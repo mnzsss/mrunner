@@ -3,6 +3,12 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.0.4](https://github.com/mnzsss/mrunner/compare/v0.0.2...v0.0.4) (2025-12-23)
+
+### Features
+
+* add WiX Toolset installation to release workflow ([1eea076](https://github.com/mnzsss/mrunner/commit/1eea076b3343afb5f4a20a551f3c8cb05bee5eca))
+
 * feat: add WiX Toolset installation to release workflow (1eea076)
 
 ## [0.0.2](https://github.com/mnzsss/mrunner/compare/v0.0.0...v0.0.2) (2025-12-23)
