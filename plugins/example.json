@@ -1,0 +1,12 @@
+{
+	"id": "open-claude",
+	"name": "Claude AI",
+	"description": "Open Claude in browser",
+	"icon": "globe",
+	"group": "AI",
+	"keywords": ["claude", "ai", "chat", "anthropic"],
+	"action": {
+		"type": "url",
+		"url": "https://claude.ai"
+	}
+}
