@@ -3,6 +3,13 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.0.6](https://github.com/mnzsss/mrunner/compare/v0.0.5...v0.0.6) (2025-12-23)
+
+### Features
+
+* add user directory management and folder manager dialog ([28ace39](https://github.com/mnzsss/mrunner/commit/28ace395319a4307482c430aea17bc0a643282bc))
+* integrate bookmark management and command palette enhancements ([123c0a3](https://github.com/mnzsss/mrunner/commit/123c0a34fdb186e05bcd90c60b57e0e7bae8db7f))
+
 ## [0.0.5](https://github.com/mnzsss/mrunner/compare/v0.0.4...v0.0.5) (2025-12-23)
 
 ### Features
