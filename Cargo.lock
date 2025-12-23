@@ -2295,6 +2295,7 @@ name = "mrunner"
 version = "0.0.4"
 dependencies = [
  "bookmarks",
+ "dirs 5.0.1",
  "serde",
  "serde_json",
  "shell-words",

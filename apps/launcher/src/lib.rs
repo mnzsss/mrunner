@@ -1,47 +1,30 @@
 mod bookmarks;
+mod chrome;
+mod platform;
 
-use std::env;
 use std::process::Command;
 use tauri::Manager;
-
-fn expand_tilde(path: &str) -> String {
-    if path == "~" {
-        env::var("HOME").unwrap_or_else(|_| path.to_string())
-    } else if let Some(rest) = path.strip_prefix("~/") {
-        match env::var("HOME") {
-            Ok(home) => format!("{}/{}", home, rest),
-            Err(_) => path.to_string(),
-        }
-    } else {
-        path.to_string()
-    }
-}
-
-const ALLOWED_COMMANDS: &[&str] = &[
-    "google-chrome-stable",
-    "nautilus",
-    "dolphin",
-    "thunar",
-    "nemo",
-    "pcmanfm",
-    "xdg-open",
-    "open",
-    "code",
-    "cursor",
-];
 
 fn is_command_allowed(cmd: &str) -> bool {
     let executable = cmd.split_whitespace().next().unwrap_or("");
     let base_name = executable.rsplit('/').next().unwrap_or(executable);
-    ALLOWED_COMMANDS.contains(&base_name)
+
+    // Windows: also strip .exe extension
+    #[cfg(target_os = "windows")]
+    let base_name = base_name.strip_suffix(".exe").unwrap_or(base_name);
+
+    platform::get_allowed_commands().contains(&base_name)
 }
 
 #[tauri::command]
 fn run_shell_command(command: &str) -> Result<String, String> {
+    println!("[DEBUG] run_shell_command called with: {}", command);
+
     if !is_command_allowed(command) {
+        println!("[DEBUG] Command not allowed: {}", command);
         return Err(format!(
             "Command not allowed. Only these executables are permitted: {:?}",
-            ALLOWED_COMMANDS
+            platform::get_allowed_commands()
         ));
     }
 
@@ -51,7 +34,10 @@ fn run_shell_command(command: &str) -> Result<String, String> {
     }
 
     let executable = &parts[0];
-    let args: Vec<String> = parts[1..].iter().map(|arg| expand_tilde(arg)).collect();
+    let args: Vec<String> = parts[1..]
+        .iter()
+        .map(|arg| platform::expand_path(arg))
+        .collect();
 
     Command::new(executable)
         .args(&args)
@@ -59,6 +45,11 @@ fn run_shell_command(command: &str) -> Result<String, String> {
         .map_err(|e| e.to_string())?;
 
     Ok("Process started".to_string())
+}
+
+#[tauri::command]
+fn get_platform_info() -> platform::PlatformInfo {
+    platform::get_platform_info()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -85,6 +76,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             run_shell_command,
+            get_platform_info,
+            chrome::list_chrome_profiles,
             bookmarks::bookmark_list,
             bookmarks::bookmark_search,
             bookmarks::bookmark_get_by_id,

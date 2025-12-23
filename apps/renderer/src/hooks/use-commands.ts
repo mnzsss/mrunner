@@ -3,7 +3,10 @@ import { open } from '@tauri-apps/plugin-shell'
 import { useCallback, useMemo } from 'react'
 
 import type { Command, CommandResult } from '@/commands/types'
-import { builtinCommands } from '@/commands'
+import { getAppCommands, getFileCommands } from '@/commands'
+
+import { useChromeProfiles } from './use-chrome-profiles'
+import { usePlatform } from './use-platform'
 
 interface UseCommandsReturn {
 	commands: Command[]
@@ -11,7 +14,14 @@ interface UseCommandsReturn {
 }
 
 export function useCommands(): UseCommandsReturn {
-	const commands = useMemo(() => builtinCommands, [])
+	const { platform } = usePlatform()
+	const { commands: chromeCommands } = useChromeProfiles(platform)
+
+	const commands = useMemo(() => {
+		const appCmds = getAppCommands(platform)
+		const fileCmds = getFileCommands(platform)
+		return [...chromeCommands, ...appCmds, ...fileCmds]
+	}, [platform, chromeCommands])
 
 	const executeCommand = useCallback(
 		async (command: Command): Promise<CommandResult> => {
