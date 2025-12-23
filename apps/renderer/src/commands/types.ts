@@ -22,7 +22,11 @@ export interface Tag {
 	count: number
 }
 
-export type DialogType = 'bookmark-add' | 'bookmark-edit' | 'bookmark-delete'
+export type DialogType =
+	| 'bookmark-add'
+	| 'bookmark-edit'
+	| 'bookmark-delete'
+	| 'folder-manager'
 
 export interface DialogAction {
 	type: 'dialog'
@@ -83,6 +87,29 @@ export type CommandIcon =
 	| 'volume'
 	| 'sun'
 	| 'moon'
+	| 'download'
+	| 'file-text'
+	| 'image'
+	| 'video'
+	| 'folder-plus'
+	| 'folder-cog'
+
+// User directory returned from backend
+export interface UserDirectory {
+	id: string
+	name: string
+	path: string
+	icon: string
+}
+
+// Configured folder for quick access
+export interface FolderConfig {
+	id: string
+	name: string
+	path: string
+	icon: CommandIcon
+	isSystem: boolean
+}
 
 export interface Command {
 	id: string
@@ -173,7 +200,26 @@ const CommandIconSchema = z.enum([
 	'volume',
 	'sun',
 	'moon',
+	'download',
+	'file-text',
+	'image',
+	'video',
+	'folder-plus',
+	'folder-cog',
 ])
+
+// Schema for folder configuration
+export const FolderConfigSchema = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	path: z.string().min(1),
+	icon: CommandIconSchema,
+	isSystem: z.boolean(),
+})
+
+export const FoldersConfigSchema = z.object({
+	folders: z.array(FolderConfigSchema),
+})
 
 const ShellActionSchema = z.object({
 	type: z.literal('shell'),

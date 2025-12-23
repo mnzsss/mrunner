@@ -6,22 +6,31 @@ import type { Command, CommandResult } from '@/commands/types'
 import { getAppCommands, getFileCommands } from '@/commands'
 
 import { useChromeProfiles } from './use-chrome-profiles'
+import { useFolderSettings } from './use-folder-settings'
 import { usePlatform } from './use-platform'
 
 interface UseCommandsReturn {
 	commands: Command[]
 	executeCommand: (command: Command) => Promise<CommandResult>
+	folderActions: {
+		addFolder: ReturnType<typeof useFolderSettings>['addFolder']
+		removeFolder: ReturnType<typeof useFolderSettings>['removeFolder']
+		folders: ReturnType<typeof useFolderSettings>['folders']
+		reloadFolders: ReturnType<typeof useFolderSettings>['reloadFolders']
+	}
 }
 
 export function useCommands(): UseCommandsReturn {
 	const { platform } = usePlatform()
 	const { commands: chromeCommands } = useChromeProfiles(platform)
+	const { folders, addFolder, removeFolder, reloadFolders } =
+		useFolderSettings()
 
 	const commands = useMemo(() => {
 		const appCmds = getAppCommands(platform)
-		const fileCmds = getFileCommands(platform)
+		const fileCmds = getFileCommands(platform, folders)
 		return [...chromeCommands, ...appCmds, ...fileCmds]
-	}, [platform, chromeCommands])
+	}, [platform, chromeCommands, folders])
 
 	const executeCommand = useCallback(
 		async (command: Command): Promise<CommandResult> => {
@@ -84,5 +93,14 @@ export function useCommands(): UseCommandsReturn {
 		[],
 	)
 
-	return { commands, executeCommand }
+	return {
+		commands,
+		executeCommand,
+		folderActions: {
+			addFolder,
+			removeFolder,
+			folders,
+			reloadFolders,
+		},
+	}
 }

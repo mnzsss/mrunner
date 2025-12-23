@@ -33,6 +33,12 @@ const DeleteConfirmDialog = lazy(() =>
 	})),
 )
 
+const FolderManager = lazy(() =>
+	import('@/components/folder/folder-manager').then((mod) => ({
+		default: mod.FolderManager,
+	})),
+)
+
 interface BookmarkDialogState {
 	bookmark: Bookmark | null
 	open: boolean
@@ -49,9 +55,10 @@ function App() {
 		bookmark: null,
 		open: false,
 	})
+	const [isFolderManagerOpen, setIsFolderManagerOpen] = useState(false)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
-	const { commands, executeCommand } = useCommands()
+	const { commands, executeCommand, folderActions } = useCommands()
 	const { plugins } = usePlugins()
 	const { bookmarks, openBookmark, refresh, remove, search, parseQuery } =
 		useBookmarks()
@@ -251,6 +258,15 @@ function App() {
 			const command = allItems.find((c) => c.id === commandId)
 			if (!command) return
 
+			// Handle folder-manager dialog
+			if (
+				command.action.type === 'dialog' &&
+				command.action.dialog === 'folder-manager'
+			) {
+				setIsFolderManagerOpen(true)
+				return
+			}
+
 			await executeCommand(command)
 
 			if (command.closeAfterRun !== false) {
@@ -314,6 +330,15 @@ function App() {
 		})
 	}, [deleteDialog.bookmark, remove, refresh])
 
+	const handleFolderManagerOpenChange = useCallback((open: boolean) => {
+		setIsFolderManagerOpen(open)
+		if (!open) {
+			requestAnimationFrame(() => {
+				inputRef.current?.focus()
+			})
+		}
+	}, [])
+
 	return (
 		<div className="h-screen w-screen">
 			<BookmarkDialog
@@ -341,6 +366,14 @@ function App() {
 					onConfirm={handleDeleteConfirm}
 				/>
 			)}
+
+			<FolderManager
+				open={isFolderManagerOpen}
+				onOpenChange={handleFolderManagerOpenChange}
+				folders={folderActions.folders}
+				onAddFolder={folderActions.addFolder}
+				onRemoveFolder={folderActions.removeFolder}
+			/>
 
 			<Command
 				className="flex h-full flex-col rounded-lg border shadow-md"

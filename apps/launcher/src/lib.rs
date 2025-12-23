@@ -52,6 +52,11 @@ fn get_platform_info() -> platform::PlatformInfo {
     platform::get_platform_info()
 }
 
+#[tauri::command]
+fn get_user_directories() -> Vec<platform::UserDirectory> {
+    platform::get_user_directories()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -62,6 +67,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let window = app
                 .get_webview_window("main")
@@ -77,6 +83,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             run_shell_command,
             get_platform_info,
+            get_user_directories,
             chrome::list_chrome_profiles,
             bookmarks::bookmark_list,
             bookmarks::bookmark_search,

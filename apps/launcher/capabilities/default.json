@@ -21,11 +21,14 @@
 		"global-shortcut:allow-is-registered",
 		"fs:allow-read-dir",
 		"fs:allow-read-text-file",
+		"fs:allow-write-text-file",
+		"fs:allow-mkdir",
 		"fs:allow-exists",
 		{
 			"identifier": "fs:scope",
 			"allow": ["$HOME/.config/mrunner/**"]
 		},
+		"dialog:allow-open",
 		"notification:default"
 	]
 }

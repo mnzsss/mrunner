@@ -5,10 +5,14 @@ import {
 	Clipboard,
 	Code,
 	Cpu,
+	Download,
 	FileText,
+	FolderCog,
 	FolderOpen,
+	FolderPlus,
 	Globe,
 	Hash,
+	Image,
 	type LucideIcon,
 	Monitor,
 	Moon,
@@ -18,6 +22,7 @@ import {
 	Settings,
 	Sun,
 	Terminal,
+	Video,
 	Volume2,
 	Wifi,
 } from 'lucide-react'
@@ -26,6 +31,15 @@ import type { CommandIcon } from '@/commands/types'
 
 export const DEBOUNCE_MS = 300
 export const SHORTCUT = 'Super+Space'
+
+export const SYSTEM_ICON_TO_COMMAND_ICON: Record<string, CommandIcon> = {
+	download: 'download',
+	'file-text': 'file-text',
+	image: 'image',
+	video: 'video',
+	music: 'music',
+	monitor: 'monitor',
+}
 
 export const ICON_MAP: Record<CommandIcon, LucideIcon> = {
 	search: Search,
@@ -48,4 +62,10 @@ export const ICON_MAP: Record<CommandIcon, LucideIcon> = {
 	volume: Volume2,
 	sun: Sun,
 	moon: Moon,
+	download: Download,
+	'file-text': FileText,
+	image: Image,
+	video: Video,
+	'folder-plus': FolderPlus,
+	'folder-cog': FolderCog,
 }
