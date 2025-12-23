@@ -52,7 +52,36 @@
 		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": {
+					"level": "on",
+					"options": {
+						"groups": [
+							{
+								"source": [":PACKAGE:", ":NODE:", "!@/**"],
+								"type": true
+							},
+							[":PACKAGE:", ":NODE:", "!@/**"],
+							":BLANK_LINE:",
+							{
+								"source": "@/**",
+								"type": true
+							},
+							"@/**",
+							":BLANK_LINE:",
+							{
+								"source": ":ALIAS:",
+								"type": true
+							},
+							":ALIAS:",
+							":BLANK_LINE:",
+							{
+								"source": ":PATH:",
+								"type": true
+							},
+							":PATH:"
+						]
+					}
+				}
 			}
 		}
 	}

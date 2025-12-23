@@ -1,6 +1,7 @@
 import { homeDir } from '@tauri-apps/api/path'
 import { readDir, readTextFile } from '@tauri-apps/plugin-fs'
 import { useCallback, useEffect, useState } from 'react'
+
 import type { Command } from '@/commands/types'
 import { pluginToCommand, safeParsePluginConfig } from '@/commands/types'
 

@@ -21,6 +21,7 @@ import {
 	Volume2,
 	Wifi,
 } from 'lucide-react'
+
 import type { CommandIcon } from '@/commands/types'
 
 export const DEBOUNCE_MS = 300

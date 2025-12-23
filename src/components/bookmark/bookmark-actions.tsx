@@ -1,8 +1,10 @@
 import { Copy, Edit, ExternalLink, Trash2 } from 'lucide-react'
 import { memo, useCallback } from 'react'
+
 import type { Bookmark } from '@/commands/types'
 import { useBuku } from '@/hooks/use-buku'
 import { UI_TEXT } from '@/lib/i18n'
+
 import { DeleteConfirmDialog } from './bookmark-delete'
 import { BookmarkDialog } from './bookmark-dialog'
 

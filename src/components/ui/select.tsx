@@ -1,5 +1,6 @@
 'use client'
 
+import type * as React from 'react'
 import { Select as SelectPrimitive } from '@base-ui/react/select'
 import {
 	ArrowDown01Icon,
@@ -8,7 +9,7 @@ import {
 	UnfoldMoreIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import type * as React from 'react'
+
 import { cn } from '@/lib/utils'
 
 const Select = SelectPrimitive.Root

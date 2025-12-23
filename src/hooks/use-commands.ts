@@ -1,8 +1,9 @@
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
 import { useCallback, useMemo } from 'react'
-import { builtinCommands } from '@/commands'
+
 import type { Command, CommandResult } from '@/commands/types'
+import { builtinCommands } from '@/commands'
 
 interface UseCommandsReturn {
 	commands: Command[]

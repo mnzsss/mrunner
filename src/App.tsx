@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { Bookmark as BookmarkIcon, Plus, Terminal } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import type { CommandIcon, Command as CommandType } from '@/commands/types'
 import { BookmarkActions, BookmarkDialog } from '@/components'
 import {
@@ -28,6 +29,7 @@ const CommandIconComponent = memo(function CommandIconComponent({
 
 function App() {
 	const [query, setQuery] = useState('')
+	const [isAddBookmarkOpen, setIsAddBookmarkOpen] = useState(false)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const { commands, executeCommand } = useCommands()
 	const { plugins } = usePlugins()
@@ -54,9 +56,26 @@ function App() {
 		}
 	}, [query, search, parseQuery])
 
+	const addBookmarkCommand: CommandType = useMemo(
+		() => ({
+			id: 'badd',
+			name: '/badd',
+			description: UI_TEXT.bookmarks.addDescription,
+			icon: 'bookmark',
+			group: 'Commands',
+			keywords: ['bookmark', 'add', 'adicionar', 'novo', 'new'],
+			closeAfterRun: false,
+			action: {
+				type: 'function',
+				fn: () => setIsAddBookmarkOpen(true),
+			},
+		}),
+		[],
+	)
+
 	const allCommands = useMemo(
-		() => [...commands, ...plugins],
-		[commands, plugins],
+		() => [...commands, ...plugins, addBookmarkCommand],
+		[commands, plugins, addBookmarkCommand],
 	)
 
 	const bookmarkCommands: CommandType[] = useMemo(
@@ -185,8 +204,19 @@ function App() {
 		[allItems, executeCommand, hideWindow, openBookmark],
 	)
 
+	const handleAddBookmarkSave = useCallback(() => {
+		refresh()
+		setIsAddBookmarkOpen(false)
+	}, [refresh])
+
 	return (
 		<div className="h-screen w-screen">
+			<BookmarkDialog
+				mode="add"
+				open={isAddBookmarkOpen}
+				onOpenChange={setIsAddBookmarkOpen}
+				onSave={handleAddBookmarkSave}
+			/>
 			<Command
 				className="flex h-full flex-col rounded-lg border shadow-md"
 				loop
@@ -205,22 +235,23 @@ function App() {
 					</CommandEmpty>
 
 					<CommandGroup heading={UI_TEXT.bookmarks.group}>
-						<BookmarkDialog mode="add" onSave={refresh}>
-							<div className="data-selected:bg-muted data-selected:text-foreground data-selected:*:[svg]:text-foreground relative flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm outline-hidden select-none [&_svg:not([class*='size-'])]:size-4 in-data-[slot=dialog-content]:rounded-2xl group/command-item data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0">
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-									<BookmarkIcon className="size-4" />
-								</div>
-								<div className="min-w-0 flex-1">
-									<div className="truncate text-sm font-medium">
-										{UI_TEXT.bookmarks.add}
-									</div>
-									<div className="truncate text-xs text-muted-foreground">
-										{UI_TEXT.bookmarks.addDescription}
-									</div>
-								</div>
-								<Plus className="size-4 text-muted-foreground" />
+						<CommandItem
+							value={`${UI_TEXT.bookmarks.add} adicionar bookmark add`}
+							onSelect={() => setIsAddBookmarkOpen(true)}
+						>
+							<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+								<BookmarkIcon className="size-4" />
 							</div>
-						</BookmarkDialog>
+							<div className="min-w-0 flex-1">
+								<div className="truncate text-sm font-medium">
+									{UI_TEXT.bookmarks.add}
+								</div>
+								<div className="truncate text-xs text-muted-foreground">
+									{UI_TEXT.bookmarks.addDescription}
+								</div>
+							</div>
+							<Plus className="size-4 text-muted-foreground" />
+						</CommandItem>
 
 						{bookmarks.map((bm) => (
 							<CommandItem

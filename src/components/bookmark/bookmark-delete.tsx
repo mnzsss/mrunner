@@ -1,5 +1,6 @@
-import { AlertTriangle } from 'lucide-react'
 import type { ReactElement } from 'react'
+import { AlertTriangle } from 'lucide-react'
+
 import type { Bookmark } from '@/commands/types'
 import {
 	AlertDialog,

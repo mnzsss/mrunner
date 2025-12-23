@@ -1,4 +1,5 @@
 import { type ReactElement, useCallback, useState } from 'react'
+
 import type { Bookmark } from '@/commands/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +23,9 @@ interface BookmarkDialogProps {
 	bookmark?: Bookmark
 	initialUrl?: string
 	onSave?: () => void
-	children: ReactElement
+	children?: ReactElement
+	open?: boolean
+	onOpenChange?: (open: boolean) => void
 }
 
 export function BookmarkDialog({
@@ -31,10 +34,24 @@ export function BookmarkDialog({
 	initialUrl,
 	onSave,
 	children,
+	open: controlledOpen,
+	onOpenChange: controlledOnOpenChange,
 }: BookmarkDialogProps) {
 	const { add, update } = useBuku()
 
-	const [open, setOpen] = useState(false)
+	const [internalOpen, setInternalOpen] = useState(false)
+	const isControlled = controlledOpen !== undefined
+	const open = isControlled ? controlledOpen : internalOpen
+	const setOpen = useCallback(
+		(value: boolean) => {
+			if (isControlled) {
+				controlledOnOpenChange?.(value)
+			} else {
+				setInternalOpen(value)
+			}
+		},
+		[isControlled, controlledOnOpenChange],
+	)
 	const [url, setUrl] = useState(bookmark?.uri || initialUrl || '')
 	const [title, setTitle] = useState(bookmark?.title || '')
 	const [tags, setTags] = useState(bookmark?.tags || '')
@@ -66,7 +83,7 @@ export function BookmarkDialog({
 				resetForm()
 			}
 		},
-		[resetForm],
+		[resetForm, setOpen],
 	)
 
 	const handleSubmit = useCallback(
@@ -122,12 +139,13 @@ export function BookmarkDialog({
 			update,
 			onSave,
 			isValidUrl,
+			setOpen,
 		],
 	)
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger render={children} />
+			{children && <DialogTrigger render={children} />}
 			<DialogContent className="max-h-[90vh] max-w-125 overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>

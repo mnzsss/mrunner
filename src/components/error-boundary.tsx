@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+
 import { UI_TEXT } from '@/lib/i18n'
 
 interface Props {

@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+
 import { ErrorBoundary } from '@/components'
+
 import App from './App'
 
 const rootElement = document.getElementById('root')

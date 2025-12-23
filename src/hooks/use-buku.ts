@@ -3,6 +3,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import { open } from '@tauri-apps/plugin-shell'
 import { useCallback, useState } from 'react'
+
 import type { Bookmark, Tag } from '@/commands/types'
 
 export type { Bookmark, Tag }
