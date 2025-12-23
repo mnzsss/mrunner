@@ -1,14 +1,7 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
 onlyBuiltDependencies:
-  - ''''
-  - '['
-  - ']'
-  - b
-  - c
   - esbuild
-  - msw
-  - p
-  - r
   - sharp
-  - t
-  - unrs-resolver
-  - y

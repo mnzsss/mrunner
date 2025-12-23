@@ -3,11 +3,11 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-BINARY="$PROJECT_DIR/src-tauri/target/release/mrunner"
-ICON="$PROJECT_DIR/src-tauri/icons/128x128.png"
+BINARY="$PROJECT_DIR/target/release/mrunner"
+ICON="$PROJECT_DIR/apps/launcher/icons/128x128.png"
 
 if [ ! -f "$BINARY" ]; then
-  echo "Error: Binary not found. Run 'pnpm tauri build' first."
+  echo "Error: Binary not found. Run 'pnpm tauri:build' first."
   exit 1
 fi
 
