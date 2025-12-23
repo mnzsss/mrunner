@@ -3,6 +3,12 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.0.5](https://github.com/mnzsss/mrunner/compare/v0.0.4...v0.0.5) (2025-12-23)
+
+### Features
+
+* Refactor launcher and renderer to support platform-specific commands and Chrome profile management ([20d6698](https://github.com/mnzsss/mrunner/commit/20d66980f236e985417abaec2aeafa5e3a200e63))
+
 ## [0.0.4](https://github.com/mnzsss/mrunner/compare/v0.0.2...v0.0.4) (2025-12-23)
 
 ### Features
