@@ -1,7 +1,7 @@
 export const UI_TEXT = {
 	app: {
 		name: 'MRunner',
-		version: 'v0.0.1',
+		version: 'v0.0.0-beta.1',
 	},
 	search: {
 		placeholder: 'Digite um comando ou busque...',

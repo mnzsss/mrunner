@@ -1,6 +1,6 @@
 # Maintainer: Gabriel Menezes <menezes@mnzs.dev>
 pkgname=mrunner
-pkgver=0.0.1
+pkgver=0.0.0-beta.1
 pkgrel=1
 pkgdesc="A fast, keyboard-driven application runner for Linux."
 arch=('x86_64')
