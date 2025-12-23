@@ -16,6 +16,7 @@ import { lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Bookmark, Command as CommandType } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
 import { ListItem } from '@/components/list-item'
+import { UpdateBanner } from '@/components/update-banner'
 import { useBookmarks, useCommands, usePlugins } from '@/hooks'
 import { DEBOUNCE_MS, SHORTCUT } from '@/lib/constants'
 import { UI_TEXT } from '@/lib/i18n'
@@ -346,6 +347,7 @@ function App() {
 				loop
 				disablePointerSelection
 			>
+				<UpdateBanner />
 				<CommandInput
 					ref={inputRef}
 					value={query}
