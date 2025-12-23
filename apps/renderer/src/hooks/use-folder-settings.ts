@@ -9,11 +9,11 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 
 import type { CommandIcon, FolderConfig, UserDirectory } from '@/commands/types'
-import { FoldersConfigSchema } from '@/commands/types'
+import { UserPreferencesSchema } from '@/commands/types'
 import { SYSTEM_ICON_TO_COMMAND_ICON } from '@/lib/constants'
 
 const CONFIG_DIR = '.config/mrunner'
-const CONFIG_FILE = 'folders.json'
+const CONFIG_FILE = 'preferences.json'
 
 interface UseFolderSettingsReturn {
 	folders: FolderConfig[]
@@ -22,6 +22,8 @@ interface UseFolderSettingsReturn {
 	error: string | null
 	addFolder: (folder: Omit<FolderConfig, 'id' | 'isSystem'>) => Promise<void>
 	removeFolder: (id: string) => Promise<void>
+	hideSystemFolder: (id: string) => Promise<void>
+	showSystemFolder: (id: string) => Promise<void>
 	reloadFolders: () => Promise<void>
 }
 
@@ -38,6 +40,7 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 	const [systemDirectories, setSystemDirectories] = useState<UserDirectory[]>(
 		[],
 	)
+	const [hiddenSystemFolders, setHiddenSystemFolders] = useState<string[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -76,35 +79,41 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 				loadSystemDirectories(),
 			])
 
-			let userFolders: FolderConfig[] = []
+			let customFolders: FolderConfig[] = []
+			let hiddenFolders: string[] = []
 
 			const configExists = await exists(configPath)
 			if (configExists) {
 				try {
 					const content = await readTextFile(configPath)
 					const json: unknown = JSON.parse(content)
-					const result = FoldersConfigSchema.safeParse(json)
+					const result = UserPreferencesSchema.safeParse(json)
 
 					if (result.success) {
-						userFolders = result.data.folders.filter((f) => !f.isSystem)
+						customFolders = result.data.customFolders
+						hiddenFolders = result.data.hiddenSystemFolders
 					} else {
-						console.warn('Invalid folder config:', result.error.issues)
+						console.warn('Invalid preferences config:', result.error.issues)
 					}
 				} catch (e) {
-					console.error('Failed to parse folder config:', e)
+					console.error('Failed to parse preferences config:', e)
 				}
 			}
 
-			// Convert system directories to FolderConfig
-			const systemFolders: FolderConfig[] = sysDirs.map((dir) => ({
-				id: `system-${dir.id}`,
-				name: dir.name,
-				path: dir.path,
-				icon: mapIconToCommandIcon(dir.icon),
-				isSystem: true,
-			}))
+			setHiddenSystemFolders(hiddenFolders)
 
-			setFolders([...systemFolders, ...userFolders])
+			// Convert system directories to FolderConfig, filtering out hidden ones
+			const systemFolders: FolderConfig[] = sysDirs
+				.filter((dir) => !hiddenFolders.includes(`system-${dir.id}`))
+				.map((dir) => ({
+					id: `system-${dir.id}`,
+					name: dir.name,
+					path: dir.path,
+					icon: mapIconToCommandIcon(dir.icon),
+					isSystem: true,
+				}))
+
+			setFolders([...systemFolders, ...customFolders])
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
 			console.error('Failed to load folders:', message)
@@ -114,20 +123,21 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 		}
 	}, [getConfigPath, loadSystemDirectories])
 
-	const saveFolders = useCallback(
-		async (foldersToSave: FolderConfig[]) => {
+	const savePreferences = useCallback(
+		async (customFolders: FolderConfig[], hiddenFolders: string[]) => {
 			try {
 				await ensureConfigDir()
 				const configPath = await getConfigPath()
 
-				// Only save user folders (not system ones)
-				const userFolders = foldersToSave.filter((f) => !f.isSystem)
-				const config = { folders: userFolders }
+				const preferences = {
+					customFolders,
+					hiddenSystemFolders: hiddenFolders,
+				}
 
-				await writeTextFile(configPath, JSON.stringify(config, null, 2))
+				await writeTextFile(configPath, JSON.stringify(preferences, null, 2))
 			} catch (e) {
 				const message = e instanceof Error ? e.message : String(e)
-				console.error('Failed to save folders:', message)
+				console.error('Failed to save preferences:', message)
 				throw new Error(message)
 			}
 		},
@@ -143,19 +153,58 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 			}
 
 			const updated = [...folders, newFolder]
-			await saveFolders(updated)
+			const customFolders = updated.filter((f) => !f.isSystem)
+			await savePreferences(customFolders, hiddenSystemFolders)
 			setFolders(updated)
 		},
-		[folders, saveFolders],
+		[folders, hiddenSystemFolders, savePreferences],
 	)
 
 	const removeFolder = useCallback(
 		async (id: string) => {
 			const updated = folders.filter((f) => f.id !== id)
-			await saveFolders(updated)
+			const customFolders = updated.filter((f) => !f.isSystem)
+			await savePreferences(customFolders, hiddenSystemFolders)
 			setFolders(updated)
 		},
-		[folders, saveFolders],
+		[folders, hiddenSystemFolders, savePreferences],
+	)
+
+	const hideSystemFolder = useCallback(
+		async (id: string) => {
+			const newHidden = [...hiddenSystemFolders, id]
+			const customFolders = folders.filter((f) => !f.isSystem)
+			await savePreferences(customFolders, newHidden)
+			setHiddenSystemFolders(newHidden)
+			setFolders(folders.filter((f) => f.id !== id))
+		},
+		[folders, hiddenSystemFolders, savePreferences],
+	)
+
+	const showSystemFolder = useCallback(
+		async (id: string) => {
+			const newHidden = hiddenSystemFolders.filter((fId) => fId !== id)
+			const customFolders = folders.filter((f) => !f.isSystem)
+			await savePreferences(customFolders, newHidden)
+
+			// Re-add the system folder
+			const systemDir = systemDirectories.find(
+				(dir) => `system-${dir.id}` === id,
+			)
+			if (systemDir) {
+				const systemFolder: FolderConfig = {
+					id: `system-${systemDir.id}`,
+					name: systemDir.name,
+					path: systemDir.path,
+					icon: mapIconToCommandIcon(systemDir.icon),
+					isSystem: true,
+				}
+				setFolders([systemFolder, ...folders])
+			}
+
+			setHiddenSystemFolders(newHidden)
+		},
+		[folders, hiddenSystemFolders, systemDirectories, savePreferences],
 	)
 
 	useEffect(() => {
@@ -169,6 +218,8 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 		error,
 		addFolder,
 		removeFolder,
+		hideSystemFolder,
+		showSystemFolder,
 		reloadFolders: loadFolders,
 	}
 }

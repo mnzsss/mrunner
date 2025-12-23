@@ -26,7 +26,7 @@
 		"fs:allow-exists",
 		{
 			"identifier": "fs:scope",
-			"allow": ["$HOME/.config/mrunner/**"]
+			"allow": ["$HOME/.config/mrunner", "$HOME/.config/mrunner/**"]
 		},
 		"dialog:allow-open",
 		"notification:default"

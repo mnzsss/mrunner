@@ -15,7 +15,10 @@ interface UseCommandsReturn {
 	folderActions: {
 		addFolder: ReturnType<typeof useFolderSettings>['addFolder']
 		removeFolder: ReturnType<typeof useFolderSettings>['removeFolder']
+		hideSystemFolder: ReturnType<typeof useFolderSettings>['hideSystemFolder']
+		showSystemFolder: ReturnType<typeof useFolderSettings>['showSystemFolder']
 		folders: ReturnType<typeof useFolderSettings>['folders']
+		systemDirectories: ReturnType<typeof useFolderSettings>['systemDirectories']
 		reloadFolders: ReturnType<typeof useFolderSettings>['reloadFolders']
 	}
 }
@@ -23,13 +26,20 @@ interface UseCommandsReturn {
 export function useCommands(): UseCommandsReturn {
 	const { platform } = usePlatform()
 	const { commands: chromeCommands } = useChromeProfiles(platform)
-	const { folders, addFolder, removeFolder, reloadFolders } =
-		useFolderSettings()
+	const {
+		folders,
+		systemDirectories,
+		addFolder,
+		removeFolder,
+		hideSystemFolder,
+		showSystemFolder,
+		reloadFolders,
+	} = useFolderSettings()
 
 	const commands = useMemo(() => {
 		const appCmds = getAppCommands(platform)
 		const fileCmds = getFileCommands(platform, folders)
-		return [...chromeCommands, ...appCmds, ...fileCmds]
+		return [...fileCmds, ...chromeCommands, ...appCmds]
 	}, [platform, chromeCommands, folders])
 
 	const executeCommand = useCallback(
@@ -60,18 +70,9 @@ export function useCommands(): UseCommandsReturn {
 						return { success: true }
 					}
 
-					case 'input': {
-						// Input mode is handled by the UI
-						return { success: true }
-					}
-
-					case 'submenu': {
-						// Submenu is handled by the UI
-						return { success: true }
-					}
-
+					case 'input':
+					case 'submenu':
 					case 'dialog': {
-						// Dialog is handled by the UI
 						return { success: true }
 					}
 
@@ -99,7 +100,10 @@ export function useCommands(): UseCommandsReturn {
 		folderActions: {
 			addFolder,
 			removeFolder,
+			hideSystemFolder,
+			showSystemFolder,
 			folders,
+			systemDirectories,
 			reloadFolders,
 		},
 	}

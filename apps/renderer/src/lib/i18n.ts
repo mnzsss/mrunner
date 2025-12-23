@@ -1,7 +1,7 @@
 export const UI_TEXT = {
 	app: {
 		name: 'MRunner',
-		version: 'v0.0.0-beta.1',
+		version: `v${__APP_VERSION__}`,
 	},
 	search: {
 		placeholder: 'Digite um comando ou busque...',
@@ -27,15 +27,20 @@ export const UI_TEXT = {
 	folders: {
 		manage: 'Gerenciar Pastas',
 		manageDescription: 'Adicione ou remova pastas de acesso rápido',
-		addFolder: 'Adicionar Pasta',
+		addFolder: 'Adicionar',
+		addNewFolder: 'Adicionar Nova Pasta',
 		addCustom: 'Adicionar pasta personalizada',
 		selectFolder: 'Selecionar Pasta',
 		folderName: 'Nome da Pasta',
 		folderNamePlaceholder: 'Ex: Projetos',
 		systemFolders: 'Pastas do Sistema',
 		customFolders: 'Pastas Personalizadas',
+		hiddenFolders: 'Pastas Ocultas',
 		noCustomFolders: 'Nenhuma pasta personalizada adicionada',
+		noHiddenFolders: 'Nenhuma pasta oculta',
 		removeConfirm: 'Remover esta pasta?',
+		hide: 'Ocultar',
+		show: 'Mostrar',
 	},
 	form: {
 		url: 'URL',

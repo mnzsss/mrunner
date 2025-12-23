@@ -11,10 +11,10 @@ import {
 	Separator,
 } from '@mrunner/ui'
 import { open } from '@tauri-apps/plugin-dialog'
-import { FolderPlus, Trash2 } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { Eye, EyeOff, FolderPlus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
-import type { CommandIcon, FolderConfig } from '@/commands/types'
+import type { CommandIcon, FolderConfig, UserDirectory } from '@/commands/types'
 import { ICON_MAP } from '@/lib/constants'
 import { UI_TEXT } from '@/lib/i18n'
 
@@ -22,8 +22,12 @@ interface FolderManagerProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	folders: FolderConfig[]
+	systemDirectories: UserDirectory[]
 	onAddFolder: (folder: Omit<FolderConfig, 'id' | 'isSystem'>) => Promise<void>
 	onRemoveFolder: (id: string) => Promise<void>
+	onHideSystemFolder: (id: string) => Promise<void>
+	onShowSystemFolder: (id: string) => Promise<void>
+	onDialogStateChange: (increment: number) => void
 }
 
 function FolderIcon({ icon }: { icon: CommandIcon }) {
@@ -35,8 +39,12 @@ export function FolderManager({
 	open: isOpen,
 	onOpenChange,
 	folders,
+	systemDirectories,
 	onAddFolder,
 	onRemoveFolder,
+	onHideSystemFolder,
+	onShowSystemFolder,
+	onDialogStateChange,
 }: FolderManagerProps) {
 	const [folderName, setFolderName] = useState('')
 	const [folderPath, setFolderPath] = useState('')
@@ -45,7 +53,13 @@ export function FolderManager({
 	const systemFolders = folders.filter((f) => f.isSystem)
 	const customFolders = folders.filter((f) => !f.isSystem)
 
+	const hiddenSystemFolders = systemDirectories.filter(
+		(dir) => !systemFolders.some((f) => f.id === `system-${dir.id}`),
+	)
+
 	const handleSelectFolder = useCallback(async () => {
+		onDialogStateChange(1)
+
 		try {
 			const selected = await open({
 				directory: true,
@@ -66,8 +80,10 @@ export function FolderManager({
 			}
 		} catch (e) {
 			console.error('Failed to select folder:', e)
+		} finally {
+			onDialogStateChange(-1)
 		}
-	}, [folderName])
+	}, [folderName, onDialogStateChange])
 
 	const handleAddFolder = useCallback(async () => {
 		if (!folderPath || !folderName) return
@@ -99,6 +115,28 @@ export function FolderManager({
 		[onRemoveFolder],
 	)
 
+	const handleHideSystemFolder = useCallback(
+		async (id: string) => {
+			try {
+				await onHideSystemFolder(id)
+			} catch (e) {
+				console.error('Failed to hide folder:', e)
+			}
+		},
+		[onHideSystemFolder],
+	)
+
+	const handleShowSystemFolder = useCallback(
+		async (id: string) => {
+			try {
+				await onShowSystemFolder(id)
+			} catch (e) {
+				console.error('Failed to show folder:', e)
+			}
+		},
+		[onShowSystemFolder],
+	)
+
 	const handleOpenChange = useCallback(
 		(open: boolean) => {
 			onOpenChange(open)
@@ -109,6 +147,13 @@ export function FolderManager({
 		},
 		[onOpenChange],
 	)
+
+	useEffect(() => {
+		if (isOpen) {
+			setFolderName('')
+			setFolderPath('')
+		}
+	}, [isOpen])
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -121,79 +166,10 @@ export function FolderManager({
 				</DialogHeader>
 
 				<div className="space-y-4">
-					{/* System Folders */}
-					<div>
-						<h4 className="mb-2 text-sm font-medium text-muted-foreground">
-							{UI_TEXT.folders.systemFolders}
-						</h4>
-						<div className="space-y-1">
-							{systemFolders.map((folder) => (
-								<div
-									key={folder.id}
-									className="flex items-center gap-3 rounded-md bg-muted/50 px-3 py-2"
-								>
-									<FolderIcon icon={folder.icon} />
-									<div className="min-w-0 flex-1">
-										<div className="truncate text-sm font-medium">
-											{folder.name}
-										</div>
-										<div className="truncate text-xs text-muted-foreground">
-											{folder.path}
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-
-					<Separator />
-
-					{/* Custom Folders */}
-					<div>
-						<h4 className="mb-2 text-sm font-medium text-muted-foreground">
-							{UI_TEXT.folders.customFolders}
-						</h4>
-						{customFolders.length === 0 ? (
-							<p className="py-2 text-center text-sm text-muted-foreground">
-								{UI_TEXT.folders.noCustomFolders}
-							</p>
-						) : (
-							<div className="space-y-1">
-								{customFolders.map((folder) => (
-									<div
-										key={folder.id}
-										className="group flex items-center gap-3 rounded-md bg-muted/50 px-3 py-2"
-									>
-										<FolderIcon icon={folder.icon} />
-										<div className="min-w-0 flex-1">
-											<div className="truncate text-sm font-medium">
-												{folder.name}
-											</div>
-											<div className="truncate text-xs text-muted-foreground">
-												{folder.path}
-											</div>
-										</div>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="size-8 opacity-0 transition-opacity group-hover:opacity-100"
-											onClick={() => handleRemoveFolder(folder.id)}
-											aria-label={`Remove ${folder.name}`}
-										>
-											<Trash2 className="size-4 text-destructive" />
-										</Button>
-									</div>
-								))}
-							</div>
-						)}
-					</div>
-
-					<Separator />
-
-					{/* Add Folder Form */}
-					<div className="space-y-3">
-						<h4 className="text-sm font-medium text-muted-foreground">
-							{UI_TEXT.folders.addCustom}
+					{/* Add Folder Form - FIRST */}
+					<div className="space-y-3 rounded-md border border-muted bg-muted/30 p-4">
+						<h4 className="text-sm font-medium">
+							{UI_TEXT.folders.addNewFolder}
 						</h4>
 
 						<div className="space-y-2">
@@ -225,18 +201,142 @@ export function FolderManager({
 								</Button>
 							</div>
 						</div>
+
+						<Button
+							onClick={handleAddFolder}
+							disabled={!folderPath || !folderName || loading}
+							className="w-full"
+						>
+							{loading ? UI_TEXT.actions.saving : UI_TEXT.folders.addFolder}
+						</Button>
 					</div>
+
+					<Separator />
+
+					{/* System Folders */}
+					<div>
+						<h4 className="mb-2 text-sm font-medium text-muted-foreground">
+							{UI_TEXT.folders.systemFolders}
+						</h4>
+						<div className="space-y-1">
+							{systemFolders.map((folder) => (
+								<div
+									key={folder.id}
+									className="group flex items-center gap-3 rounded-md bg-muted/50 px-3 py-2"
+								>
+									<FolderIcon icon={folder.icon} />
+									<div className="min-w-0 flex-1">
+										<div className="truncate text-sm font-medium">
+											{folder.name}
+										</div>
+										<div className="truncate text-xs text-muted-foreground">
+											{folder.path}
+										</div>
+									</div>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="size-8 opacity-0 transition-opacity group-hover:opacity-100"
+										onClick={() => handleHideSystemFolder(folder.id)}
+										aria-label={`${UI_TEXT.folders.hide} ${folder.name}`}
+									>
+										<EyeOff className="size-4 text-muted-foreground" />
+									</Button>
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* Custom Folders */}
+					{customFolders.length > 0 && (
+						<>
+							<Separator />
+							<div>
+								<h4 className="mb-2 text-sm font-medium text-muted-foreground">
+									{UI_TEXT.folders.customFolders}
+								</h4>
+								<div className="space-y-1">
+									{customFolders.map((folder) => (
+										<div
+											key={folder.id}
+											className="group flex items-center gap-3 rounded-md bg-muted/50 px-3 py-2"
+										>
+											<FolderIcon icon={folder.icon} />
+											<div className="min-w-0 flex-1">
+												<div className="truncate text-sm font-medium">
+													{folder.name}
+												</div>
+												<div className="truncate text-xs text-muted-foreground">
+													{folder.path}
+												</div>
+											</div>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-8 opacity-0 transition-opacity group-hover:opacity-100"
+												onClick={() => handleRemoveFolder(folder.id)}
+												aria-label={`Remove ${folder.name}`}
+											>
+												<Trash2 className="size-4 text-destructive" />
+											</Button>
+										</div>
+									))}
+								</div>
+							</div>
+						</>
+					)}
+
+					{/* Hidden System Folders */}
+					{hiddenSystemFolders.length > 0 && (
+						<>
+							<Separator />
+							<div>
+								<h4 className="mb-2 text-sm font-medium text-muted-foreground">
+									{UI_TEXT.folders.hiddenFolders}
+								</h4>
+								<div className="space-y-1">
+									{hiddenSystemFolders.map((dir) => (
+										<div
+											key={dir.id}
+											className="group flex items-center gap-3 rounded-md bg-muted/50 px-3 py-2 opacity-60"
+										>
+											<FolderIcon
+												icon={
+													ICON_MAP[dir.icon as CommandIcon]
+														? (dir.icon as CommandIcon)
+														: 'folder'
+												}
+											/>
+											<div className="min-w-0 flex-1">
+												<div className="truncate text-sm font-medium">
+													{dir.name}
+												</div>
+												<div className="truncate text-xs text-muted-foreground">
+													{dir.path}
+												</div>
+											</div>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-8 opacity-0 transition-opacity group-hover:opacity-100"
+												onClick={() =>
+													handleShowSystemFolder(`system-${dir.id}`)
+												}
+												aria-label={`${UI_TEXT.folders.show} ${dir.name}`}
+											>
+												<Eye className="size-4 text-muted-foreground" />
+											</Button>
+										</div>
+									))}
+								</div>
+							</div>
+						</>
+					)}
 				</div>
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => handleOpenChange(false)}>
 						{UI_TEXT.actions.cancel}
-					</Button>
-					<Button
-						onClick={handleAddFolder}
-						disabled={!folderPath || !folderName || loading}
-					>
-						{loading ? UI_TEXT.actions.saving : UI_TEXT.folders.addFolder}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

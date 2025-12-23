@@ -18,8 +18,7 @@
 		"release:patch": "release-it patch --config release/release-it.json",
 		"release:minor": "release-it minor --config release/release-it.json",
 		"release:major": "release-it major --config release/release-it.json",
-		"release:dry-run": "release-it --dry-run --config release/release-it.json",
-		"aur:publish": "bash release/publish-aur.sh"
+		"release:dry-run": "release-it --dry-run --config release/release-it.json"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.10",

@@ -1,1 +1,36 @@
-{"default":{"identifier":"default","description":"Default capability for the launcher","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-show","core:window:allow-hide","core:window:allow-set-focus","core:window:allow-is-visible","core:window:allow-center","core:window:allow-set-decorations","core:window:allow-set-always-on-top","core:window:allow-set-skip-taskbar","shell:allow-open","clipboard-manager:allow-read-text","clipboard-manager:allow-write-text","global-shortcut:allow-register","global-shortcut:allow-unregister","global-shortcut:allow-is-registered","fs:allow-read-dir","fs:allow-read-text-file","fs:allow-write-text-file","fs:allow-mkdir","fs:allow-exists",{"identifier":"fs:scope","allow":["$HOME/.config/mrunner/**"]},"dialog:allow-open","notification:default"]}}
+{
+	"default": {
+		"identifier": "default",
+		"description": "Default capability for the launcher",
+		"local": true,
+		"windows": ["main"],
+		"permissions": [
+			"core:default",
+			"core:window:allow-show",
+			"core:window:allow-hide",
+			"core:window:allow-set-focus",
+			"core:window:allow-is-visible",
+			"core:window:allow-center",
+			"core:window:allow-set-decorations",
+			"core:window:allow-set-always-on-top",
+			"core:window:allow-set-skip-taskbar",
+			"shell:allow-open",
+			"clipboard-manager:allow-read-text",
+			"clipboard-manager:allow-write-text",
+			"global-shortcut:allow-register",
+			"global-shortcut:allow-unregister",
+			"global-shortcut:allow-is-registered",
+			"fs:allow-read-dir",
+			"fs:allow-read-text-file",
+			"fs:allow-write-text-file",
+			"fs:allow-mkdir",
+			"fs:allow-exists",
+			{
+				"identifier": "fs:scope",
+				"allow": ["$HOME/.config/mrunner", "$HOME/.config/mrunner/**"]
+			},
+			"dialog:allow-open",
+			"notification:default"
+		]
+	}
+}

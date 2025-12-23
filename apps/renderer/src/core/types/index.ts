@@ -19,7 +19,7 @@ export type {
 	UserDirectory,
 	UserPreferences,
 	ValidatedPluginConfig,
-} from '@/core/types'
+} from './command'
 export {
 	FolderConfigSchema,
 	FoldersConfigSchema,
@@ -36,4 +36,4 @@ export {
 	safeParsePluginConfig,
 	UserPreferencesSchema,
 	validatePluginConfig,
-} from '@/core/types'
+} from './command'
