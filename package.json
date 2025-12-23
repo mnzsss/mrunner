@@ -28,5 +28,6 @@
 		"@types/node": "^20",
 		"release-it": "^19.1.0",
 		"typescript": "^5"
-	}
+	},
+	"version": "0.0.1"
 }
