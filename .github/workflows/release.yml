@@ -251,6 +251,7 @@ jobs:
   update-aur:
     needs: [create-release, build-linux]
     runs-on: ubuntu-latest
+    if: ${{ !contains(needs.create-release.outputs.version, '-') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -271,6 +272,7 @@ jobs:
           VERSION=${{ needs.create-release.outputs.version }}
           SHA256=${{ steps.checksum.outputs.SHA256 }}
           sed -i "s/^pkgver=.*/pkgver=$VERSION/" release/aur/PKGBUILD
+          sed -i "s/^_gitver=.*/_gitver=$VERSION/" release/aur/PKGBUILD
           sed -i "s/^sha256sums=.*/sha256sums=('$SHA256')/" release/aur/PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" release/aur/PKGBUILD
 
