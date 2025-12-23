@@ -151,6 +151,30 @@ jobs:
         with:
           workspaces: '. -> target'
 
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: |
+          $wixDir = "$env:USERPROFILE\.wix"
+          $wixBin = "$wixDir\wix314"
+
+          if (-not (Test-Path $wixBin)) {
+            New-Item -ItemType Directory -Force -Path $wixBin | Out-Null
+
+            # Download WiX using .NET WebClient (more reliable than Invoke-WebRequest)
+            $url = "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip"
+            $zipPath = "$env:TEMP\wix314.zip"
+
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            $webClient = New-Object System.Net.WebClient
+            $webClient.DownloadFile($url, $zipPath)
+
+            Expand-Archive -Path $zipPath -DestinationPath $wixBin -Force
+            Remove-Item $zipPath
+          }
+
+          echo "WIX=$wixBin" >> $env:GITHUB_ENV
+          echo "$wixBin" >> $env:GITHUB_PATH
+
       - name: Install frontend dependencies
         run: pnpm install
 

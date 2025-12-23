@@ -24,6 +24,7 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+.secrets
 
 # Tauri
 src-tauri/target/
