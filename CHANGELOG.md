@@ -3,6 +3,16 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.0.7](https://github.com/mnzsss/mrunner/compare/v0.0.6...v0.0.7) (2025-12-24)
+
+### Features
+
+* add settings page and autostart functionality ([a90b249](https://github.com/mnzsss/mrunner/commit/a90b24965e221a4e4058c5557278b9157f817a28))
+
+### Code Refactoring
+
+* implement new shortcuts management ([a0c1dc1](https://github.com/mnzsss/mrunner/commit/a0c1dc113fc338a6fae2efe85409956ff6019a7d))
+
 ## [0.0.6](https://github.com/mnzsss/mrunner/compare/v0.0.5...v0.0.6) (2025-12-23)
 
 ### Features

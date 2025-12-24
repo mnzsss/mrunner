@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "bookmarks"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "dirs 5.0.1",
  "open",
@@ -2355,7 +2355,7 @@ dependencies = [
 
 [[package]]
 name = "mrunner"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "bookmarks",
  "dirs 5.0.1",
