@@ -1,9 +1,6 @@
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { useCallback, useEffect, useRef } from 'react'
-
-import { SHORTCUT } from '@/lib/constants'
 
 export interface UseWindowManagerOptions {
 	onQueryReset?: () => void
@@ -36,52 +33,6 @@ export function useWindowManager({
 		await window.show()
 		await window.setFocus()
 		onQueryResetRef.current?.()
-	}, [])
-
-	// Global shortcut setup
-	useEffect(() => {
-		let isToggling = false
-
-		const toggleWindow = async () => {
-			if (isToggling) return
-			isToggling = true
-
-			try {
-				const win = getCurrentWindow()
-				const visible = await win.isVisible()
-				if (visible) {
-					await win.hide()
-				} else {
-					await win.center()
-					await win.show()
-					await win.setFocus()
-					onQueryResetRef.current?.()
-				}
-			} finally {
-				// Add delay to prevent rapid toggling
-				setTimeout(() => {
-					isToggling = false
-				}, 200)
-			}
-		}
-
-		const setupShortcut = async () => {
-			try {
-				await register(SHORTCUT, async (event) => {
-					if (event.state === 'Pressed') {
-						await toggleWindow()
-					}
-				})
-			} catch {
-				// Shortcut registration failed - may already be registered
-			}
-		}
-
-		setupShortcut()
-
-		return () => {
-			unregister(SHORTCUT)
-		}
 	}, [])
 
 	// Blur handling

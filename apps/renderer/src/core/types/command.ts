@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import type { ShortcutsSettings } from './shortcuts'
+
 export type CommandAction =
 	| ShellAction
 	| OpenAction
@@ -217,15 +219,24 @@ export const FolderConfigSchema = z.object({
 	isSystem: z.boolean(),
 })
 
-// User preferences for folder management
+// User preferences for folder management and shortcuts
 export interface UserPreferences {
+	setupCompleted: boolean
 	customFolders: FolderConfig[]
 	hiddenSystemFolders: string[]
+	shortcuts: ShortcutsSettings
 }
 
+// Simplified schema that doesn't require circular imports
+// The full ShortcutsSettingsSchema validation happens in use-shortcuts-settings.ts
 export const UserPreferencesSchema = z.object({
-	customFolders: z.array(FolderConfigSchema),
-	hiddenSystemFolders: z.array(z.string()),
+	setupCompleted: z.boolean().default(false),
+	customFolders: z.array(FolderConfigSchema).default([]),
+	hiddenSystemFolders: z.array(z.string()).default([]),
+	shortcuts: z.object({
+		shortcuts: z.array(z.any()).default([]),
+		conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
+	}).optional(),
 })
 
 export const FoldersConfigSchema = z.object({

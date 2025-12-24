@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react'
 import type { Bookmark } from '@/commands/types'
 
 import type { BookmarkDialogState } from './use-dialog-manager'
+import { useShortcutsSettings } from './use-shortcuts-settings'
 
 export interface UseKeyboardShortcutsOptions {
 	bookmarks: Bookmark[]
@@ -17,6 +18,8 @@ export function useKeyboardShortcuts({
 	onEditBookmark,
 	onDeleteBookmark,
 }: UseKeyboardShortcutsOptions): void {
+	const { shortcuts } = useShortcutsSettings()
+
 	const getSelectedBookmark = useCallback((): Bookmark | null => {
 		const selectedItem = document.querySelector(
 			'[cmdk-item][data-selected="true"]',
@@ -35,33 +38,51 @@ export function useKeyboardShortcuts({
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				onHideWindow()
-				return
-			}
+			const activeShortcuts = shortcuts.filter(
+				(sc) =>
+					sc.type === 'internal' && sc.enabled && sc.context === 'launcher',
+			)
 
-			// Ctrl+E - Edit bookmark
-			if (e.ctrlKey && e.key === 'e') {
-				e.preventDefault()
-				const bookmark = getSelectedBookmark()
-				if (bookmark) {
-					onEditBookmark({ bookmark, open: true })
-				}
-				return
-			}
+			for (const sc of activeShortcuts) {
+				const modifiersMatch =
+					sc.hotkey.modifiers.includes('Control') === e.ctrlKey &&
+					sc.hotkey.modifiers.includes('Alt') === e.altKey &&
+					sc.hotkey.modifiers.includes('Shift') === e.shiftKey &&
+					sc.hotkey.modifiers.includes('Meta') === e.metaKey &&
+					sc.hotkey.modifiers.includes('Super') === e.metaKey
 
-			// Ctrl+D - Delete bookmark
-			if (e.ctrlKey && e.key === 'd') {
-				e.preventDefault()
-				const bookmark = getSelectedBookmark()
-				if (bookmark) {
-					onDeleteBookmark({ bookmark, open: true })
+				const keyMatches = e.key.toLowerCase() === sc.hotkey.key.toLowerCase()
+
+				if (modifiersMatch && keyMatches) {
+					e.preventDefault()
+
+					switch (sc.action) {
+						case 'escape':
+							onHideWindow()
+							break
+						case 'edit-bookmark': {
+							const bookmark = getSelectedBookmark()
+							if (bookmark) onEditBookmark({ bookmark, open: true })
+							break
+						}
+						case 'delete-bookmark': {
+							const bookmark = getSelectedBookmark()
+							if (bookmark) onDeleteBookmark({ bookmark, open: true })
+							break
+						}
+					}
+					break
 				}
-				return
 			}
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [onHideWindow, getSelectedBookmark, onEditBookmark, onDeleteBookmark])
+	}, [
+		shortcuts,
+		onHideWindow,
+		getSelectedBookmark,
+		onEditBookmark,
+		onDeleteBookmark,
+	])
 }

@@ -30,7 +30,6 @@ import {
 import type { CommandIcon } from '@/commands/types'
 
 export const DEBOUNCE_MS = 300
-export const SHORTCUT = 'Super+Space'
 
 export const SYSTEM_ICON_TO_COMMAND_ICON: Record<string, CommandIcon> = {
 	download: 'download',

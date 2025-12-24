@@ -13,11 +13,46 @@ import {
 	ItemTitle,
 } from '@mrunner/ui/components/ui/item'
 import { invoke } from '@tauri-apps/api/core'
-import { useEffect, useState } from 'react'
+import { getCurrentWindow, Window } from '@tauri-apps/api/window'
+import { useCallback, useEffect, useState } from 'react'
+
+import { ShortcutItem } from '@/components/shortcuts/shortcut-item'
+import { useShortcutsSettings } from '@/hooks/use-shortcuts-settings'
+import { UI_TEXT } from '@/lib/i18n'
 
 export function Settings() {
 	const [autostartEnabled, setAutostartEnabled] = useState(false)
 	const [loading, setLoading] = useState(true)
+
+	const closeSettings = useCallback(async () => {
+		const currentWindow = getCurrentWindow()
+		await currentWindow.hide()
+		const mainWindow = new Window('main')
+		await mainWindow.show()
+		await mainWindow.setFocus()
+	}, [])
+
+	// Close on ESC key
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				e.preventDefault()
+				closeSettings()
+			}
+		}
+
+		window.addEventListener('keydown', handleKeyDown)
+		return () => window.removeEventListener('keydown', handleKeyDown)
+	}, [closeSettings])
+
+	const {
+		shortcuts,
+		loading: shortcutsLoading,
+		conflicts,
+		updateShortcut,
+		resetShortcut,
+		toggleShortcut,
+	} = useShortcutsSettings()
 
 	useEffect(() => {
 		const loadAutostartState = async () => {
@@ -44,13 +79,16 @@ export function Settings() {
 		}
 	}
 
-	if (loading) {
+	if (loading || shortcutsLoading) {
 		return (
 			<div className="flex h-screen items-center justify-center bg-background">
 				<p className="text-muted-foreground">Carregando...</p>
 			</div>
 		)
 	}
+
+	const globalShortcuts = shortcuts.filter((sc) => sc.type === 'global')
+	const internalShortcuts = shortcuts.filter((sc) => sc.type === 'internal')
 
 	return (
 		<div className="min-h-screen bg-background p-8">
@@ -85,6 +123,53 @@ export function Settings() {
 								/>
 							</Item>
 						</Label>
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader>
+						<CardTitle>{UI_TEXT.shortcuts.title}</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<div className="space-y-2">
+							<h3 className="text-sm font-medium">
+								{UI_TEXT.shortcuts.global}
+							</h3>
+							<div className="space-y-2">
+								{globalShortcuts.map((sc) => (
+									<ShortcutItem
+										key={sc.id}
+										shortcut={sc}
+										isConflicting={Array.from(conflicts.values()).some((ids) =>
+											ids.includes(sc.id),
+										)}
+										onUpdate={updateShortcut}
+										onReset={resetShortcut}
+										onToggle={toggleShortcut}
+									/>
+								))}
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<h3 className="text-sm font-medium">
+								{UI_TEXT.shortcuts.internal}
+							</h3>
+							<div className="space-y-2">
+								{internalShortcuts.map((sc) => (
+									<ShortcutItem
+										key={sc.id}
+										shortcut={sc}
+										isConflicting={Array.from(conflicts.values()).some((ids) =>
+											ids.includes(sc.id),
+										)}
+										onUpdate={updateShortcut}
+										onReset={resetShortcut}
+										onToggle={toggleShortcut}
+									/>
+								))}
+							</div>
+						</div>
 					</CardContent>
 				</Card>
 

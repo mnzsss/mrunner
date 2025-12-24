@@ -6,7 +6,12 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!**/dist", "!src-tauri/gen", "!.claude"]
+		"includes": [
+			"**",
+			"!**/dist",
+			"!src-tauri/gen",
+			"!.claude"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -28,7 +33,8 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
-			"semicolons": "asNeeded"
+			"semicolons": "asNeeded",
+			"indentStyle": "tab"
 		}
 	},
 	"css": {
@@ -45,7 +51,7 @@
 	},
 	"json": {
 		"formatter": {
-			"enabled": true
+			"enabled": false
 		}
 	},
 	"assist": {
@@ -57,10 +63,18 @@
 					"options": {
 						"groups": [
 							{
-								"source": [":PACKAGE:", ":NODE:", "!@/**"],
+								"source": [
+									":PACKAGE:",
+									":NODE:",
+									"!@/**"
+								],
 								"type": true
 							},
-							[":PACKAGE:", ":NODE:", "!@/**"],
+							[
+								":PACKAGE:",
+								":NODE:",
+								"!@/**"
+							],
 							":BLANK_LINE:",
 							{
 								"source": "@/**",

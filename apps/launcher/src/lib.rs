@@ -1,14 +1,18 @@
 mod bookmarks;
 mod chrome;
 mod platform;
+mod shortcuts;
 
 use std::process::Command;
+use std::sync::Mutex;
 use tauri::{
     Manager,
     menu::{Menu, MenuItem, CheckMenuItem, PredefinedMenuItem},
     tray::{TrayIconBuilder, TrayIconEvent},
 };
 use tauri_plugin_autostart::MacosLauncher;
+
+use shortcuts::{load_saved_shortcuts, RegisteredShortcuts};
 
 fn is_command_allowed(cmd: &str) -> bool {
     let executable = cmd.split_whitespace().next().unwrap_or("");
@@ -83,9 +87,24 @@ fn toggle_autostart(app: tauri::AppHandle, enable: bool) -> Result<(), String> {
 
 #[tauri::command]
 fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("settings") {
-        window.show().map_err(|e| e.to_string())?;
-        window.set_focus().map_err(|e| e.to_string())?;
+    println!("[settings] open_settings called");
+    match app.get_webview_window("settings") {
+        Some(window) => {
+            println!("[settings] Window found, showing...");
+            window.show().map_err(|e| {
+                println!("[settings] Error showing: {}", e);
+                e.to_string()
+            })?;
+            window.set_focus().map_err(|e| {
+                println!("[settings] Error focus: {}", e);
+                e.to_string()
+            })?;
+            println!("[settings] Window shown successfully");
+        }
+        None => {
+            println!("[settings] Window 'settings' not found!");
+            return Err("Settings window not found".to_string());
+        }
     }
     Ok(())
 }
@@ -93,6 +112,9 @@ fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(Mutex::new(RegisteredShortcuts {
+            registered: vec![],
+        }))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -114,6 +136,22 @@ pub fn run() {
             let _ = window.set_always_on_top(true);
             let _ = window.set_skip_taskbar(true);
             let _ = window.center();
+
+            // Prevent settings window from being destroyed on close - just hide and return to main
+            if let Some(settings_window) = app.get_webview_window("settings") {
+                let sw = settings_window.clone();
+                let main_win = app.get_webview_window("main");
+                settings_window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = sw.hide();
+                        if let Some(ref mw) = main_win {
+                            let _ = mw.show();
+                            let _ = mw.set_focus();
+                        }
+                    }
+                });
+            }
 
             // Configurar system tray
             use tauri_plugin_autostart::ManagerExt;
@@ -174,17 +212,25 @@ pub fn run() {
                         {
                             let app = tray.app_handle();
                             if let Some(window) = app.get_webview_window("main") {
-                                let _ = if window.is_visible().unwrap_or(false) {
-                                    window.hide()
+                                if window.is_visible().unwrap_or(false) {
+                                    let _ = window.hide();
                                 } else {
-                                    window.show();
-                                    window.set_focus()
-                                };
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
                             }
                         }
                     }
                 })
                 .build(app)?;
+
+            // Load saved shortcuts from preferences on startup
+            let app_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                if let Err(e) = load_saved_shortcuts(&app_handle) {
+                    println!("[shortcuts] Failed to load saved shortcuts: {}", e);
+                }
+            });
 
             Ok(())
         })
@@ -195,6 +241,7 @@ pub fn run() {
             is_autostart_enabled,
             toggle_autostart,
             open_settings,
+            shortcuts::sync_global_shortcuts,
             chrome::list_chrome_profiles,
             bookmarks::bookmark_list,
             bookmarks::bookmark_search,

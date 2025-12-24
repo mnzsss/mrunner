@@ -54,7 +54,25 @@ export const UI_TEXT = {
 		description: 'Descrição',
 		descriptionPlaceholder: 'Descrição do bookmark (opcional)',
 	},
+	setup: {
+		title: 'Bem-vindo ao MRunner',
+		subtitle: 'Vamos configurar seu launcher',
+		step1Title: 'Atalho Global',
+		step1Description:
+			'Defina o atalho de teclado para abrir o launcher de qualquer lugar. Recomendamos Super+Space.',
+		hotkeyPlaceholder: 'Pressione as teclas...',
+	},
+	shortcuts: {
+		title: 'Atalhos',
+		global: 'Atalhos Globais',
+		internal: 'Atalhos Internos',
+		custom: 'Atalhos Customizados',
+		conflictWarning: 'Este atalho está em conflito com outro',
+		resetTooltip: 'Restaurar padrão',
+	},
 	actions: {
+		skip: 'Pular',
+		finish: 'Finalizar',
 		save: 'Salvar',
 		saving: 'Salvando...',
 		cancel: 'Cancelar',
