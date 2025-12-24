@@ -233,10 +233,12 @@ export const UserPreferencesSchema = z.object({
 	setupCompleted: z.boolean().default(false),
 	customFolders: z.array(FolderConfigSchema).default([]),
 	hiddenSystemFolders: z.array(z.string()).default([]),
-	shortcuts: z.object({
-		shortcuts: z.array(z.any()).default([]),
-		conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
-	}).optional(),
+	shortcuts: z
+		.object({
+			shortcuts: z.array(z.any()).default([]),
+			conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
+		})
+		.optional(),
 })
 
 export const FoldersConfigSchema = z.object({
