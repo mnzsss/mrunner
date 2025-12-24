@@ -26,6 +26,19 @@
 				"center": true,
 				"visible": false,
 				"focus": true
+			},
+			{
+				"title": "Configurações - MRunner",
+				"label": "settings",
+				"url": "/settings",
+				"width": 600,
+				"height": 400,
+				"resizable": true,
+				"fullscreen": false,
+				"decorations": true,
+				"transparent": false,
+				"center": true,
+				"visible": false
 			}
 		],
 		"security": {

@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react'
 
 import type { Command, CommandResult } from '@/commands/types'
 import { getAppCommands, getFileCommands } from '@/commands'
+import { getMRunnerCommands } from '@/core/commands'
 
 import { useChromeProfiles } from './use-chrome-profiles'
 import { useFolderSettings } from './use-folder-settings'
@@ -39,7 +40,8 @@ export function useCommands(): UseCommandsReturn {
 	const commands = useMemo(() => {
 		const appCmds = getAppCommands(platform)
 		const fileCmds = getFileCommands(platform, folders)
-		return [...fileCmds, ...chromeCommands, ...appCmds]
+		const mrunnerCmds = getMRunnerCommands(platform)
+		return [...fileCmds, ...chromeCommands, ...appCmds, ...mrunnerCmds]
 	}, [platform, chromeCommands, folders])
 
 	const executeCommand = useCallback(
