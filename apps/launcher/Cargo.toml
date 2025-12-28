@@ -29,3 +29,5 @@ serde_json.workspace = true
 dirs.workspace = true
 bookmarks = { path = "../../packages/bookmarks" }
 shell-words = "1.1"
+chrono = "0.4"
+native-dialog = "0.7"
