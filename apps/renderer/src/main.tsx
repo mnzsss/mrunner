@@ -1,3 +1,7 @@
+import { initSentry } from '@/lib/sentry'
+
+initSentry()
+
 import { homeDir } from '@tauri-apps/api/path'
 import { exists, readTextFile } from '@tauri-apps/plugin-fs'
 import React, { useEffect, useState } from 'react'

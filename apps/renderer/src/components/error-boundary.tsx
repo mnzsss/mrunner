@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 import { UI_TEXT } from '@/lib/i18n'
+import { Sentry } from '@/lib/sentry'
 
 interface Props {
 	children: ReactNode
@@ -52,6 +53,13 @@ export class ErrorBoundary extends Component<Props, State> {
 		const errorLog = createErrorLog(error, errorInfo)
 
 		console.error('[ErrorBoundary] Uncaught error:', errorLog)
+
+		Sentry.withScope((scope) => {
+			scope.setTag('error.boundary', 'true')
+			scope.setExtra('componentStack', errorInfo.componentStack)
+			scope.setExtra('errorLog', errorLog)
+			Sentry.captureException(error)
+		})
 	}
 
 	render(): ReactNode {

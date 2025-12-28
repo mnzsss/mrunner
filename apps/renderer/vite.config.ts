@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -6,6 +7,8 @@ import { defineConfig } from 'vite'
 import packageJson from './package.json'
 
 const host = process.env.TAURI_DEV_HOST
+const shouldUploadSourceMaps =
+	process.env.SENTRY_AUTH_TOKEN && !process.env.TAURI_ENV_DEBUG
 
 export default defineConfig({
 	plugins: [
@@ -15,6 +18,22 @@ export default defineConfig({
 			},
 		}),
 		tailwindcss(),
+		...(shouldUploadSourceMaps
+			? [
+					sentryVitePlugin({
+						org: process.env.SENTRY_ORG,
+						project: process.env.SENTRY_PROJECT,
+						authToken: process.env.SENTRY_AUTH_TOKEN,
+						release: {
+							name: `mrunner@${packageJson.version}`,
+						},
+						sourcemaps: {
+							filesToDeleteAfterUpload: ['../../dist/**/*.map'],
+						},
+						telemetry: false,
+					}),
+				]
+			: []),
 	],
 	resolve: {
 		alias: {
@@ -41,13 +60,13 @@ export default defineConfig({
 			ignored: ['**/apps/launcher/**', '**/target/**'],
 		},
 	},
-	envPrefix: ['VITE_', 'TAURI_'],
+	envPrefix: ['VITE_', 'TAURI_', 'SENTRY_'],
 	build: {
 		outDir: '../../dist',
 		emptyOutDir: true,
 		target:
 			process.env.TAURI_ENV_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
 		minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
-		sourcemap: !!process.env.TAURI_ENV_DEBUG,
+		sourcemap: shouldUploadSourceMaps ? 'hidden' : !!process.env.TAURI_ENV_DEBUG,
 	},
 })
