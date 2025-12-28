@@ -383,7 +383,7 @@ dependencies = [
 
 [[package]]
 name = "bookmarks"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "dirs 5.0.1",
  "open",
@@ -2558,7 +2558,7 @@ dependencies = [
 
 [[package]]
 name = "mrunner"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "bookmarks",
  "chrono",

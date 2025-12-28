@@ -3,6 +3,17 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.0.9](https://github.com/mnzsss/mrunner/compare/v0.0.8...v0.0.9) (2025-12-28)
+
+### Features
+
+* add crash logging and native dialog for error reporting ([aafb16b](https://github.com/mnzsss/mrunner/commit/aafb16bef309ced2983ae827ff8bb1a4e8fc6710))
+* add Sentry error tracking for crash reporting ([3aba818](https://github.com/mnzsss/mrunner/commit/3aba8185ef31b2c999f9a2ff5265d500ff5f6bf1))
+
+### Code Refactoring
+
+* simplify Chrome profile extraction by removing redundant code ([003baf0](https://github.com/mnzsss/mrunner/commit/003baf00453cfbac237e854ef30b8104f4c456fd))
+
 ## [0.0.8](https://github.com/mnzsss/mrunner/compare/v0.0.7...v0.0.8) (2025-12-28)
 
 ## [0.0.7](https://github.com/mnzsss/mrunner/compare/v0.0.6...v0.0.7) (2025-12-24)
