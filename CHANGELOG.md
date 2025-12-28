@@ -3,6 +3,8 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.0.8](https://github.com/mnzsss/mrunner/compare/v0.0.7...v0.0.8) (2025-12-28)
+
 ## [0.0.7](https://github.com/mnzsss/mrunner/compare/v0.0.6...v0.0.7) (2025-12-24)
 
 ### Features
