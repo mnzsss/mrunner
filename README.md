@@ -1,5 +1,7 @@
 <img src="./.github/assets/logo.png" alt="MRunner banner" style="width: 208px; display: block; margin: 0 auto;">
 
+![AUR package version](https://img.shields.io/aur/version/mrunner)
+
 # MRunner
 
 **A fast, keyboard-first application runner for Linux**
