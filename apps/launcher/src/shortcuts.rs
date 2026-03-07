@@ -2,6 +2,103 @@ use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
+/// Activate a window on X11 by sending _NET_ACTIVE_WINDOW and XSetInputFocus.
+/// This bypasses WM focus-stealing prevention, similar to how rofi/dmenu work.
+#[cfg(target_os = "linux")]
+fn x11_activate_window(xid: u64) {
+    use std::ffi::CString;
+    use std::mem;
+    use x11_dl::xlib;
+
+    unsafe {
+        let xlib = match xlib::Xlib::open() {
+            Ok(x) => x,
+            Err(_) => return,
+        };
+
+        let display = (xlib.XOpenDisplay)(std::ptr::null());
+        if display.is_null() {
+            return;
+        }
+
+        let root = (xlib.XDefaultRootWindow)(display);
+        let net_active = CString::new("_NET_ACTIVE_WINDOW").unwrap();
+        let atom = (xlib.XInternAtom)(display, net_active.as_ptr(), 0);
+
+        // Send _NET_ACTIVE_WINDOW with source=2 (pager) so KWin accepts it
+        let mut event: xlib::XClientMessageEvent = mem::zeroed();
+        event.type_ = xlib::ClientMessage;
+        event.window = xid as xlib::Window;
+        event.message_type = atom;
+        event.format = 32;
+        event.data.set_long(0, 2); // source indication: pager
+        event.data.set_long(1, xlib::CurrentTime as i64);
+        event.data.set_long(2, 0);
+
+        (xlib.XSendEvent)(
+            display,
+            root,
+            0,
+            xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask,
+            &mut event as *mut xlib::XClientMessageEvent as *mut xlib::XEvent,
+        );
+
+        (xlib.XSetInputFocus)(
+            display,
+            xid as xlib::Window,
+            xlib::RevertToParent,
+            xlib::CurrentTime,
+        );
+
+        (xlib.XFlush)(display);
+        (xlib.XCloseDisplay)(display);
+    }
+}
+
+/// Show window and force focus via X11.
+#[cfg(target_os = "linux")]
+pub fn focus_window(window: &tauri::WebviewWindow) {
+    use gtk::prelude::{GtkWindowExt, WidgetExt};
+
+    let _ = window.show();
+    let _ = window.center();
+
+    let handle = window.app_handle().clone();
+    let handle2 = handle.clone();
+    let _ = handle.run_on_main_thread(move || {
+        if let Some(ww) = handle2.get_webview_window("main") {
+            if let Ok(gtk_window) = ww.gtk_window() {
+                gtk_window.present();
+
+                if let Some(gdk_window) = gtk_window.window() {
+                    use glib::object::Cast;
+                    if let Ok(x11_window) = gdk_window.downcast::<gdkx11::X11Window>() {
+                        x11_activate_window(x11_window.xid() as u64);
+                    }
+                }
+            }
+        }
+    });
+}
+
+/// Hide window.
+#[cfg(target_os = "linux")]
+pub fn unfocus_window(window: &tauri::WebviewWindow) {
+    let _ = window.hide();
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn focus_window(window: &tauri::WebviewWindow) {
+    let _ = window.show();
+    let _ = window.center();
+    let _ = window.set_focus();
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn unfocus_window(window: &tauri::WebviewWindow) {
+    let _ = window.hide();
+}
+
 // State management for registered global shortcuts
 pub struct RegisteredShortcuts {
     pub registered: Vec<String>,
@@ -54,11 +151,9 @@ pub fn sync_global_shortcuts(
                             "toggle-window" => {
                                 if let Some(window) = app.get_webview_window("main") {
                                     if window.is_visible().unwrap_or(false) {
-                                        let _ = window.hide();
+                                        unfocus_window(&window);
                                     } else {
-                                        let _ = window.center();
-                                        let _ = window.show();
-                                        let _ = window.set_focus();
+                                        focus_window(&window);
                                     }
                                 }
                             }
@@ -154,11 +249,9 @@ pub fn load_saved_shortcuts(app: &tauri::AppHandle) -> Result<(), String> {
                         "toggle-window" => {
                             if let Some(window) = app.get_webview_window("main") {
                                 if window.is_visible().unwrap_or(false) {
-                                    let _ = window.hide();
+                                    unfocus_window(&window);
                                 } else {
-                                    let _ = window.center();
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
+                                    focus_window(&window);
                                 }
                             }
                         }
