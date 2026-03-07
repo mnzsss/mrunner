@@ -135,14 +135,17 @@ export function useBookmarks(): UseBookmarksReturn {
 					tags: tags ?? null,
 					description: description ?? null,
 				})
-				sendNotification({ title: 'MRunner', body: t('notifications.added', { url }) })
+				sendNotification({
+					title: 'MRunner',
+					body: t('notifications.added', { url }),
+				})
 				await refresh()
 				return true
 			} catch (_err) {
 				return false
 			}
 		},
-		[refresh],
+		[refresh, t],
 	)
 
 	const update = useCallback(
@@ -168,20 +171,23 @@ export function useBookmarks(): UseBookmarksReturn {
 				return false
 			}
 		},
-		[refresh],
+		[refresh, t],
 	)
 
-	const remove = useCallback(async (id: number): Promise<boolean> => {
-		try {
-			await invoke('bookmark_delete', { id })
-			sendNotification({ title: 'MRunner', body: t('notifications.deleted') })
-			setBookmarks((prev) => prev.filter((b) => b.index !== id))
-			return true
-		} catch (err) {
-			console.error('Bookmark delete error:', err)
-			return false
-		}
-	}, [])
+	const remove = useCallback(
+		async (id: number): Promise<boolean> => {
+			try {
+				await invoke('bookmark_delete', { id })
+				sendNotification({ title: 'MRunner', body: t('notifications.deleted') })
+				setBookmarks((prev) => prev.filter((b) => b.index !== id))
+				return true
+			} catch (err) {
+				console.error('Bookmark delete error:', err)
+				return false
+			}
+		},
+		[t],
+	)
 
 	const openBookmark = useCallback(
 		async (id: number) => {
@@ -197,16 +203,28 @@ export function useBookmarks(): UseBookmarksReturn {
 		[bookmarks],
 	)
 
-	const copyUrl = useCallback(async (bookmark: Bookmark) => {
-		await writeText(bookmark.uri)
-		sendNotification({ title: 'MRunner', body: t('notifications.copied', { url: bookmark.uri }) })
-	}, [])
+	const copyUrl = useCallback(
+		async (bookmark: Bookmark) => {
+			await writeText(bookmark.uri)
+			sendNotification({
+				title: 'MRunner',
+				body: t('notifications.copied', { url: bookmark.uri }),
+			})
+		},
+		[t],
+	)
 
-	const copyMarkdown = useCallback(async (bookmark: Bookmark) => {
-		const md = `[${bookmark.title || bookmark.uri}](${bookmark.uri})`
-		await writeText(md)
-		sendNotification({ title: 'MRunner', body: t('notifications.copiedMarkdown') })
-	}, [])
+	const copyMarkdown = useCallback(
+		async (bookmark: Bookmark) => {
+			const md = `[${bookmark.title || bookmark.uri}](${bookmark.uri})`
+			await writeText(md)
+			sendNotification({
+				title: 'MRunner',
+				body: t('notifications.copiedMarkdown'),
+			})
+		},
+		[t],
+	)
 
 	const listTags = useCallback(async (): Promise<Tag[]> => {
 		setLoading(true)
@@ -237,14 +255,17 @@ export function useBookmarks(): UseBookmarksReturn {
 				return false
 			}
 		},
-		[listTags],
+		[listTags, t],
 	)
 
 	const deleteTag = useCallback(
 		async (tag: string): Promise<boolean> => {
 			try {
 				await invoke('bookmark_delete_tag', { tag })
-				sendNotification({ title: 'MRunner', body: t('notifications.tagDeleted', { tag }) })
+				sendNotification({
+					title: 'MRunner',
+					body: t('notifications.tagDeleted', { tag }),
+				})
 				await listTags()
 				return true
 			} catch (err) {
@@ -252,7 +273,7 @@ export function useBookmarks(): UseBookmarksReturn {
 				return false
 			}
 		},
-		[listTags],
+		[listTags, t],
 	)
 
 	const parseQuery = useCallback(

@@ -3,13 +3,12 @@ import { invoke } from '@tauri-apps/api/core'
 import { homeDir } from '@tauri-apps/api/path'
 import { exists, mkdir, writeTextFile } from '@tauri-apps/plugin-fs'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
-import { useTranslation } from 'react-i18next'
-
+import type { Hotkey } from '@/core/types/shortcuts'
 import { LanguageSelector } from '@/components/language-selector'
 import { HotkeyPicker } from '@/components/shortcuts/hotkey-picker'
-import type { Hotkey } from '@/core/types/shortcuts'
 import { DEFAULT_SHORTCUTS, hotkeyToString } from '@/core/types/shortcuts'
 import { useLocale } from '@/hooks/use-locale'
 
@@ -81,7 +80,7 @@ export function Setup() {
 		} finally {
 			setLoading(false)
 		}
-	}, [globalShortcut, navigate])
+	}, [globalShortcut, navigate, locale])
 
 	return (
 		<div className="min-h-screen bg-background flex items-center justify-center p-8">
@@ -90,7 +89,9 @@ export function Setup() {
 					<h1 className="text-2xl font-bold">{t('setup.title')}</h1>
 					<p className="text-muted-foreground">{t('setup.subtitle')}</p>
 					<div className="flex items-center justify-center gap-2 pt-2">
-						<span className="text-sm text-muted-foreground">{t('setup.languageLabel')}</span>
+						<span className="text-sm text-muted-foreground">
+							{t('setup.languageLabel')}
+						</span>
 						<LanguageSelector />
 					</div>
 				</div>

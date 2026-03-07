@@ -20,10 +20,7 @@ function SheetClose({ ...props }: DialogPrimitive.Close.Props) {
 	return <DialogPrimitive.Close data-slot="sheet-close" {...props} />
 }
 
-function SheetOverlay({
-	className,
-	...props
-}: DialogPrimitive.Backdrop.Props) {
+function SheetOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
 	return (
 		<DialogPrimitive.Backdrop
 			data-slot="sheet-overlay"

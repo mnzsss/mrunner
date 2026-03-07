@@ -253,9 +253,7 @@ export function FolderManager({
 							</h4>
 
 							<div className="space-y-2">
-								<Label htmlFor="folder-name">
-									{t('folders.folderName')}
-								</Label>
+								<Label htmlFor="folder-name">{t('folders.folderName')}</Label>
 								<Input
 									ref={nameInputRef}
 									id="folder-name"
@@ -379,9 +377,7 @@ export function FolderManager({
 															? (dir.icon as CommandIcon)
 															: 'folder',
 													}}
-													action={() =>
-														onShowSystemFolder(`system-${dir.id}`)
-													}
+													action={() => onShowSystemFolder(`system-${dir.id}`)}
 													actionIcon={
 														<Eye className="size-4 text-muted-foreground" />
 													}
@@ -409,9 +405,7 @@ export function FolderManager({
 						<Kbd>↵</Kbd>
 						<span>{t('navigation.select')}</span>
 					</span>
-					<span className="ml-auto opacity-60">
-						{t('settings.autoSaved')}
-					</span>
+					<span className="ml-auto opacity-60">{t('settings.autoSaved')}</span>
 				</div>
 			</SheetContent>
 		</Sheet>
