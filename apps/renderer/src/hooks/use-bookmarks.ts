@@ -3,6 +3,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import { open } from '@tauri-apps/plugin-shell'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Tag } from '@/commands/types'
 
@@ -54,6 +55,7 @@ interface UseBookmarksReturn {
 }
 
 export function useBookmarks(): UseBookmarksReturn {
+	const { t } = useTranslation()
 	const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
 	const [tags, setTags] = useState<Tag[]>([])
 	const [loading, setLoading] = useState(false)
@@ -133,7 +135,7 @@ export function useBookmarks(): UseBookmarksReturn {
 					tags: tags ?? null,
 					description: description ?? null,
 				})
-				sendNotification({ title: 'MRunner', body: `Adicionado: ${url}` })
+				sendNotification({ title: 'MRunner', body: t('notifications.added', { url }) })
 				await refresh()
 				return true
 			} catch (_err) {
@@ -159,7 +161,7 @@ export function useBookmarks(): UseBookmarksReturn {
 					tags: tags ?? null,
 					description: description ?? null,
 				})
-				sendNotification({ title: 'MRunner', body: 'Bookmark atualizado' })
+				sendNotification({ title: 'MRunner', body: t('notifications.updated') })
 				await refresh()
 				return true
 			} catch (_err) {
@@ -172,7 +174,7 @@ export function useBookmarks(): UseBookmarksReturn {
 	const remove = useCallback(async (id: number): Promise<boolean> => {
 		try {
 			await invoke('bookmark_delete', { id })
-			sendNotification({ title: 'MRunner', body: 'Bookmark deletado' })
+			sendNotification({ title: 'MRunner', body: t('notifications.deleted') })
 			setBookmarks((prev) => prev.filter((b) => b.index !== id))
 			return true
 		} catch (err) {
@@ -197,13 +199,13 @@ export function useBookmarks(): UseBookmarksReturn {
 
 	const copyUrl = useCallback(async (bookmark: Bookmark) => {
 		await writeText(bookmark.uri)
-		sendNotification({ title: 'MRunner', body: `Copiado: ${bookmark.uri}` })
+		sendNotification({ title: 'MRunner', body: t('notifications.copied', { url: bookmark.uri }) })
 	}, [])
 
 	const copyMarkdown = useCallback(async (bookmark: Bookmark) => {
 		const md = `[${bookmark.title || bookmark.uri}](${bookmark.uri})`
 		await writeText(md)
-		sendNotification({ title: 'MRunner', body: 'Copiado como Markdown' })
+		sendNotification({ title: 'MRunner', body: t('notifications.copiedMarkdown') })
 	}, [])
 
 	const listTags = useCallback(async (): Promise<Tag[]> => {
@@ -226,7 +228,7 @@ export function useBookmarks(): UseBookmarksReturn {
 				await invoke('bookmark_rename_tag', { oldTag, newTag })
 				sendNotification({
 					title: 'MRunner',
-					body: `Tag renomeada: ${oldTag} → ${newTag}`,
+					body: t('notifications.tagRenamed', { oldTag, newTag }),
 				})
 				await listTags()
 				return true
@@ -242,7 +244,7 @@ export function useBookmarks(): UseBookmarksReturn {
 		async (tag: string): Promise<boolean> => {
 			try {
 				await invoke('bookmark_delete_tag', { tag })
-				sendNotification({ title: 'MRunner', body: `Tag deletada: ${tag}` })
+				sendNotification({ title: 'MRunner', body: t('notifications.tagDeleted', { tag }) })
 				await listTags()
 				return true
 			} catch (err) {

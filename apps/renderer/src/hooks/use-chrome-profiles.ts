@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import { invoke } from '@tauri-apps/api/core'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -20,11 +21,12 @@ interface UseChromeProfilesReturn {
 function profileToCommand(
 	profile: ChromeProfile,
 	platform: PlatformInfo,
+	t: TFunction,
 ): Command {
 	return {
 		id: `app-chrome-${profile.directory.toLowerCase().replace(/\s+/g, '-')}`,
 		name: `Chrome - ${profile.name}`,
-		description: 'Open Chrome browser',
+		description: t('commands.openChrome'),
 		icon: 'globe',
 		group: 'Chrome',
 		keywords: [
@@ -43,6 +45,7 @@ function profileToCommand(
 
 export function useChromeProfiles(
 	platform: PlatformInfo | null,
+	t: TFunction,
 ): UseChromeProfilesReturn {
 	const [profiles, setProfiles] = useState<ChromeProfile[]>([])
 	const [loading, setLoading] = useState(false)
@@ -69,7 +72,7 @@ export function useChromeProfiles(
 	}, [refresh])
 
 	const commands = platform
-		? profiles.map((p) => profileToCommand(p, platform))
+		? profiles.map((p) => profileToCommand(p, platform, t))
 		: []
 
 	return {

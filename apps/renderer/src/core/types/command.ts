@@ -223,6 +223,7 @@ export const FolderConfigSchema = z.object({
 // User preferences for folder management and shortcuts
 export interface UserPreferences {
 	setupCompleted: boolean
+	locale?: string
 	customFolders: FolderConfig[]
 	hiddenSystemFolders: string[]
 	shortcuts: ShortcutsSettings
@@ -232,6 +233,7 @@ export interface UserPreferences {
 // The full ShortcutsSettingsSchema validation happens in use-shortcuts-settings.ts
 export const UserPreferencesSchema = z.object({
 	setupCompleted: z.boolean().default(false),
+	locale: z.string().optional(),
 	customFolders: z.array(FolderConfigSchema).default([]),
 	hiddenSystemFolders: z.array(z.string()).default([]),
 	shortcuts: z

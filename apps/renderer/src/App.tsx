@@ -81,12 +81,12 @@ function App() {
 		onDeleteBookmark: dialogManager.setDeleteDialog,
 	})
 
-	// Ctrl+, to open settings
+	// Ctrl+, to toggle settings
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.ctrlKey && e.key === ',') {
 				e.preventDefault()
-				dialogManager.setIsSettingsOpen(true)
+				dialogManager.setIsSettingsOpen((prev: boolean) => !prev)
 			}
 		}
 

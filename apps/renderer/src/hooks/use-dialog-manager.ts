@@ -28,7 +28,7 @@ export interface UseDialogManagerReturn {
 	setEditDialog: (state: BookmarkDialogState) => void
 	setDeleteDialog: (state: BookmarkDialogState) => void
 	setIsFolderManagerOpen: (open: boolean) => void
-	setIsSettingsOpen: (open: boolean) => void
+	setIsSettingsOpen: (open: boolean | ((prev: boolean) => boolean)) => void
 
 	// Handlers
 	handleAddBookmarkSave: () => void

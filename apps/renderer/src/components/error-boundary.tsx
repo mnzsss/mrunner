@@ -1,9 +1,9 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { withTranslation, type WithTranslation } from 'react-i18next'
 
-import { UI_TEXT } from '@/lib/i18n'
 import { Sentry } from '@/lib/sentry'
 
-interface Props {
+interface Props extends WithTranslation {
 	children: ReactNode
 	fallback?: ReactNode
 }
@@ -39,7 +39,7 @@ function createErrorLog(error: Error, errorInfo: ErrorInfo): ErrorLog {
 	}
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryInner extends Component<Props, State> {
 	constructor(props: Props) {
 		super(props)
 		this.state = { hasError: false, error: null }
@@ -68,18 +68,20 @@ export class ErrorBoundary extends Component<Props, State> {
 				return this.props.fallback
 			}
 
+			const { t } = this.props
+
 			return (
 				<div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background p-8 text-foreground">
-					<h1 className="text-xl font-semibold">{UI_TEXT.errors.generic}</h1>
+					<h1 className="text-xl font-semibold">{t('errors.generic')}</h1>
 					<p className="text-sm text-muted-foreground">
-						{this.state.error?.message ?? UI_TEXT.errors.unknown}
+						{this.state.error?.message ?? t('errors.unknown')}
 					</p>
 					<button
 						type="button"
 						onClick={() => this.setState({ hasError: false, error: null })}
 						className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
 					>
-						{UI_TEXT.actions.tryAgain}
+						{t('actions.tryAgain')}
 					</button>
 				</div>
 			)
@@ -88,3 +90,5 @@ export class ErrorBoundary extends Component<Props, State> {
 		return this.props.children
 	}
 }
+
+export const ErrorBoundary = withTranslation()(ErrorBoundaryInner)
