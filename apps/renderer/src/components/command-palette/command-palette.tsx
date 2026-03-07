@@ -6,11 +6,11 @@ import {
 	CommandInput,
 	CommandList,
 } from '@mrunner/ui'
+import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Command as CommandType } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
 import { UpdateBanner } from '@/components/update-banner'
-import { UI_TEXT } from '@/lib/i18n'
 
 import { AddBookmarkButton } from './add-bookmark-button'
 import { BookmarkList } from './bookmark-list'
@@ -42,6 +42,8 @@ export function CommandPalette({
 	onSelect,
 	onAddBookmark,
 }: CommandPaletteProps) {
+	const { t } = useTranslation()
+
 	return (
 		<Command
 			className="flex h-full flex-col rounded-lg border shadow-md"
@@ -54,16 +56,16 @@ export function CommandPalette({
 				ref={inputRef}
 				value={query}
 				onValueChange={onQueryChange}
-				placeholder={UI_TEXT.search.placeholder}
+				placeholder={t('search.placeholder')}
 				autoFocus
 			/>
 
 			<CommandList className="flex-1 overflow-y-auto p-2">
 				<CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-					{UI_TEXT.search.empty}
+					{t('search.empty')}
 				</CommandEmpty>
 
-				<CommandGroup heading={UI_TEXT.bookmarks.group}>
+				<CommandGroup heading={t('groups.Bookmarks')}>
 					<AddBookmarkButton onSelect={onAddBookmark} />
 					<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
 				</CommandGroup>

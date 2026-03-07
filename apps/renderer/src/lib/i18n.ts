@@ -1,104 +1,20 @@
-export const UI_TEXT = {
-	app: {
-		name: 'MRunner',
-		version: `v${__APP_VERSION__}`,
-	},
-	search: {
-		placeholder: 'Digite um comando ou busque...',
-		empty: 'Nenhum resultado encontrado.',
-	},
-	navigation: {
-		navigate: 'navegar',
-		select: 'selecionar',
-		edit: 'editar',
-		delete: 'deletar',
-		close: 'fechar',
-	},
-	bookmarks: {
-		group: 'Bookmarks',
-		add: 'Adicionar Bookmark',
-		addDescription: 'Adicionar novo bookmark',
-		edit: 'Editar Bookmark',
-		editDescription: 'Edite as informações do bookmark',
-		delete: 'Deletar Bookmark?',
-		deleteConfirm: 'Tem certeza que deseja deletar este bookmark?',
-		noTitle: 'Sem título',
-	},
-	folders: {
-		manage: 'Gerenciar Pastas',
-		manageDescription: 'Adicione ou remova pastas de acesso rápido',
-		addFolder: 'Adicionar',
-		addNewFolder: 'Adicionar Nova Pasta',
-		addCustom: 'Adicionar pasta personalizada',
-		selectFolder: 'Selecionar Pasta',
-		folderName: 'Nome da Pasta',
-		folderNamePlaceholder: 'Ex: Projetos',
-		systemFolders: 'Pastas do Sistema',
-		customFolders: 'Pastas Personalizadas',
-		hiddenFolders: 'Pastas Ocultas',
-		noCustomFolders: 'Nenhuma pasta personalizada adicionada',
-		noHiddenFolders: 'Nenhuma pasta oculta',
-		removeConfirm: 'Remover esta pasta?',
-		hide: 'Ocultar',
-		show: 'Mostrar',
-	},
-	form: {
-		url: 'URL',
-		urlRequired: 'URL é obrigatória',
-		urlInvalid: 'URL inválida. Use o formato: https://example.com',
-		urlPlaceholder: 'https://example.com',
-		title: 'Título',
-		titlePlaceholder: 'Título do bookmark (opcional)',
-		tags: 'Tags',
-		tagsPlaceholder: 'tag1, tag2, tag3 (separadas por vírgula)',
-		description: 'Descrição',
-		descriptionPlaceholder: 'Descrição do bookmark (opcional)',
-	},
-	setup: {
-		title: 'Bem-vindo ao MRunner',
-		subtitle: 'Vamos configurar seu launcher',
-		step1Title: 'Atalho Global',
-		step1Description:
-			'Defina o atalho de teclado para abrir o launcher de qualquer lugar. Recomendamos Super+Space.',
-		hotkeyPlaceholder: 'Pressione as teclas...',
-	},
-	shortcuts: {
-		title: 'Atalhos',
-		global: 'Atalhos Globais',
-		internal: 'Atalhos Internos',
-		custom: 'Atalhos Customizados',
-		conflictWarning: 'Este atalho está em conflito com outro',
-		resetTooltip: 'Restaurar padrão',
-	},
-	actions: {
-		skip: 'Pular',
-		finish: 'Finalizar',
-		save: 'Salvar',
-		saving: 'Salvando...',
-		cancel: 'Cancelar',
-		delete: 'Deletar',
-		open: 'Abrir',
-		openBookmark: 'Abrir bookmark',
-		copy: 'Copiar URL',
-		copyBookmark: 'Copiar URL do bookmark',
-		editBookmark: 'Editar bookmark',
-		deleteBookmark: 'Deletar bookmark',
-		tryAgain: 'Tentar novamente',
-	},
-	errors: {
-		generic: 'Algo deu errado',
-		unknown: 'Erro desconhecido',
-	},
-	notifications: {
-		added: (url: string) => `Adicionado: ${url}`,
-		updated: 'Bookmark atualizado',
-		deleted: 'Bookmark deletado',
-		copied: (url: string) => `Copiado: ${url}`,
-		copiedMarkdown: 'Copiado como Markdown',
-		tagRenamed: (oldTag: string, newTag: string) =>
-			`Tag renomeada: ${oldTag} → ${newTag}`,
-		tagDeleted: (tag: string) => `Tag deletada: ${tag}`,
-	},
-} as const
+import i18next from 'i18next'
+import { initReactI18next } from 'react-i18next'
 
-export type UIText = typeof UI_TEXT
+import en from '@/locales/en.json'
+import ptBR from '@/locales/pt-BR.json'
+
+i18next.use(initReactI18next).init({
+	resources: {
+		en: { translation: en },
+		'pt-BR': { translation: ptBR },
+	},
+	lng: navigator.language.startsWith('pt') ? 'pt-BR' : 'en',
+	fallbackLng: 'en',
+	supportedLngs: ['en', 'pt-BR'],
+	interpolation: {
+		escapeValue: false,
+	},
+})
+
+export default i18next

@@ -1,9 +1,12 @@
+import type { TFunction } from 'i18next'
+
 import type { Command, FolderConfig } from '@/core/types'
 import type { PlatformInfo } from '@/hooks/use-platform'
 
 export function getFileCommands(
 	platform: PlatformInfo | null,
 	folders: FolderConfig[],
+	t: TFunction,
 ): Command[] {
 	if (!platform) return []
 
@@ -12,7 +15,7 @@ export function getFileCommands(
 	const folderCommands: Command[] = folders.map((folder) => ({
 		id: `files-${folder.id}`,
 		name: folder.name,
-		description: `Open ${folder.name.toLowerCase()} folder`,
+		description: t('commands.openFolder', { name: folder.name.toLowerCase() }),
 		icon: folder.icon,
 		group: 'Quick Access',
 		keywords: [folder.name.toLowerCase(), 'folder', folder.path],
@@ -21,8 +24,8 @@ export function getFileCommands(
 
 	const manageCommand: Command = {
 		id: 'files-manage',
-		name: 'Manage Folders',
-		description: 'Add or remove quick access folders',
+		name: t('commands.manageFolders'),
+		description: t('commands.manageFoldersDescription'),
 		icon: 'folder-cog',
 		group: 'Quick Access',
 		keywords: ['manage', 'folders', 'settings', 'add', 'remove', 'config'],

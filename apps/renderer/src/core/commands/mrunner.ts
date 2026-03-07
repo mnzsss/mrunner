@@ -1,16 +1,19 @@
-import { invoke } from '@tauri-apps/api/core'
+import type { TFunction } from 'i18next'
 
 import type { Command } from '@/core/types'
 import type { PlatformInfo } from '@/hooks/use-platform'
 
-export function getMRunnerCommands(platform: PlatformInfo | null): Command[] {
+export function getMRunnerCommands(
+	platform: PlatformInfo | null,
+	t: TFunction,
+): Command[] {
 	if (!platform) return []
 
 	return [
 		{
 			id: 'app-settings',
-			name: 'Configurações',
-			description: 'Abrir configurações do MRunner',
+			name: t('commands.settings'),
+			description: t('commands.settingsDescription'),
 			icon: 'settings',
 			group: 'MRunner',
 			keywords: [
@@ -20,12 +23,12 @@ export function getMRunnerCommands(platform: PlatformInfo | null): Command[] {
 				'preferências',
 				'autostart',
 			],
+			shortcut: 'Ctrl+,',
 			action: {
-				type: 'function',
-				fn: async () => {
-					await invoke('open_settings')
-				},
+				type: 'dialog',
+				dialog: 'settings',
 			},
+			closeAfterRun: false,
 		},
 	]
 }

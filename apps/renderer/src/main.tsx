@@ -2,20 +2,24 @@ import { initSentry } from '@/lib/sentry'
 
 initSentry()
 
+import '@/lib/i18n'
+
 import { homeDir } from '@tauri-apps/api/path'
 import { exists, readTextFile } from '@tauri-apps/plugin-fs'
+import i18next from 'i18next'
 import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { UserPreferencesSchema } from '@/commands/types'
 
 import App from './App'
 import { ErrorBoundary } from './components/error-boundary'
-import { Settings } from './pages/settings'
 import { Setup } from './pages/setup'
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
+	const { t } = useTranslation()
 	const [setupCompleted, setSetupCompleted] = useState<boolean | null>(null)
 
 	useEffect(() => {
@@ -36,7 +40,15 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
 				const json: unknown = JSON.parse(content)
 				const result = UserPreferencesSchema.safeParse(json)
 
-				setSetupCompleted(result.success && result.data.setupCompleted)
+				if (result.success) {
+					// Load persisted locale
+					if (result.data.locale) {
+						await i18next.changeLanguage(result.data.locale)
+					}
+					setSetupCompleted(result.data.setupCompleted)
+				} else {
+					setSetupCompleted(false)
+				}
 			} catch {
 				setSetupCompleted(false)
 			}
@@ -48,7 +60,7 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
 	if (setupCompleted === null) {
 		return (
 			<div className="flex h-screen items-center justify-center bg-background">
-				<p className="text-muted-foreground">Carregando...</p>
+				<p className="text-muted-foreground">{t('app.loading')}</p>
 			</div>
 		)
 	}
@@ -77,7 +89,6 @@ ReactDOM.createRoot(rootElement).render(
 							</SetupGuard>
 						}
 					/>
-					<Route path="/settings" element={<Settings />} />
 				</Routes>
 			</BrowserRouter>
 		</ErrorBoundary>

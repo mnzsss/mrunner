@@ -3,6 +3,19 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.1.0](https://github.com/mnzsss/mrunner/compare/v0.0.9...v0.1.0) (2026-03-07)
+
+### Features
+
+* add prepare-release skill with semver guidelines ([0764a2c](https://github.com/mnzsss/mrunner/commit/0764a2c1aa81722fb90af488f5506dcbe40999f2))
+* **i18n:** Add i18next internationalization with en/pt-BR support ([db965d8](https://github.com/mnzsss/mrunner/commit/db965d88ac3e1e2e4048230f8524adb4e3c169ad))
+* improve window focus handling with X11 support and blur debounce ([d60d204](https://github.com/mnzsss/mrunner/commit/d60d204c340b2f2adcf08a9889547373e260f11c))
+* replace settings window with in-app sheet ([dcbe7bd](https://github.com/mnzsss/mrunner/commit/dcbe7bd69ac7aed7e2cbc0e0e58020e02a36965f))
+
+### Bug Fixes
+
+* resolve biome lint errors for release ([3a505db](https://github.com/mnzsss/mrunner/commit/3a505dbd7953fb9bd73dd36cae6beaff1a52cf95))
+
 ## [0.0.9](https://github.com/mnzsss/mrunner/compare/v0.0.8...v0.0.9) (2025-12-28)
 
 ### Features

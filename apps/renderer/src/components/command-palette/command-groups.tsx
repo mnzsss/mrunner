@@ -1,4 +1,5 @@
 import { CommandGroup } from '@mrunner/ui'
+import { useTranslation } from 'react-i18next'
 
 import type { Command } from '@/commands/types'
 import { ListItem } from '@/components/list-item'
@@ -12,12 +13,17 @@ export function CommandGroups({
 	groupedCommands,
 	onSelect,
 }: CommandGroupsProps) {
+	const { t } = useTranslation()
+
 	return (
 		<>
 			{Object.entries(groupedCommands)
 				.filter(([group]) => group !== 'Bookmarks')
 				.map(([group, cmds]) => (
-					<CommandGroup key={group} heading={group}>
+					<CommandGroup
+						key={group}
+						heading={t(`groups.${group}`, { defaultValue: group })}
+					>
 						{cmds.map((cmd) => (
 							<ListItem
 								key={cmd.id}

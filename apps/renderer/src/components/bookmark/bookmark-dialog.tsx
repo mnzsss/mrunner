@@ -13,10 +13,10 @@ import {
 	Textarea,
 } from '@mrunner/ui'
 import { type ReactElement, useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { Bookmark } from '@/commands/types'
 import { useBookmarks } from '@/hooks/use-bookmarks'
-import { UI_TEXT } from '@/lib/i18n'
 
 interface BookmarkDialogProps {
 	key?: string
@@ -38,6 +38,7 @@ export function BookmarkDialog({
 	open: controlledOpen,
 	onOpenChange: controlledOnOpenChange,
 }: BookmarkDialogProps) {
+	const { t } = useTranslation()
 	const { add, update } = useBookmarks()
 
 	const [internalOpen, setInternalOpen] = useState(false)
@@ -92,12 +93,12 @@ export function BookmarkDialog({
 			e.preventDefault()
 
 			if (!url.trim()) {
-				setUrlError(UI_TEXT.form.urlRequired)
+				setUrlError(t('form.urlRequired'))
 				return
 			}
 
 			if (!isValidUrl(url)) {
-				setUrlError(UI_TEXT.form.urlInvalid)
+				setUrlError(t('form.urlInvalid'))
 				return
 			}
 
@@ -141,6 +142,7 @@ export function BookmarkDialog({
 			onSave,
 			isValidUrl,
 			setOpen,
+			t,
 		],
 	)
 
@@ -150,18 +152,18 @@ export function BookmarkDialog({
 			<DialogContent className="max-h-[90vh] max-w-125 overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>
-						{mode === 'add' ? UI_TEXT.bookmarks.add : UI_TEXT.bookmarks.edit}
+						{mode === 'add' ? t('bookmarks.add') : t('bookmarks.edit')}
 					</DialogTitle>
 					<DialogDescription>
 						{mode === 'add'
-							? UI_TEXT.bookmarks.addDescription
-							: UI_TEXT.bookmarks.editDescription}
+							? t('bookmarks.addDescription')
+							: t('bookmarks.editDescription')}
 					</DialogDescription>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="bookmark-url">{UI_TEXT.form.url}</Label>
+						<Label htmlFor="bookmark-url">{t('form.url')}</Label>
 						<Input
 							id="bookmark-url"
 							type="text"
@@ -170,7 +172,7 @@ export function BookmarkDialog({
 								setUrl(e.target.value)
 								if (urlError) setUrlError(null)
 							}}
-							placeholder={UI_TEXT.form.urlPlaceholder}
+							placeholder={t('form.urlPlaceholder')}
 							autoFocus
 							aria-invalid={urlError ? 'true' : undefined}
 							aria-describedby={urlError ? 'bookmark-url-error' : undefined}
@@ -186,36 +188,36 @@ export function BookmarkDialog({
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="bookmark-title">{UI_TEXT.form.title}</Label>
+						<Label htmlFor="bookmark-title">{t('form.title')}</Label>
 						<Input
 							id="bookmark-title"
 							type="text"
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
-							placeholder={UI_TEXT.form.titlePlaceholder}
+							placeholder={t('form.titlePlaceholder')}
 						/>
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="bookmark-tags">{UI_TEXT.form.tags}</Label>
+						<Label htmlFor="bookmark-tags">{t('form.tags')}</Label>
 						<Input
 							id="bookmark-tags"
 							type="text"
 							value={tags}
 							onChange={(e) => setTags(e.target.value)}
-							placeholder={UI_TEXT.form.tagsPlaceholder}
+							placeholder={t('form.tagsPlaceholder')}
 						/>
 					</div>
 
 					<div className="space-y-2">
 						<Label htmlFor="bookmark-description">
-							{UI_TEXT.form.description}
+							{t('form.description')}
 						</Label>
 						<Textarea
 							id="bookmark-description"
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
-							placeholder={UI_TEXT.form.descriptionPlaceholder}
+							placeholder={t('form.descriptionPlaceholder')}
 							rows={3}
 						/>
 					</div>
@@ -226,10 +228,10 @@ export function BookmarkDialog({
 							variant="outline"
 							onClick={() => setOpen(false)}
 						>
-							{UI_TEXT.actions.cancel}
+							{t('actions.cancel')}
 						</Button>
 						<Button type="submit" disabled={loading}>
-							{loading ? UI_TEXT.actions.saving : UI_TEXT.actions.save}
+							{loading ? t('actions.saving') : t('actions.save')}
 						</Button>
 					</DialogFooter>
 				</form>

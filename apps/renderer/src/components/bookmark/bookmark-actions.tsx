@@ -1,9 +1,9 @@
 import { Copy, Edit, ExternalLink, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { Bookmark } from '@/commands/types'
 import { useBookmarks } from '@/hooks/use-bookmarks'
-import { UI_TEXT } from '@/lib/i18n'
 
 import { DeleteConfirmDialog } from './bookmark-delete'
 import { BookmarkDialog } from './bookmark-dialog'
@@ -17,6 +17,7 @@ export const BookmarkActions = ({
 	bookmark,
 	onAction,
 }: BookmarkActionsProps) => {
+	const { t } = useTranslation()
 	const { openBookmark, copyUrl, remove, refresh } = useBookmarks()
 
 	const handleOpen = useCallback(
@@ -47,8 +48,8 @@ export const BookmarkActions = ({
 				type="button"
 				onClick={handleOpen}
 				className="rounded p-1 hover:bg-muted"
-				title={UI_TEXT.actions.open}
-				aria-label={UI_TEXT.actions.openBookmark}
+				title={t('actions.open')}
+				aria-label={t('actions.openBookmark')}
 			>
 				<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
 			</button>
@@ -57,8 +58,8 @@ export const BookmarkActions = ({
 				type="button"
 				onClick={handleCopy}
 				className="rounded p-1 hover:bg-muted"
-				title={UI_TEXT.actions.copy}
-				aria-label={UI_TEXT.actions.copyBookmark}
+				title={t('actions.copy')}
+				aria-label={t('actions.copyBookmark')}
 			>
 				<Copy className="h-3.5 w-3.5" aria-hidden="true" />
 			</button>
@@ -68,8 +69,8 @@ export const BookmarkActions = ({
 					type="button"
 					onClick={(e) => e.stopPropagation()}
 					className="rounded p-1 hover:bg-muted"
-					title={UI_TEXT.bookmarks.edit}
-					aria-label={UI_TEXT.actions.editBookmark}
+					title={t('bookmarks.edit')}
+					aria-label={t('actions.editBookmark')}
 				>
 					<Edit className="h-3.5 w-3.5" aria-hidden="true" />
 				</button>
@@ -80,8 +81,8 @@ export const BookmarkActions = ({
 					type="button"
 					onClick={(e) => e.stopPropagation()}
 					className="rounded p-1 hover:bg-muted text-destructive"
-					title={UI_TEXT.actions.delete}
-					aria-label={UI_TEXT.actions.deleteBookmark}
+					title={t('actions.delete')}
+					aria-label={t('actions.deleteBookmark')}
 				>
 					<Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
 				</button>
