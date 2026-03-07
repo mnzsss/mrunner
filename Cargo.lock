@@ -2563,6 +2563,10 @@ dependencies = [
  "bookmarks",
  "chrono",
  "dirs 5.0.1",
+ "gdk",
+ "gdkx11",
+ "glib",
+ "gtk",
  "native-dialog",
  "sentry",
  "serde",
@@ -2579,6 +2583,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-shell",
  "tauri-plugin-updater",
+ "x11-dl",
 ]
 
 [[package]]

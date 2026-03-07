@@ -1,6 +1,9 @@
+import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useCallback, useEffect, useRef } from 'react'
+
+const BLUR_DEBOUNCE_MS = 150
 
 export interface UseWindowManagerOptions {
 	onQueryReset?: () => void
@@ -17,6 +20,7 @@ export function useWindowManager({
 	activeDialogs = 0,
 }: UseWindowManagerOptions = {}): UseWindowManagerReturn {
 	const onQueryResetRef = useRef(onQueryReset)
+	const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	// Keep ref updated
 	useEffect(() => {
@@ -24,10 +28,15 @@ export function useWindowManager({
 	}, [onQueryReset])
 
 	const hideWindow = useCallback(async () => {
-		await getCurrentWindow().hide()
+		await invoke('hide_main_window')
 	}, [])
 
 	const showWindow = useCallback(async () => {
+		// Cancel any pending blur-triggered hide
+		if (blurTimeoutRef.current) {
+			clearTimeout(blurTimeoutRef.current)
+			blurTimeoutRef.current = null
+		}
 		const window = getCurrentWindow()
 		await window.center()
 		await window.show()
@@ -35,18 +44,38 @@ export function useWindowManager({
 		onQueryResetRef.current?.()
 	}, [])
 
-	// Blur handling
+	// Blur handling — debounced to avoid race with global shortcut toggle
 	useEffect(() => {
 		const handleBlur = () => {
 			if (activeDialogs === 0) {
-				hideWindow()
+				if (blurTimeoutRef.current) {
+					clearTimeout(blurTimeoutRef.current)
+				}
+				blurTimeoutRef.current = setTimeout(() => {
+					blurTimeoutRef.current = null
+					hideWindow()
+				}, BLUR_DEBOUNCE_MS)
 			}
 		}
 
-		const unlisten = listen('tauri://blur', handleBlur)
+		const handleFocus = () => {
+			// Cancel any pending blur when window regains focus (e.g. via global shortcut)
+			if (blurTimeoutRef.current) {
+				clearTimeout(blurTimeoutRef.current)
+				blurTimeoutRef.current = null
+			}
+			onQueryResetRef.current?.()
+		}
+
+		const unlistenBlur = listen('tauri://blur', handleBlur)
+		const unlistenFocus = listen('tauri://focus', handleFocus)
 
 		return () => {
-			unlisten.then((fn) => fn())
+			unlistenBlur.then((fn) => fn())
+			unlistenFocus.then((fn) => fn())
+			if (blurTimeoutRef.current) {
+				clearTimeout(blurTimeoutRef.current)
+			}
 		}
 	}, [hideWindow, activeDialogs])
 

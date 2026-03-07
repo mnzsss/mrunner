@@ -49,7 +49,10 @@ function App() {
 
 	// Window manager hook
 	const { hideWindow } = useWindowManager({
-		onQueryReset: () => setQuery(''),
+		onQueryReset: () => {
+			setQuery('')
+			requestAnimationFrame(() => inputRef.current?.focus())
+		},
 		activeDialogs: dialogManager.activeDialogs,
 	})
 

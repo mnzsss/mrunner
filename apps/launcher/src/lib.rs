@@ -109,6 +109,13 @@ fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn hide_main_window(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        shortcuts::unfocus_window(&window);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -125,7 +132,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
-            Some(vec!["--flag1", "--flag2"]),
+            None,
         ))
         .setup(|app| {
             let window = app
@@ -165,14 +172,14 @@ pub fn run() {
             
             let menu = Menu::with_items(app, &[&show_i, &settings_i, &separator, &autostart_i, &quit_i])?;
 
+            let autostart_check = autostart_i.clone();
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
                 .icon(app.default_window_icon().unwrap().clone())
                 .on_menu_event(move |app, event| match event.id.as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
+                            shortcuts::focus_window(&window);
                         }
                     }
                     "settings" => {
@@ -185,7 +192,6 @@ pub fn run() {
                         app.exit(0);
                     }
                     "autostart" => {
-                        // Toggle autostart
                         use tauri_plugin_autostart::ManagerExt;
                         let autostart_manager = app.autolaunch();
                         let new_state = if autostart_manager.is_enabled().unwrap_or(false) {
@@ -195,13 +201,7 @@ pub fn run() {
                             let _ = autostart_manager.enable();
                             true
                         };
-                        
-                        // Update checkbox state
-                        if let Some(item) = app.menu().unwrap().get("autostart") {
-                            if let Some(check_item) = item.as_check_menuitem() {
-                                let _ = check_item.set_checked(new_state);
-                            }
-                        }
+                        let _ = autostart_check.set_checked(new_state);
                     }
                     _ => {}
                 })
@@ -213,10 +213,9 @@ pub fn run() {
                             let app = tray.app_handle();
                             if let Some(window) = app.get_webview_window("main") {
                                 if window.is_visible().unwrap_or(false) {
-                                    let _ = window.hide();
+                                    shortcuts::unfocus_window(&window);
                                 } else {
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
+                                    shortcuts::focus_window(&window);
                                 }
                             }
                         }
@@ -225,12 +224,9 @@ pub fn run() {
                 .build(app)?;
 
             // Load saved shortcuts from preferences on startup
-            let app_handle = app.handle().clone();
-            std::thread::spawn(move || {
-                if let Err(e) = load_saved_shortcuts(&app_handle) {
-                    println!("[shortcuts] Failed to load saved shortcuts: {}", e);
-                }
-            });
+            if let Err(e) = load_saved_shortcuts(app.handle()) {
+                println!("[shortcuts] Failed to load saved shortcuts: {}", e);
+            }
 
             Ok(())
         })
@@ -241,6 +237,7 @@ pub fn run() {
             is_autostart_enabled,
             toggle_autostart,
             open_settings,
+            hide_main_window,
             shortcuts::sync_global_shortcuts,
             chrome::list_chrome_profiles,
             bookmarks::bookmark_list,
