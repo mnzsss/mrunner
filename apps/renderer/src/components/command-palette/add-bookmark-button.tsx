@@ -18,9 +18,7 @@ export function AddBookmarkButton({ onSelect }: AddBookmarkButtonProps) {
 				<BookmarkIcon className="size-4" />
 			</div>
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-sm font-medium">
-					{t('bookmarks.add')}
-				</div>
+				<div className="truncate text-sm font-medium">{t('bookmarks.add')}</div>
 				<div className="truncate text-xs text-muted-foreground">
 					{t('bookmarks.addDescription')}
 				</div>

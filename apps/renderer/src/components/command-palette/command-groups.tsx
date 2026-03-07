@@ -20,7 +20,10 @@ export function CommandGroups({
 			{Object.entries(groupedCommands)
 				.filter(([group]) => group !== 'Bookmarks')
 				.map(([group, cmds]) => (
-					<CommandGroup key={group} heading={t(`groups.${group}`, { defaultValue: group })}>
+					<CommandGroup
+						key={group}
+						heading={t(`groups.${group}`, { defaultValue: group })}
+					>
 						{cmds.map((cmd) => (
 							<ListItem
 								key={cmd.id}

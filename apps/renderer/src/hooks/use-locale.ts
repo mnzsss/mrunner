@@ -23,10 +23,7 @@ export function useLocale() {
 				const content = await readTextFile(configPath)
 				const preferences = JSON.parse(content)
 				preferences.locale = locale
-				await writeTextFile(
-					configPath,
-					JSON.stringify(preferences, null, 2),
-				)
+				await writeTextFile(configPath, JSON.stringify(preferences, null, 2))
 			} catch (e) {
 				console.error('Failed to persist locale:', e)
 			}

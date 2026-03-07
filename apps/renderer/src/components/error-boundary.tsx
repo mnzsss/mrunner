@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { withTranslation, type WithTranslation } from 'react-i18next'
+import { type WithTranslation, withTranslation } from 'react-i18next'
 
 import { Sentry } from '@/lib/sentry'
 

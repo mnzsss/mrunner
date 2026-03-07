@@ -17,7 +17,6 @@ import {
 } from '@mrunner/ui/components/ui/item'
 import { invoke } from '@tauri-apps/api/core'
 import { useCallback, useEffect, useRef, useState } from 'react'
-
 import { useTranslation } from 'react-i18next'
 
 import { LanguageSelector } from '@/components/language-selector'
@@ -76,7 +75,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 			// Alt+1/2 to jump to tab
 			if (e.altKey && e.key >= '1' && e.key <= '2') {
 				e.preventDefault()
-				const index = parseInt(e.key) - 1
+				const index = parseInt(e.key, 10) - 1
 				const tab = TABS[index]
 				if (tab) {
 					setActiveTab(tab)
@@ -110,7 +109,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 	)
 
 	const globalShortcuts = shortcuts.filter(
-		(sc) => sc.type === 'global' || (sc.type === 'internal' && !sc.action.includes('bookmark')),
+		(sc) =>
+			sc.type === 'global' ||
+			(sc.type === 'internal' && !sc.action.includes('bookmark')),
 	)
 	const bookmarkShortcuts = shortcuts.filter(
 		(sc) => sc.type === 'internal' && sc.action.includes('bookmark'),
@@ -153,7 +154,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 								}`}
 								onClick={() => setActiveTab(tab)}
 							>
-								{tab === 'Global' ? t('settings.tabGlobal') : t('settings.tabBookmarks')}
+								{tab === 'Global'
+									? t('settings.tabGlobal')
+									: t('settings.tabBookmarks')}
 								<Kbd className="opacity-60">{`Alt+${index + 1}`}</Kbd>
 							</button>
 						))}
@@ -257,8 +260,8 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 									<ShortcutItem
 										key={sc.id}
 										shortcut={sc}
-										isConflicting={Array.from(conflicts.values()).some(
-											(ids) => ids.includes(sc.id),
+										isConflicting={Array.from(conflicts.values()).some((ids) =>
+											ids.includes(sc.id),
 										)}
 										onUpdate={updateShortcut}
 										onReset={resetShortcut}
@@ -280,9 +283,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 						<Kbd>Alt+N</Kbd>
 						<span>{t('settings.goToTab')}</span>
 					</span>
-					<span className="ml-auto opacity-60">
-						{t('settings.autoSaved')}
-					</span>
+					<span className="ml-auto opacity-60">{t('settings.autoSaved')}</span>
 				</div>
 			</SheetContent>
 		</Sheet>

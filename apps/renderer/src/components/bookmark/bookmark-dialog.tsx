@@ -142,6 +142,7 @@ export function BookmarkDialog({
 			onSave,
 			isValidUrl,
 			setOpen,
+			t,
 		],
 	)
 

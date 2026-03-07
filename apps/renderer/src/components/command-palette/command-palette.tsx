@@ -6,7 +6,6 @@ import {
 	CommandInput,
 	CommandList,
 } from '@mrunner/ui'
-
 import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Command as CommandType } from '@/commands/types'

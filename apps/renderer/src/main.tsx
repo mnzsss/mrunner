@@ -89,7 +89,7 @@ ReactDOM.createRoot(rootElement).render(
 							</SetupGuard>
 						}
 					/>
-					</Routes>
+				</Routes>
 			</BrowserRouter>
 		</ErrorBoundary>
 	</React.StrictMode>,
