@@ -1,7 +1,12 @@
+import type { TFunction } from 'i18next'
+
 import type { Command } from '@/core/types'
 import type { PlatformInfo } from '@/hooks/use-platform'
 
-export function getAppCommands(platform: PlatformInfo | null): Command[] {
+export function getAppCommands(
+	platform: PlatformInfo | null,
+	t: TFunction,
+): Command[] {
 	if (!platform) return []
 
 	return [
@@ -16,8 +21,8 @@ export function getAppCommands(platform: PlatformInfo | null): Command[] {
 		},
 		{
 			id: 'app-file-manager',
-			name: platform.os === 'linux' ? 'File Manager' : 'Explorer',
-			description: 'Open file manager',
+			name: platform.os === 'linux' ? t('commands.fileManager') : 'Explorer',
+			description: t('commands.openFileManager'),
 			icon: 'folder',
 			group: 'Applications',
 			keywords: ['files', 'explorer', 'manager', 'dolphin', 'nautilus'],

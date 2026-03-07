@@ -18,9 +18,11 @@ import {
 import { invoke } from '@tauri-apps/api/core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
+import { LanguageSelector } from '@/components/language-selector'
 import { ShortcutItem } from '@/components/shortcuts/shortcut-item'
 import { useShortcutsSettings } from '@/hooks/use-shortcuts-settings'
-import { UI_TEXT } from '@/lib/i18n'
 
 const TABS = ['Global', 'Bookmarks'] as const
 type Tab = (typeof TABS)[number]
@@ -31,6 +33,7 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
+	const { t } = useTranslation()
 	const [activeTab, setActiveTab] = useState<Tab>('Global')
 	const [autostartEnabled, setAutostartEnabled] = useState(false)
 	const tabsRef = useRef<HTMLDivElement>(null)
@@ -118,15 +121,15 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 			<SheetContent onKeyDown={handleKeyDown}>
 				<SheetHeader>
 					<div className="flex items-center justify-between pr-8">
-						<SheetTitle>Configurações</SheetTitle>
+						<SheetTitle>{t('settings.title')}</SheetTitle>
 						<div className="flex items-center gap-3 text-xs text-muted-foreground">
 							<span className="flex items-center gap-1.5">
 								<Kbd>Esc</Kbd>
-								<span>fechar</span>
+								<span>{t('settings.close')}</span>
 							</span>
 							<span className="flex items-center gap-1.5">
 								<Kbd>Tab</Kbd>
-								<span>navegar</span>
+								<span>{t('settings.navigate')}</span>
 							</span>
 						</div>
 					</div>
@@ -150,7 +153,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 								}`}
 								onClick={() => setActiveTab(tab)}
 							>
-								{tab}
+								{tab === 'Global' ? t('settings.tabGlobal') : t('settings.tabBookmarks')}
 								<Kbd className="opacity-60">{`Alt+${index + 1}`}</Kbd>
 							</button>
 						))}
@@ -162,7 +165,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 						<div className="space-y-6">
 							<div className="space-y-3">
 								<h3 className="text-sm font-medium text-muted-foreground">
-									Preferências
+									{t('settings.preferences')}
 								</h3>
 								<Label htmlFor="autostart">
 									<Item
@@ -170,9 +173,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 										className="flex items-center justify-between"
 									>
 										<ItemContent className="space-y-1">
-											<ItemTitle>Iniciar com o sistema</ItemTitle>
+											<ItemTitle>{t('settings.autostart')}</ItemTitle>
 											<ItemDescription className="text-sm text-muted-foreground">
-												Inicia o MRunner automaticamente quando você faz login
+												{t('settings.autostartDescription')}
 											</ItemDescription>
 										</ItemContent>
 										<Switch
@@ -188,7 +191,29 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 
 							<div className="space-y-3">
 								<h3 className="text-sm font-medium text-muted-foreground">
-									Atalhos
+									{t('settings.language')}
+								</h3>
+								<Label>
+									<Item
+										variant="outline"
+										className="flex items-center justify-between"
+									>
+										<ItemContent className="space-y-1">
+											<ItemTitle>{t('settings.language')}</ItemTitle>
+											<ItemDescription className="text-sm text-muted-foreground">
+												{t('settings.languageDescription')}
+											</ItemDescription>
+										</ItemContent>
+										<LanguageSelector />
+									</Item>
+								</Label>
+							</div>
+
+							<Separator />
+
+							<div className="space-y-3">
+								<h3 className="text-sm font-medium text-muted-foreground">
+									{t('settings.shortcuts')}
 								</h3>
 								<div className="space-y-2">
 									{globalShortcuts.map((sc) => (
@@ -210,13 +235,13 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 
 							<div className="space-y-1">
 								<h3 className="text-sm font-medium text-muted-foreground">
-									Sobre
+									{t('settings.about')}
 								</h3>
 								<p className="text-sm text-muted-foreground">
-									MRunner — Um launcher de comandos personalizável
+									{t('settings.aboutDescription')}
 								</p>
 								<p className="text-sm text-muted-foreground">
-									{UI_TEXT.app.version}
+									v{__APP_VERSION__}
 								</p>
 							</div>
 						</div>
@@ -225,7 +250,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 					{activeTab === 'Bookmarks' && (
 						<div className="space-y-3">
 							<h3 className="text-sm font-medium text-muted-foreground">
-								Atalhos de Bookmarks
+								{t('settings.bookmarkShortcuts')}
 							</h3>
 							<div className="space-y-2">
 								{bookmarkShortcuts.map((sc) => (
@@ -249,14 +274,14 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 					<span className="flex items-center gap-1.5">
 						<Kbd>←</Kbd>
 						<Kbd>→</Kbd>
-						<span>trocar aba</span>
+						<span>{t('settings.switchTab')}</span>
 					</span>
 					<span className="flex items-center gap-1.5">
 						<Kbd>Alt+N</Kbd>
-						<span>ir para aba</span>
+						<span>{t('settings.goToTab')}</span>
 					</span>
 					<span className="ml-auto opacity-60">
-						Alterações salvas automaticamente
+						{t('settings.autoSaved')}
 					</span>
 				</div>
 			</SheetContent>

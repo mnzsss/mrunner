@@ -5,12 +5,17 @@ import { exists, mkdir, writeTextFile } from '@tauri-apps/plugin-fs'
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type { Hotkey } from '@/core/types/shortcuts'
+import { useTranslation } from 'react-i18next'
+
+import { LanguageSelector } from '@/components/language-selector'
 import { HotkeyPicker } from '@/components/shortcuts/hotkey-picker'
+import type { Hotkey } from '@/core/types/shortcuts'
 import { DEFAULT_SHORTCUTS, hotkeyToString } from '@/core/types/shortcuts'
-import { UI_TEXT } from '@/lib/i18n'
+import { useLocale } from '@/hooks/use-locale'
 
 export function Setup() {
+	const { t } = useTranslation()
+	const { locale } = useLocale()
 	const navigate = useNavigate()
 	const defaultGlobalShortcut = DEFAULT_SHORTCUTS.find(
 		(sc) => sc.id === 'global-toggle-window',
@@ -36,6 +41,7 @@ export function Setup() {
 			// Create initial preferences
 			const preferences = {
 				setupCompleted: true,
+				locale,
 				customFolders: [],
 				hiddenSystemFolders: [],
 				shortcuts: {
@@ -80,31 +86,35 @@ export function Setup() {
 	return (
 		<div className="min-h-screen bg-background flex items-center justify-center p-8">
 			<div className="max-w-xl w-full space-y-6">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold">{UI_TEXT.setup.title}</h1>
-					<p className="text-muted-foreground">{UI_TEXT.setup.subtitle}</p>
+				<div className="text-center space-y-2">
+					<h1 className="text-2xl font-bold">{t('setup.title')}</h1>
+					<p className="text-muted-foreground">{t('setup.subtitle')}</p>
+					<div className="flex items-center justify-center gap-2 pt-2">
+						<span className="text-sm text-muted-foreground">{t('setup.languageLabel')}</span>
+						<LanguageSelector />
+					</div>
 				</div>
 
 				<Card>
 					<CardHeader>
-						<CardTitle>{UI_TEXT.setup.step1Title}</CardTitle>
+						<CardTitle>{t('setup.step1Title')}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<p className="text-sm text-muted-foreground">
-							{UI_TEXT.setup.step1Description}
+							{t('setup.step1Description')}
 						</p>
 
 						<HotkeyPicker
 							value={globalShortcut}
 							onChange={setGlobalShortcut}
-							placeholder={UI_TEXT.setup.hotkeyPlaceholder}
+							placeholder={t('setup.hotkeyPlaceholder')}
 						/>
 
 						{error && <p className="text-sm text-destructive">{error}</p>}
 
 						<div className="flex justify-end pt-4">
 							<Button onClick={handleFinish} disabled={loading}>
-								{loading ? UI_TEXT.actions.saving : UI_TEXT.actions.finish}
+								{loading ? t('actions.saving') : t('actions.finish')}
 							</Button>
 						</div>
 					</CardContent>
