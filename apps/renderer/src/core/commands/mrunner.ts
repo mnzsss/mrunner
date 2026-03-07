@@ -1,5 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
-
 import type { Command } from '@/core/types'
 import type { PlatformInfo } from '@/hooks/use-platform'
 
@@ -21,11 +19,10 @@ export function getMRunnerCommands(platform: PlatformInfo | null): Command[] {
 				'autostart',
 			],
 			action: {
-				type: 'function',
-				fn: async () => {
-					await invoke('open_settings')
-				},
+				type: 'dialog',
+				dialog: 'settings',
 			},
+			closeAfterRun: false,
 		},
 	]
 }

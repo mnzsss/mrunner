@@ -29,6 +29,7 @@ export type DialogType =
 	| 'bookmark-edit'
 	| 'bookmark-delete'
 	| 'folder-manager'
+	| 'settings'
 
 export interface DialogAction {
 	type: 'dialog'

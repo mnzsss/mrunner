@@ -12,7 +12,6 @@ import { UserPreferencesSchema } from '@/commands/types'
 
 import App from './App'
 import { ErrorBoundary } from './components/error-boundary'
-import { Settings } from './pages/settings'
 import { Setup } from './pages/setup'
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
@@ -77,8 +76,7 @@ ReactDOM.createRoot(rootElement).render(
 							</SetupGuard>
 						}
 					/>
-					<Route path="/settings" element={<Settings />} />
-				</Routes>
+					</Routes>
 			</BrowserRouter>
 		</ErrorBoundary>
 	</React.StrictMode>,

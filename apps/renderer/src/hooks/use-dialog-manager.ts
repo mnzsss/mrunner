@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { Bookmark } from '@/commands/types'
 
@@ -20,6 +20,7 @@ export interface UseDialogManagerReturn {
 	editDialog: BookmarkDialogState
 	deleteDialog: BookmarkDialogState
 	isFolderManagerOpen: boolean
+	isSettingsOpen: boolean
 	activeDialogs: number
 
 	// Setters
@@ -27,6 +28,7 @@ export interface UseDialogManagerReturn {
 	setEditDialog: (state: BookmarkDialogState) => void
 	setDeleteDialog: (state: BookmarkDialogState) => void
 	setIsFolderManagerOpen: (open: boolean) => void
+	setIsSettingsOpen: (open: boolean) => void
 
 	// Handlers
 	handleAddBookmarkSave: () => void
@@ -36,6 +38,7 @@ export interface UseDialogManagerReturn {
 	handleDeleteDialogOpenChange: (open: boolean) => void
 	handleDeleteConfirm: () => Promise<void>
 	handleFolderManagerOpenChange: (open: boolean) => void
+	handleSettingsOpenChange: (open: boolean) => void
 	handleDialogStateChange: (increment: number) => void
 }
 
@@ -54,7 +57,8 @@ export function useDialogManager({
 		open: false,
 	})
 	const [isFolderManagerOpen, setIsFolderManagerOpen] = useState(false)
-	const [activeDialogs, setActiveDialogs] = useState(0)
+	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+	const [nestedDialogs, setNestedDialogs] = useState(0)
 
 	const focusInput = useCallback(() => {
 		requestAnimationFrame(() => {
@@ -123,20 +127,49 @@ export function useDialogManager({
 		[focusInput],
 	)
 
+	const handleSettingsOpenChange = useCallback(
+		(open: boolean) => {
+			setIsSettingsOpen(open)
+			if (!open) {
+				focusInput()
+			}
+		},
+		[focusInput],
+	)
+
 	const handleDialogStateChange = useCallback((increment: number) => {
-		setActiveDialogs((prev) => Math.max(0, prev + increment))
+		setNestedDialogs((prev) => Math.max(0, prev + increment))
 	}, [])
+
+	const activeDialogs = useMemo(() => {
+		let count = nestedDialogs
+		if (isAddBookmarkOpen) count++
+		if (editDialog.open) count++
+		if (deleteDialog.open) count++
+		if (isFolderManagerOpen) count++
+		if (isSettingsOpen) count++
+		return count
+	}, [
+		nestedDialogs,
+		isAddBookmarkOpen,
+		editDialog.open,
+		deleteDialog.open,
+		isFolderManagerOpen,
+		isSettingsOpen,
+	])
 
 	return {
 		isAddBookmarkOpen,
 		editDialog,
 		deleteDialog,
 		isFolderManagerOpen,
+		isSettingsOpen,
 		activeDialogs,
 		setIsAddBookmarkOpen,
 		setEditDialog,
 		setDeleteDialog,
 		setIsFolderManagerOpen,
+		setIsSettingsOpen,
 		handleAddBookmarkSave,
 		handleDialogOpenChange,
 		handleEditDialogOpenChange,
@@ -144,6 +177,7 @@ export function useDialogManager({
 		handleDeleteDialogOpenChange,
 		handleDeleteConfirm,
 		handleFolderManagerOpenChange,
+		handleSettingsOpenChange,
 		handleDialogStateChange,
 	}
 }
