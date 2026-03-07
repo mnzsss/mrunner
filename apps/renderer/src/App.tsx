@@ -1,6 +1,8 @@
-import { lazy, useCallback, useRef, useState } from 'react'
+import { listen } from '@tauri-apps/api/event'
+import { lazy, useCallback, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette } from '@/components/command-palette'
+import { SettingsSheet } from '@/components/settings/settings-sheet'
 import {
 	useBookmarkSearch,
 	useBookmarks,
@@ -79,6 +81,29 @@ function App() {
 		onDeleteBookmark: dialogManager.setDeleteDialog,
 	})
 
+	// Ctrl+, to open settings
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.ctrlKey && e.key === ',') {
+				e.preventDefault()
+				dialogManager.setIsSettingsOpen(true)
+			}
+		}
+
+		window.addEventListener('keydown', handleKeyDown)
+		return () => window.removeEventListener('keydown', handleKeyDown)
+	}, [dialogManager])
+
+	// Listen for tray "open-settings" event
+	useEffect(() => {
+		const unlisten = listen('open-settings', () => {
+			dialogManager.setIsSettingsOpen(true)
+		})
+		return () => {
+			unlisten.then((fn) => fn())
+		}
+	}, [dialogManager])
+
 	const handleSelect = useCallback(
 		async (commandId: string) => {
 			if (commandId.startsWith('bookmark-')) {
@@ -93,12 +118,13 @@ function App() {
 			const command = allItems.find((c) => c.id === commandId)
 			if (!command) return
 
-			// Handle folder-manager dialog
-			if (
-				command.action.type === 'dialog' &&
-				command.action.dialog === 'folder-manager'
-			) {
-				dialogManager.setIsFolderManagerOpen(true)
+			// Handle dialog actions
+			if (command.action.type === 'dialog') {
+				if (command.action.dialog === 'folder-manager') {
+					dialogManager.setIsFolderManagerOpen(true)
+				} else if (command.action.dialog === 'settings') {
+					dialogManager.setIsSettingsOpen(true)
+				}
 				return
 			}
 
@@ -149,6 +175,11 @@ function App() {
 				onHideSystemFolder={folderActions.hideSystemFolder}
 				onShowSystemFolder={folderActions.showSystemFolder}
 				onDialogStateChange={dialogManager.handleDialogStateChange}
+			/>
+
+			<SettingsSheet
+				open={dialogManager.isSettingsOpen}
+				onOpenChange={dialogManager.handleSettingsOpenChange}
 			/>
 
 			<CommandPalette

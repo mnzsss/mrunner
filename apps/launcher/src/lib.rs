@@ -6,6 +6,7 @@ mod shortcuts;
 use std::process::Command;
 use std::sync::Mutex;
 use tauri::{
+    Emitter,
     Manager,
     menu::{Menu, MenuItem, CheckMenuItem, PredefinedMenuItem},
     tray::{TrayIconBuilder, TrayIconEvent},
@@ -86,30 +87,6 @@ fn toggle_autostart(app: tauri::AppHandle, enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
-    println!("[settings] open_settings called");
-    match app.get_webview_window("settings") {
-        Some(window) => {
-            println!("[settings] Window found, showing...");
-            window.show().map_err(|e| {
-                println!("[settings] Error showing: {}", e);
-                e.to_string()
-            })?;
-            window.set_focus().map_err(|e| {
-                println!("[settings] Error focus: {}", e);
-                e.to_string()
-            })?;
-            println!("[settings] Window shown successfully");
-        }
-        None => {
-            println!("[settings] Window 'settings' not found!");
-            return Err("Settings window not found".to_string());
-        }
-    }
-    Ok(())
-}
-
-#[tauri::command]
 fn hide_main_window(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         shortcuts::unfocus_window(&window);
@@ -144,22 +121,6 @@ pub fn run() {
             let _ = window.set_skip_taskbar(true);
             let _ = window.center();
 
-            // Prevent settings window from being destroyed on close - just hide and return to main
-            if let Some(settings_window) = app.get_webview_window("settings") {
-                let sw = settings_window.clone();
-                let main_win = app.get_webview_window("main");
-                settings_window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = sw.hide();
-                        if let Some(ref mw) = main_win {
-                            let _ = mw.show();
-                            let _ = mw.set_focus();
-                        }
-                    }
-                });
-            }
-
             // Configurar system tray
             use tauri_plugin_autostart::ManagerExt;
             let autostart_enabled = app.autolaunch().is_enabled().unwrap_or(false);
@@ -183,9 +144,9 @@ pub fn run() {
                         }
                     }
                     "settings" => {
-                        if let Some(window) = app.get_webview_window("settings") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
+                        if let Some(window) = app.get_webview_window("main") {
+                            shortcuts::focus_window(&window);
+                            let _ = window.emit("open-settings", ());
                         }
                     }
                     "quit" => {
@@ -236,7 +197,6 @@ pub fn run() {
             get_user_directories,
             is_autostart_enabled,
             toggle_autostart,
-            open_settings,
             hide_main_window,
             shortcuts::sync_global_shortcuts,
             chrome::list_chrome_profiles,
