@@ -3,6 +3,21 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.1.1](https://github.com/mnzsss/mrunner/compare/v0.0.9...v0.1.1) (2026-03-08)
+
+### Features
+
+* add prepare-release skill with semver guidelines ([b89353e](https://github.com/mnzsss/mrunner/commit/b89353e13ba3a9c49ce51457f27ad446aca27a6e))
+* **ci:** Add tag-release workflow and disable local tag creation ([fd25539](https://github.com/mnzsss/mrunner/commit/fd2553935383a32e38747116fd2712090e21d8c3))
+* **i18n:** Add i18next internationalization with en/pt-BR support ([48b4ce2](https://github.com/mnzsss/mrunner/commit/48b4ce20a98ae426b446c2785bf2c7b6aef3b8d5))
+* improve window focus handling with X11 support and blur debounce ([dc69d99](https://github.com/mnzsss/mrunner/commit/dc69d99cdd6ebb56d736fb63ae14d5de2386873c))
+* replace settings window with in-app sheet ([3616b6d](https://github.com/mnzsss/mrunner/commit/3616b6db2ec540b6eabb2a54833fab2d7e686847))
+
+### Bug Fixes
+
+* **build:** Restrict Linux-only deps to Linux target ([d7b980f](https://github.com/mnzsss/mrunner/commit/d7b980f2a2b0ce39f097e8ac39cd95925ebafdec))
+* resolve biome lint errors for release ([80c1dc1](https://github.com/mnzsss/mrunner/commit/80c1dc1e3de3e289f6853c7e2929f8dc858e9c36))
+
 ## [0.1.0](https://github.com/mnzsss/mrunner/compare/v0.0.9...v0.1.0) (2026-03-07)
 
 ### Features
