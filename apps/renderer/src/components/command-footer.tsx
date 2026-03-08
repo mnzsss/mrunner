@@ -5,7 +5,7 @@ export function CommandFooter() {
 	const { t } = useTranslation()
 
 	return (
-		<div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
+		<div className="flex items-center justify-between border-border border-t px-4 py-2 text-muted-foreground text-xs">
 			<div className="flex items-center gap-3">
 				<span className="flex items-center gap-1">
 					<Kbd>↑↓</Kbd> {t('navigation.navigate')}

@@ -97,11 +97,11 @@ export function ToolsSettingsTab() {
 											</Badge>
 										)}
 									</div>
-									<ItemDescription className="text-sm text-muted-foreground">
+									<ItemDescription className="text-muted-foreground text-sm">
 										{provider.description}
 									</ItemDescription>
 									{status?.path && (
-										<p className="text-xs text-muted-foreground">
+										<p className="text-muted-foreground text-xs">
 											{t('tools.detectedPath', { path: status.path })}
 										</p>
 									)}
@@ -114,7 +114,7 @@ export function ToolsSettingsTab() {
 							</div>
 
 							{isActive && !modelsLoading && models.length > 0 && (
-								<div className="flex flex-col gap-2 border-t border-border/50 pt-3 mt-1">
+								<div className="mt-1 flex flex-col gap-2 border-border/50 border-t pt-3">
 									<div className="flex items-center gap-3">
 										<Label className="shrink-0 text-xs">
 											{t('tools.model')}

@@ -184,7 +184,7 @@ export function BookmarkDialog({
 							})}
 						/>
 						{urlError && (
-							<p id="bookmark-url-error" className="text-xs text-destructive">
+							<p id="bookmark-url-error" className="text-destructive text-xs">
 								{urlError}
 							</p>
 						)}

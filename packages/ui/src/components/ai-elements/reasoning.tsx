@@ -107,7 +107,7 @@ export function ReasoningTrigger({
 	return (
 		<CollapsibleTrigger
 			className={cn(
-				'group/reasoning gap-1 py-1 text-xs text-muted-foreground',
+				'group/reasoning gap-1 py-1 text-muted-foreground text-xs',
 				className,
 			)}
 			{...props}
@@ -135,7 +135,7 @@ export function ReasoningContent({
 		<CollapsiblePanel>
 			<div
 				className={cn(
-					'border-l-2 border-muted py-2 pl-3 text-xs text-muted-foreground',
+					'border-muted border-l-2 py-2 pl-3 text-muted-foreground text-xs',
 					className,
 				)}
 				{...props}

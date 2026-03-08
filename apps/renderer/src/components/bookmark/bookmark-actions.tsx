@@ -82,7 +82,7 @@ export const BookmarkActions = ({
 				<button
 					type="button"
 					onClick={(e) => e.stopPropagation()}
-					className="rounded p-1 hover:bg-muted text-destructive"
+					className="rounded p-1 text-destructive hover:bg-muted"
 					title={t('actions.delete')}
 					aria-label={t('actions.deleteBookmark')}
 				>

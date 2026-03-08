@@ -75,14 +75,14 @@ class ErrorBoundaryInner extends Component<Props, State> {
 
 			return (
 				<div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background p-8 text-foreground">
-					<h1 className="text-xl font-semibold">{t('errors.generic')}</h1>
-					<p className="text-sm text-muted-foreground">
+					<h1 className="font-semibold text-xl">{t('errors.generic')}</h1>
+					<p className="text-muted-foreground text-sm">
 						{this.state.error?.message ?? t('errors.unknown')}
 					</p>
 					<button
 						type="button"
 						onClick={() => this.setState({ hasError: false, error: null })}
-						className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+						className="rounded-md bg-primary px-4 py-2 text-primary-foreground text-sm hover:bg-primary/90"
 					>
 						{t('actions.tryAgain')}
 					</button>

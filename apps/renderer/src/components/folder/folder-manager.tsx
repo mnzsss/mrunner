@@ -81,8 +81,8 @@ function FolderRow({
 		>
 			<FolderIcon icon={folder.icon} />
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-sm font-medium">{folder.name}</div>
-				<div className="truncate text-xs text-muted-foreground">
+				<div className="truncate font-medium text-sm">{folder.name}</div>
+				<div className="truncate text-muted-foreground text-xs">
 					{folder.path}
 				</div>
 			</div>
@@ -234,7 +234,7 @@ export function FolderManager({
 				<SheetHeader>
 					<div className="flex items-center justify-between pr-8">
 						<SheetTitle>{t('folders.manage')}</SheetTitle>
-						<div className="flex items-center gap-3 text-xs text-muted-foreground">
+						<div className="flex items-center gap-3 text-muted-foreground text-xs">
 							<span className="flex items-center gap-1.5">
 								<Kbd>Esc</Kbd>
 								<span>{t('settings.close')}</span>
@@ -251,7 +251,7 @@ export function FolderManager({
 					<div className="space-y-6">
 						{/* Add Folder Form */}
 						<div className="space-y-3 rounded-md border border-muted bg-muted/30 p-4">
-							<h4 className="text-sm font-medium">
+							<h4 className="font-medium text-sm">
 								{t('folders.addNewFolder')}
 							</h4>
 
@@ -305,7 +305,7 @@ export function FolderManager({
 
 						{/* System Folders */}
 						<div>
-							<h4 className="mb-2 text-sm font-medium text-muted-foreground">
+							<h4 className="mb-2 font-medium text-muted-foreground text-sm">
 								{t('folders.systemFolders')}
 							</h4>
 							<div className="space-y-1">
@@ -333,7 +333,7 @@ export function FolderManager({
 							<>
 								<Separator />
 								<div>
-									<h4 className="mb-2 text-sm font-medium text-muted-foreground">
+									<h4 className="mb-2 font-medium text-muted-foreground text-sm">
 										{t('folders.customFolders')}
 									</h4>
 									<div className="space-y-1">
@@ -363,7 +363,7 @@ export function FolderManager({
 							<>
 								<Separator />
 								<div>
-									<h4 className="mb-2 text-sm font-medium text-muted-foreground">
+									<h4 className="mb-2 font-medium text-muted-foreground text-sm">
 										{t('folders.hiddenFolders')}
 									</h4>
 									<div className="space-y-1">
@@ -398,7 +398,7 @@ export function FolderManager({
 					</div>
 				</SheetBody>
 
-				<div className="flex items-center gap-4 border-t px-6 py-3 text-xs text-muted-foreground">
+				<div className="flex items-center gap-4 border-t px-6 py-3 text-muted-foreground text-xs">
 					<span className="flex items-center gap-1.5">
 						<Kbd>↑</Kbd>
 						<Kbd>↓</Kbd>

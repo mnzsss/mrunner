@@ -60,7 +60,7 @@ export const HotkeyPicker = ({
 			readOnly
 			disabled={disabled}
 			className={cn(
-				'font-mono cursor-pointer',
+				'cursor-pointer font-mono',
 				{ 'ring-2 ring-primary': recorder.isRecording },
 				className,
 			)}

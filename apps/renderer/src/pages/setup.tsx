@@ -83,13 +83,13 @@ export function Setup() {
 	}, [globalShortcut, navigate, locale])
 
 	return (
-		<div className="min-h-screen bg-background flex items-center justify-center p-8">
-			<div className="max-w-xl w-full space-y-6">
-				<div className="text-center space-y-2">
-					<h1 className="text-2xl font-bold">{t('setup.title')}</h1>
+		<div className="flex min-h-screen items-center justify-center bg-background p-8">
+			<div className="w-full max-w-xl space-y-6">
+				<div className="space-y-2 text-center">
+					<h1 className="font-bold text-2xl">{t('setup.title')}</h1>
 					<p className="text-muted-foreground">{t('setup.subtitle')}</p>
 					<div className="flex items-center justify-center gap-2 pt-2">
-						<span className="text-sm text-muted-foreground">
+						<span className="text-muted-foreground text-sm">
 							{t('setup.languageLabel')}
 						</span>
 						<LanguageSelector />
@@ -101,7 +101,7 @@ export function Setup() {
 						<CardTitle>{t('setup.step1Title')}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<p className="text-sm text-muted-foreground">
+						<p className="text-muted-foreground text-sm">
 							{t('setup.step1Description')}
 						</p>
 
@@ -111,7 +111,7 @@ export function Setup() {
 							placeholder={t('setup.hotkeyPlaceholder')}
 						/>
 
-						{error && <p className="text-sm text-destructive">{error}</p>}
+						{error && <p className="text-destructive text-sm">{error}</p>}
 
 						<div className="flex justify-end pt-4">
 							<Button onClick={handleFinish} disabled={loading}>

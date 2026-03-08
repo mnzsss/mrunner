@@ -26,9 +26,9 @@ export function tanStackToHotkey(str: string): Hotkey {
 	const key = parts.pop() ?? ''
 	const modResolver = isMac() ? 'Meta' : 'Super'
 
-	const KNOWN_MODIFIERS = new Set(['Control', 'Alt', 'Shift', 'Mod'])
+	const KnownModifiers = new Set(['Control', 'Alt', 'Shift', 'Mod'])
 	const modifiers: Modifier[] = parts
-		.filter((p) => KNOWN_MODIFIERS.has(p))
+		.filter((p) => KnownModifiers.has(p))
 		.map((p) => (p === 'Mod' ? (modResolver as Modifier) : (p as Modifier)))
 
 	return { modifiers, key }

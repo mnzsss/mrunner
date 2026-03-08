@@ -105,7 +105,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 				<SheetHeader>
 					<div className="flex items-center justify-between pr-8">
 						<SheetTitle>{t('settings.title')}</SheetTitle>
-						<div className="flex items-center gap-3 text-xs text-muted-foreground">
+						<div className="flex items-center gap-3 text-muted-foreground text-xs">
 							<span className="flex items-center gap-1.5">
 								<Kbd>Esc</Kbd>
 								<span>{t('settings.close')}</span>
@@ -133,7 +133,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 					{activeTab === 'global' && (
 						<div className="space-y-6">
 							<div className="space-y-3">
-								<h3 className="text-sm font-medium text-muted-foreground">
+								<h3 className="font-medium text-muted-foreground text-sm">
 									{t('settings.preferences')}
 								</h3>
 								<Label htmlFor="autostart">
@@ -143,7 +143,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 									>
 										<ItemContent className="space-y-1">
 											<ItemTitle>{t('settings.autostart')}</ItemTitle>
-											<ItemDescription className="text-sm text-muted-foreground">
+											<ItemDescription className="text-muted-foreground text-sm">
 												{t('settings.autostartDescription')}
 											</ItemDescription>
 										</ItemContent>
@@ -159,7 +159,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							<Separator />
 
 							<div className="space-y-3">
-								<h3 className="text-sm font-medium text-muted-foreground">
+								<h3 className="font-medium text-muted-foreground text-sm">
 									{t('settings.language')}
 								</h3>
 								<Label>
@@ -169,7 +169,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 									>
 										<ItemContent className="space-y-1">
 											<ItemTitle>{t('settings.language')}</ItemTitle>
-											<ItemDescription className="text-sm text-muted-foreground">
+											<ItemDescription className="text-muted-foreground text-sm">
 												{t('settings.languageDescription')}
 											</ItemDescription>
 										</ItemContent>
@@ -181,7 +181,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							<Separator />
 
 							<div className="space-y-3">
-								<h3 className="text-sm font-medium text-muted-foreground">
+								<h3 className="font-medium text-muted-foreground text-sm">
 									{t('settings.shortcuts')}
 								</h3>
 								<div className="space-y-2">
@@ -203,13 +203,13 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							<Separator />
 
 							<div className="space-y-1">
-								<h3 className="text-sm font-medium text-muted-foreground">
+								<h3 className="font-medium text-muted-foreground text-sm">
 									{t('settings.about')}
 								</h3>
-								<p className="text-sm text-muted-foreground">
+								<p className="text-muted-foreground text-sm">
 									{t('settings.aboutDescription')}
 								</p>
-								<p className="text-sm text-muted-foreground">
+								<p className="text-muted-foreground text-sm">
 									v{__APP_VERSION__}
 								</p>
 							</div>
@@ -218,7 +218,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 
 					{activeTab === 'bookmarks' && (
 						<div className="space-y-3">
-							<h3 className="text-sm font-medium text-muted-foreground">
+							<h3 className="font-medium text-muted-foreground text-sm">
 								{t('settings.bookmarkShortcuts')}
 							</h3>
 							<div className="space-y-2">
@@ -241,7 +241,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 					{activeTab === 'tools' && <ToolsSettingsTab />}
 				</SheetBody>
 
-				<div className="flex items-center gap-4 border-t px-6 py-3 text-xs text-muted-foreground">
+				<div className="flex items-center gap-4 border-t px-6 py-3 text-muted-foreground text-xs">
 					<span className="flex items-center gap-1.5">
 						<Kbd>←</Kbd>
 						<Kbd>→</Kbd>

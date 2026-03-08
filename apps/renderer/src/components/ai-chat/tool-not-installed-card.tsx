@@ -34,7 +34,7 @@ export function ToolNotInstalledCard({
 				>
 					<ArrowLeft className="size-4" />
 				</button>
-				<span className="text-sm font-medium">{t('chat.title')}</span>
+				<span className="font-medium text-sm">{t('chat.title')}</span>
 			</div>
 
 			<div className="flex flex-1 items-center justify-center p-4">
@@ -52,7 +52,7 @@ export function ToolNotInstalledCard({
 					</CardHeader>
 					<CardContent className="space-y-3">
 						<div className="space-y-1.5">
-							<p className="text-xs font-medium text-muted-foreground">
+							<p className="font-medium text-muted-foreground text-xs">
 								{isWindows
 									? t('tools.installWindows')
 									: t('tools.installLinux')}
@@ -66,7 +66,7 @@ export function ToolNotInstalledCard({
 						<button
 							type="button"
 							onClick={() => open(provider.docsUrl)}
-							className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-primary transition-colors duration-150 hover:underline focus:outline-none focus:ring-2 focus:ring-primary"
+							className="inline-flex cursor-pointer items-center gap-1.5 text-primary text-xs transition-colors duration-150 hover:underline focus:outline-none focus:ring-2 focus:ring-primary"
 						>
 							<ExternalLink className="size-3" />
 							{t('tools.openDocs')}

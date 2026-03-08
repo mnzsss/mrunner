@@ -276,9 +276,9 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 					<Kbd>esc</Kbd>
 				</button>
 				<Badge className={provider.color.badge}>/{provider.command}</Badge>
-				<span className="text-sm text-muted-foreground">{provider.name}</span>
+				<span className="text-muted-foreground text-sm">{provider.name}</span>
 				{selectedModel && (
-					<span className="ml-1 text-xs text-muted-foreground">
+					<span className="ml-1 text-muted-foreground text-xs">
 						{selectedModel}
 					</span>
 				)}
@@ -322,7 +322,7 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 									render={
 										<button
 											type="button"
-											className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+											className="flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground text-xs transition-colors hover:bg-muted hover:text-foreground"
 										/>
 									}
 								>

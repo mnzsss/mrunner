@@ -38,7 +38,7 @@ export function ShortcutItem({
 				<ItemTitle className={isConflicting ? 'text-destructive' : ''}>
 					{shortcut.description}
 					{isConflicting && (
-						<span className="ml-2 text-xs text-destructive">(Conflicting)</span>
+						<span className="ml-2 text-destructive text-xs">(Conflicting)</span>
 					)}
 				</ItemTitle>
 				<ItemDescription className="text-xs">
@@ -61,7 +61,7 @@ export function ShortcutItem({
 						variant="outline"
 						size="sm"
 						onClick={() => setIsEditing(true)}
-						className="font-mono min-w-32"
+						className="min-w-32 font-mono"
 						title={`Edit ${shortcut.description} shortcut`}
 						aria-label={`Edit ${shortcut.description} shortcut`}
 					>

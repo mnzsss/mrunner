@@ -126,7 +126,7 @@ export function CommandPalette({
 				<Suspense
 					fallback={
 						<div className="flex h-full items-center justify-center">
-							<span className="text-sm text-muted-foreground motion-safe:animate-pulse">
+							<span className="text-muted-foreground text-sm motion-safe:animate-pulse">
 								{t('app.loading')}
 							</span>
 						</div>
@@ -175,7 +175,7 @@ export function CommandPalette({
 								key={tool.id}
 								value={`/${tool.command} ${tool.name}`}
 								onSelect={() => handleToolSelect(tool)}
-								className={`cursor-pointer w-full ${tool.color.selectedBg}`}
+								className={`w-full cursor-pointer ${tool.color.selectedBg}`}
 							>
 								<tool.icon className={`size-4 ${tool.color.icon}`} />
 								<span className={`font-medium ${tool.color.text}`}>
@@ -192,7 +192,7 @@ export function CommandPalette({
 
 				{!isSlashMode && !activeCommand && (
 					<>
-						<CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+						<CommandEmpty className="py-6 text-center text-muted-foreground text-sm">
 							{t('search.empty')}
 						</CommandEmpty>
 
@@ -209,7 +209,7 @@ export function CommandPalette({
 				)}
 
 				{activeCommand && !query.trim() && (
-					<div className="py-6 text-center text-sm text-muted-foreground">
+					<div className="py-6 text-center text-muted-foreground text-sm">
 						{t('chat.placeholder')}
 					</div>
 				)}
