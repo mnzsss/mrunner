@@ -78,7 +78,7 @@
         "pnpm check passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "formatForDisplay from @tanstack/react-hotkeys renders platform-specific symbols. shortcut-item.tsx is at apps/renderer/src/components/shortcuts/shortcut-item.tsx. i18n files at apps/renderer/src/locales/{en,pt-BR}.json."
     },
     {

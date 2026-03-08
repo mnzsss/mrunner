@@ -69,3 +69,14 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - setup.tsx passes placeholder={t('setup.hotkeyPlaceholder')} — kept placeholder prop in HotkeyPickerProps for compatibility
   - US-005 i18n keys (pressKeys/clickToRecord) added here since CLAUDE.md mandates i18n for all user-facing text
 ---
+
+## 2026-03-08 - US-005
+- Updated apps/renderer/src/components/shortcuts/shortcut-item.tsx to use formatForDisplay(hotkeyToTanStack(shortcut.hotkey)) for platform-aware hotkey display
+- i18n keys (shortcuts.pressKeys, shortcuts.clickToRecord) were already added in US-004
+- setup.tsx was already compatible with rewritten HotkeyPicker (placeholder prop preserved)
+- Files changed: apps/renderer/src/components/shortcuts/shortcut-item.tsx
+- **Learnings for future iterations:**
+  - When US-004 added i18n keys early (to satisfy CLAUDE.md), US-005 i18n criteria were pre-satisfied — check progress.txt before adding duplicate keys
+  - setup.tsx compatibility check is trivial: HotkeyPicker props (value, onChange, placeholder) are the same interface
+  - formatForDisplay from @tanstack/react-hotkeys renders platform-specific symbols (e.g. ⌘ on Mac, Ctrl on Linux) automatically
+---
