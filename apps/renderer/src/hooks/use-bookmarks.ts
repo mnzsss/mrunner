@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Tag } from '@/commands/types'
 import { createLogger } from '@/lib/logger'
+import { parseQuery } from '@/lib/parse-query'
 
 const logger = createLogger('bookmarks')
 
@@ -277,31 +278,6 @@ export function useBookmarks(): UseBookmarksReturn {
 			}
 		},
 		[listTags, t],
-	)
-
-	const parseQuery = useCallback(
-		(query: string): { term: string; tags: string | null; isOr: boolean } => {
-			let term = query
-			let tags: string | null = null
-			let isOr = false
-
-			if (query.includes('#')) {
-				const hashIndex = query.indexOf('#')
-				term = query.slice(0, hashIndex).trim()
-				const tagPart = query.slice(hashIndex + 1).trim()
-
-				if (tagPart.includes('+')) {
-					tags = tagPart.replace(/\+/g, ',')
-					isOr = true
-				} else {
-					tags = tagPart
-					isOr = false
-				}
-			}
-
-			return { term, tags, isOr }
-		},
-		[],
 	)
 
 	return {
