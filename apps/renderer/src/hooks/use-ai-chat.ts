@@ -11,6 +11,56 @@ import type {
 	ToolStatus,
 } from '@/core/types/tools'
 
+function applyItemCompleted(
+	msg: ChatMessage,
+	payload: CodexItemEventPayload,
+): ChatMessage {
+	const { item_type, text, command, aggregated_output, exit_code } = payload
+
+	if (item_type === 'reasoning') {
+		const existing = msg.reasoning ?? ''
+		const separator = existing ? '\n\n' : ''
+		return { ...msg, reasoning: `${existing}${separator}${text ?? ''}` }
+	}
+
+	if (item_type === 'agent_message') {
+		return { ...msg, content: `${msg.content}${text ?? ''}` }
+	}
+
+	if (item_type === 'command_execution') {
+		const cmdId = payload.id
+		const existing = msg.commands ?? []
+		const found = existing.some((c) => c.id === cmdId)
+
+		if (found) {
+			return {
+				...msg,
+				commands: existing.map((c) =>
+					c.id === cmdId
+						? {
+								...c,
+								aggregatedOutput: aggregated_output ?? '',
+								exitCode: exit_code ?? null,
+								status: 'completed' as const,
+							}
+						: c,
+				),
+			}
+		}
+
+		const newCmd: CommandExecution = {
+			id: cmdId,
+			command: command ?? '',
+			aggregatedOutput: aggregated_output ?? '',
+			exitCode: exit_code ?? null,
+			status: 'completed',
+		}
+		return { ...msg, commands: [...existing, newCmd] }
+	}
+
+	return msg
+}
+
 export interface UseAIChatOptions {
 	provider?: string
 	model?: string
@@ -44,63 +94,10 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 				const id = streamingIdRef.current
 				if (!id) return
 
-				const { item_type, text, command, aggregated_output, exit_code } =
-					event.payload
-
 				setMessages((prev) =>
-					prev.map((msg) => {
-						if (msg.id !== id) return msg
-
-						if (item_type === 'reasoning') {
-							const existing = msg.reasoning ?? ''
-							const separator = existing ? '\n\n' : ''
-							return {
-								...msg,
-								reasoning: `${existing}${separator}${text ?? ''}`,
-							}
-						}
-
-						if (item_type === 'agent_message') {
-							return {
-								...msg,
-								content: `${msg.content}${text ?? ''}`,
-							}
-						}
-
-						if (item_type === 'command_execution') {
-							const cmdId = event.payload.id
-							const existing = msg.commands ?? []
-							const found = existing.some((c) => c.id === cmdId)
-
-							if (found) {
-								return {
-									...msg,
-									commands: existing.map((c) =>
-										c.id === cmdId
-											? {
-													...c,
-													aggregatedOutput: aggregated_output ?? '',
-													exitCode: exit_code ?? null,
-													status: 'completed' as const,
-												}
-											: c,
-									),
-								}
-							}
-
-							// item.completed without prior item.started
-							const newCmd: CommandExecution = {
-								id: cmdId,
-								command: command ?? '',
-								aggregatedOutput: aggregated_output ?? '',
-								exitCode: exit_code ?? null,
-								status: 'completed',
-							}
-							return { ...msg, commands: [...existing, newCmd] }
-						}
-
-						return msg
-					}),
+					prev.map((msg) =>
+						msg.id === id ? applyItemCompleted(msg, event.payload) : msg,
+					),
 				)
 			},
 		)

@@ -20,6 +20,17 @@ const CONFIG_DIR = import.meta.env.DEV
 	: '.config/mrunner'
 const CONFIG_FILE = 'preferences.json'
 
+async function readPreferencesFile(
+	configPath: string,
+): Promise<UserPreferences | null> {
+	const configExists = await exists(configPath)
+	if (!configExists) return null
+	const content = await readTextFile(configPath)
+	const json: unknown = JSON.parse(content)
+	const result = UserPreferencesSchema.safeParse(json)
+	return result.success ? result.data : null
+}
+
 export interface UseAIModelsReturn {
 	models: AiModel[]
 	activeProvider: string
@@ -67,43 +78,30 @@ export function useAIModels(): UseAIModelsReturn {
 				})
 				setModels(modelList)
 
-				const configExists = await exists(configPath)
-				if (configExists) {
-					const content = await readTextFile(configPath)
-					const json: unknown = JSON.parse(content)
-					const result = UserPreferencesSchema.safeParse(json)
-					if (result.success && result.data.tools?.ai) {
-						const aiPrefs = result.data.tools.ai
-						logger.debug('loaded ai prefs from config', {
-							aiPrefs,
-						})
-						// Migrate old flat format: { provider, model, reasoningEffort }
-						if (!('providers' in aiPrefs)) {
-							const old = aiPrefs as {
-								provider?: string
-								model?: string
-								reasoningEffort?: string
-							}
-							if (old.model) setSelectedModel(old.model)
-							if (old.reasoningEffort) setSelectedReasoning(old.reasoningEffort)
-						} else {
-							const providerPrefs = aiPrefs.providers?.[provider]
-							logger.debug('restoring provider prefs', {
-								provider,
-								providerPrefs,
-							})
-							setSelectedModel(providerPrefs?.model ?? '')
-							setSelectedReasoning(providerPrefs?.reasoningEffort ?? '')
-						}
-					} else {
-						logger.debug('no ai prefs in config, resetting')
-						setSelectedModel('')
-						setSelectedReasoning('')
-					}
-				} else {
-					logger.debug('config file not found, resetting')
+				const prefs = await readPreferencesFile(configPath)
+				const aiPrefs = prefs?.tools?.ai
+
+				if (!aiPrefs) {
+					logger.debug('no ai prefs in config, resetting')
 					setSelectedModel('')
 					setSelectedReasoning('')
+				} else if (!('providers' in aiPrefs)) {
+					// Migrate old flat format: { provider, model, reasoningEffort }
+					const old = aiPrefs as {
+						provider?: string
+						model?: string
+						reasoningEffort?: string
+					}
+					if (old.model) setSelectedModel(old.model)
+					if (old.reasoningEffort) setSelectedReasoning(old.reasoningEffort)
+				} else {
+					const providerPrefs = aiPrefs.providers?.[provider]
+					logger.debug('restoring provider prefs', {
+						provider,
+						providerPrefs,
+					})
+					setSelectedModel(providerPrefs?.model ?? '')
+					setSelectedReasoning(providerPrefs?.reasoningEffort ?? '')
 				}
 			} catch (e) {
 				logger.error('Failed to load AI models', { error: String(e) })
@@ -120,16 +118,10 @@ export function useAIModels(): UseAIModelsReturn {
 			try {
 				const configPath = await getConfigPath()
 				let initialProvider = 'codex'
-				if (await exists(configPath)) {
-					const content = await readTextFile(configPath)
-					const json: unknown = JSON.parse(content)
-					const result = UserPreferencesSchema.safeParse(json)
-					if (result.success && result.data.tools?.ai) {
-						const aiPrefs = result.data.tools.ai
-						if ('activeProvider' in aiPrefs && aiPrefs.activeProvider) {
-							initialProvider = aiPrefs.activeProvider
-						}
-					}
+				const prefs = await readPreferencesFile(configPath)
+				const aiPrefs = prefs?.tools?.ai
+				if (aiPrefs && 'activeProvider' in aiPrefs && aiPrefs.activeProvider) {
+					initialProvider = aiPrefs.activeProvider
 				}
 				setActiveProvider(initialProvider)
 				await loadModelsForProvider(initialProvider)
@@ -151,21 +143,13 @@ export function useAIModels(): UseAIModelsReturn {
 			await ensureConfigDir()
 			const configPath = await getConfigPath()
 
-			let currentPrefs: UserPreferences = {
+			const currentPrefs: UserPreferences = (await readPreferencesFile(
+				configPath,
+			)) ?? {
 				setupCompleted: false,
 				customFolders: [],
 				hiddenSystemFolders: [],
 				shortcuts: { shortcuts: [], conflictResolution: 'warn' },
-			}
-
-			const configExists = await exists(configPath)
-			if (configExists) {
-				const content = await readTextFile(configPath)
-				const json: unknown = JSON.parse(content)
-				const result = UserPreferencesSchema.safeParse(json)
-				if (result.success) {
-					currentPrefs = result.data
-				}
 			}
 
 			const currentAi = currentPrefs.tools?.ai
