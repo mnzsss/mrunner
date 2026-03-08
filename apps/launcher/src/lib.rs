@@ -213,7 +213,7 @@ pub fn run() {
             bookmarks::bookmark_rename_tag,
             bookmarks::bookmark_delete_tag,
             tools::check_tool_installed,
-            tools::list_codex_models,
+            tools::list_ai_models,
             tools::send_ai_message,
             tools::cancel_ai_message,
         ])

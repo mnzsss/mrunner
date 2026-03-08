@@ -60,18 +60,19 @@ pub fn check_tool_installed(tool_id: String) -> Result<ToolStatus, String> {
 // --- Model listing ---
 
 #[derive(Serialize, Clone)]
-pub struct CodexReasoningLevel {
+pub struct AiReasoningLevel {
     pub effort: String,
     pub description: String,
 }
 
 #[derive(Serialize, Clone)]
-pub struct CodexModel {
+pub struct AiModel {
     pub slug: String,
     pub display_name: String,
     pub description: String,
     pub default_reasoning_level: String,
-    pub supported_reasoning_levels: Vec<CodexReasoningLevel>,
+    pub supported_reasoning_levels: Vec<AiReasoningLevel>,
+    pub provider: String,
 }
 
 #[derive(Deserialize)]
@@ -96,41 +97,81 @@ struct ReasoningEntry {
 }
 
 #[tauri::command]
-pub fn list_codex_models() -> Result<Vec<CodexModel>, String> {
-    let home = dirs::home_dir().ok_or("Could not determine home directory")?;
-    let cache_path = home.join(".codex").join("models_cache.json");
+pub fn list_ai_models(provider: String) -> Result<Vec<AiModel>, String> {
+    match provider.as_str() {
+        "codex" => {
+            let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+            let cache_path = home.join(".codex").join("models_cache.json");
 
-    if !cache_path.exists() {
-        return Ok(vec![]);
-    }
+            if !cache_path.exists() {
+                return Ok(vec![]);
+            }
 
-    let content =
-        std::fs::read_to_string(&cache_path).map_err(|e| format!("Failed to read cache: {}", e))?;
-    let cache: ModelsCache =
-        serde_json::from_str(&content).map_err(|e| format!("Failed to parse cache: {}", e))?;
+            let content = std::fs::read_to_string(&cache_path)
+                .map_err(|e| format!("Failed to read cache: {}", e))?;
+            let cache: ModelsCache = serde_json::from_str(&content)
+                .map_err(|e| format!("Failed to parse cache: {}", e))?;
 
-    let models = cache
-        .models
-        .into_iter()
-        .filter(|m| m.visibility.as_deref() == Some("list"))
-        .map(|m| CodexModel {
-            display_name: m.display_name.unwrap_or_else(|| m.slug.clone()),
-            description: m.description.unwrap_or_default(),
-            default_reasoning_level: m.default_reasoning_level.unwrap_or_default(),
-            supported_reasoning_levels: m
-                .supported_reasoning_levels
-                .unwrap_or_default()
+            let models = cache
+                .models
                 .into_iter()
-                .map(|r| CodexReasoningLevel {
-                    effort: r.effort,
-                    description: r.description.unwrap_or_default(),
+                .filter(|m| m.visibility.as_deref() == Some("list"))
+                .map(|m| AiModel {
+                    display_name: m.display_name.unwrap_or_else(|| m.slug.clone()),
+                    description: m.description.unwrap_or_default(),
+                    default_reasoning_level: m.default_reasoning_level.unwrap_or_default(),
+                    supported_reasoning_levels: m
+                        .supported_reasoning_levels
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|r| AiReasoningLevel {
+                            effort: r.effort,
+                            description: r.description.unwrap_or_default(),
+                        })
+                        .collect(),
+                    slug: m.slug,
+                    provider: "codex".to_string(),
                 })
-                .collect(),
-            slug: m.slug,
-        })
-        .collect();
+                .collect();
 
-    Ok(models)
+            Ok(models)
+        }
+        "claude" => {
+            let levels = vec![
+                AiReasoningLevel { effort: "low".to_string(), description: "Low reasoning effort".to_string() },
+                AiReasoningLevel { effort: "medium".to_string(), description: "Medium reasoning effort".to_string() },
+                AiReasoningLevel { effort: "high".to_string(), description: "High reasoning effort".to_string() },
+            ];
+            let models = vec![
+                AiModel {
+                    slug: "claude-sonnet-4-6".to_string(),
+                    display_name: "Claude Sonnet 4.6".to_string(),
+                    description: "Balanced performance and speed".to_string(),
+                    default_reasoning_level: "medium".to_string(),
+                    supported_reasoning_levels: levels.clone(),
+                    provider: "claude".to_string(),
+                },
+                AiModel {
+                    slug: "claude-opus-4-6".to_string(),
+                    display_name: "Claude Opus 4.6".to_string(),
+                    description: "Most capable model".to_string(),
+                    default_reasoning_level: "medium".to_string(),
+                    supported_reasoning_levels: levels.clone(),
+                    provider: "claude".to_string(),
+                },
+                AiModel {
+                    slug: "claude-haiku-4-5".to_string(),
+                    display_name: "Claude Haiku 4.5".to_string(),
+                    description: "Fastest model".to_string(),
+                    default_reasoning_level: "low".to_string(),
+                    supported_reasoning_levels: levels,
+                    provider: "claude".to_string(),
+                },
+            ];
+            Ok(models)
+        }
+        _ => Err(format!("Unknown provider: {}", provider)),
+    }
 }
 
 // --- AI message handling ---
