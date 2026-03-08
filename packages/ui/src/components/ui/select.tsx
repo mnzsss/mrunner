@@ -25,15 +25,30 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
 function SelectValue({
 	className,
 	placeholder,
+	children,
 	...props
 }: SelectPrimitive.Value.Props & { placeholder?: string }) {
+	// When explicit children are passed, use them directly.
+	// When placeholder is set (no children), use a function to show
+	// placeholder for empty state or raw value otherwise.
+	// When neither is set, pass undefined so Base UI auto-resolves
+	// the label from the items prop on Select.Root.
+	const resolvedChildren =
+		children ??
+		(placeholder
+			? (value: unknown) => {
+					if (value == null || value === '') return placeholder
+					return String(value)
+				}
+			: undefined)
+
 	return (
 		<SelectPrimitive.Value
 			data-slot="select-value"
 			className={cn('flex flex-1 text-left', className)}
 			{...props}
 		>
-			{placeholder}
+			{resolvedChildren}
 		</SelectPrimitive.Value>
 	)
 }
