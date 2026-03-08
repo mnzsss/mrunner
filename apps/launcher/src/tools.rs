@@ -229,6 +229,7 @@ fn extract_usage(event: &Value) -> CodexTurnCompleted {
 
 #[tauri::command]
 pub fn send_ai_message(
+    provider: String,
     message: String,
     model: Option<String>,
     reasoning_effort: Option<String>,
@@ -242,28 +243,44 @@ pub fn send_ai_message(
         }
     }
 
-    let mut cmd = Command::new("codex");
-    cmd.arg("exec").arg("--json");
-
-    if let Some(ref m) = model {
-        if !m.is_empty() {
-            cmd.arg("--model").arg(m);
+    let mut child = match provider.as_str() {
+        "claude" => {
+            let mut cmd = Command::new("claude");
+            cmd.arg("-p").arg("--output-format").arg("stream-json");
+            if let Some(ref m) = model {
+                if !m.is_empty() {
+                    cmd.arg("--model").arg(m);
+                }
+            }
+            cmd.arg(&message);
+            // Remove CLAUDECODE env var to avoid nested-session error
+            cmd.env_remove("CLAUDECODE");
+            cmd.stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|e| format!("Failed to start claude: {}", e))?
         }
-    }
-
-    if let Some(ref effort) = reasoning_effort {
-        if !effort.is_empty() {
-            cmd.arg("-c").arg(format!("model_reasoning_effort=\"{}\"", effort));
+        _ => {
+            // Default: codex
+            let mut cmd = Command::new("codex");
+            cmd.arg("exec").arg("--json");
+            if let Some(ref m) = model {
+                if !m.is_empty() {
+                    cmd.arg("--model").arg(m);
+                }
+            }
+            if let Some(ref effort) = reasoning_effort {
+                if !effort.is_empty() {
+                    cmd.arg("-c").arg(format!("model_reasoning_effort=\"{}\"", effort));
+                }
+            }
+            cmd.arg(&message);
+            cmd.stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|e| format!("Failed to start codex: {}", e))?
         }
-    }
-
-    cmd.arg(&message);
-
-    let mut child = cmd
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|e| format!("Failed to start codex: {}", e))?;
+    };
 
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
 
