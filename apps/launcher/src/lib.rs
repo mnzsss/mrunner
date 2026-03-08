@@ -105,7 +105,6 @@ pub fn run() {
             tauri_plugin_log::Builder::new()
                 .targets([
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
-                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
                         file_name: None,
                     }),
@@ -115,6 +114,7 @@ pub fn run() {
                 } else {
                     log::LevelFilter::Info
                 })
+                .level_for("tao", log::LevelFilter::Error)
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
