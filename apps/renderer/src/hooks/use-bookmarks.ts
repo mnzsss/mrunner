@@ -5,17 +5,16 @@ import { open } from '@tauri-apps/plugin-shell'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { Bookmark, Tag } from '@/commands/types'
+import type { Bookmark } from '@/commands/types'
 import { createLogger } from '@/lib/logger'
 import { parseQuery } from '@/lib/parse-query'
 
 const logger = createLogger('bookmarks')
 
-export type { Bookmark, Tag }
+export type { Bookmark }
 
 interface UseBookmarksReturn {
 	bookmarks: Bookmark[]
-	tags: Tag[]
 	loading: boolean
 	error: string | null
 	// Search & List
@@ -46,10 +45,6 @@ interface UseBookmarksReturn {
 	openBookmark: (id: number) => Promise<void>
 	copyUrl: (bookmark: Bookmark) => Promise<void>
 	copyMarkdown: (bookmark: Bookmark) => Promise<void>
-	// Tags
-	listTags: () => Promise<Tag[]>
-	renameTag: (oldTag: string, newTag: string) => Promise<boolean>
-	deleteTag: (tag: string) => Promise<boolean>
 	// Utils
 	parseQuery: (query: string) => {
 		term: string
@@ -61,7 +56,6 @@ interface UseBookmarksReturn {
 export function useBookmarks(): UseBookmarksReturn {
 	const { t } = useTranslation()
 	const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
-	const [tags, setTags] = useState<Tag[]>([])
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -230,59 +224,8 @@ export function useBookmarks(): UseBookmarksReturn {
 		[t],
 	)
 
-	const listTags = useCallback(async (): Promise<Tag[]> => {
-		setLoading(true)
-		try {
-			const results = await invoke<Tag[]>('bookmark_list_tags')
-			setTags(results)
-			return results
-		} catch (err) {
-			logger.error('Bookmark list tags error', { error: String(err) })
-			return []
-		} finally {
-			setLoading(false)
-		}
-	}, [])
-
-	const renameTag = useCallback(
-		async (oldTag: string, newTag: string): Promise<boolean> => {
-			try {
-				await invoke('bookmark_rename_tag', { oldTag, newTag })
-				sendNotification({
-					title: 'MRunner',
-					body: t('notifications.tagRenamed', { oldTag, newTag }),
-				})
-				await listTags()
-				return true
-			} catch (err) {
-				logger.error('Bookmark rename tag error', { error: String(err) })
-				return false
-			}
-		},
-		[listTags, t],
-	)
-
-	const deleteTag = useCallback(
-		async (tag: string): Promise<boolean> => {
-			try {
-				await invoke('bookmark_delete_tag', { tag })
-				sendNotification({
-					title: 'MRunner',
-					body: t('notifications.tagDeleted', { tag }),
-				})
-				await listTags()
-				return true
-			} catch (err) {
-				logger.error('Bookmark delete tag error', { error: String(err) })
-				return false
-			}
-		},
-		[listTags, t],
-	)
-
 	return {
 		bookmarks,
-		tags,
 		loading,
 		error,
 		list,
@@ -295,9 +238,6 @@ export function useBookmarks(): UseBookmarksReturn {
 		openBookmark,
 		copyUrl,
 		copyMarkdown,
-		listTags,
-		renameTag,
-		deleteTag,
 		parseQuery,
 	}
 }

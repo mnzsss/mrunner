@@ -1,6 +1,7 @@
 export type { UseAIChatReturn } from './use-ai-chat'
 export type { UseBookmarkSearchOptions } from './use-bookmark-search'
-export type { Bookmark, Tag } from './use-bookmarks'
+export type { Tag } from './use-bookmark-tags'
+export type { Bookmark } from './use-bookmarks'
 export type {
 	UseCommandDataOptions,
 	UseCommandDataReturn,
@@ -19,6 +20,7 @@ export type {
 export { useAIChat } from './use-ai-chat'
 export { useAIModels } from './use-ai-models'
 export { useBookmarkSearch } from './use-bookmark-search'
+export { useBookmarkTags } from './use-bookmark-tags'
 export { useBookmarks } from './use-bookmarks'
 export { useCommandData } from './use-command-data'
 export { useCommands } from './use-commands'
