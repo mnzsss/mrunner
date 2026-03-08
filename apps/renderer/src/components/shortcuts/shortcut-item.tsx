@@ -6,10 +6,12 @@ import {
 	ItemTitle,
 	Switch,
 } from '@mrunner/ui'
+import { formatForDisplay } from '@tanstack/react-hotkeys'
 import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import type { Hotkey, ShortcutConfig } from '@/core/types/shortcuts'
+import { hotkeyToTanStack } from '@/lib/hotkey-adapter'
 
 import { HotkeyPicker } from './hotkey-picker'
 
@@ -63,9 +65,7 @@ export function ShortcutItem({
 						title={`Edit ${shortcut.description} shortcut`}
 						aria-label={`Edit ${shortcut.description} shortcut`}
 					>
-						{shortcut.hotkey.modifiers.join('+')}
-						{shortcut.hotkey.modifiers.length > 0 && '+'}
-						{shortcut.hotkey.key}
+						{formatForDisplay(hotkeyToTanStack(shortcut.hotkey))}
 					</Button>
 				)}
 
