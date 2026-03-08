@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Bookmark } from '@/commands/types'
+import { useBookmarkActions } from '@/hooks/use-bookmark-actions'
 import { useBookmarks } from '@/hooks/use-bookmarks'
 
 import { DeleteConfirmDialog } from './bookmark-delete'
@@ -18,7 +19,8 @@ export const BookmarkActions = ({
 	onAction,
 }: BookmarkActionsProps) => {
 	const { t } = useTranslation()
-	const { openBookmark, copyUrl, remove, refresh } = useBookmarks()
+	const { bookmarks, remove, refresh } = useBookmarks()
+	const { openBookmark, copyUrl } = useBookmarkActions(bookmarks)
 
 	const handleOpen = useCallback(
 		async (e: React.MouseEvent) => {

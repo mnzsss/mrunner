@@ -19,6 +19,7 @@ export type {
 } from './use-window-manager'
 export { useAIChat } from './use-ai-chat'
 export { useAIModels } from './use-ai-models'
+export { useBookmarkActions } from './use-bookmark-actions'
 export { useBookmarkSearch } from './use-bookmark-search'
 export { useBookmarkTags } from './use-bookmark-tags'
 export { useBookmarks } from './use-bookmarks'

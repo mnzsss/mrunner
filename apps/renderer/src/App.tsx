@@ -4,6 +4,7 @@ import { lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { CommandPalette } from '@/components/command-palette'
 import { SettingsSheet } from '@/components/settings/settings-sheet'
 import {
+	useBookmarkActions,
 	useBookmarkSearch,
 	useBookmarks,
 	useCommandData,
@@ -41,8 +42,8 @@ function App() {
 	// Core data hooks
 	const { commands, executeCommand, folderActions } = useCommands()
 	const { plugins } = usePlugins()
-	const { bookmarks, openBookmark, refresh, remove, search, parseQuery } =
-		useBookmarks()
+	const { bookmarks, refresh, remove, search, parseQuery } = useBookmarks()
+	const { openBookmark } = useBookmarkActions(bookmarks)
 
 	// Dialog manager hook
 	const dialogManager = useDialogManager({
