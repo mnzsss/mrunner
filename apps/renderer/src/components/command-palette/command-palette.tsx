@@ -8,7 +8,6 @@ import {
 	CommandList,
 	Kbd,
 } from '@mrunner/ui'
-import { MessageCircle } from 'lucide-react'
 import { lazy, type RefObject, Suspense, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -176,9 +175,9 @@ export function CommandPalette({
 								key={tool.id}
 								value={`/${tool.command} ${tool.name}`}
 								onSelect={() => handleToolSelect(tool)}
-								className={`cursor-pointer ${tool.color.selectedBg}`}
+								className={`cursor-pointer w-full ${tool.color.selectedBg}`}
 							>
-								<MessageCircle className={`size-4 ${tool.color.icon}`} />
+								<tool.icon className={`size-4 ${tool.color.icon}`} />
 								<span className={`font-medium ${tool.color.text}`}>
 									/{tool.command}
 								</span>

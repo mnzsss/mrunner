@@ -1,3 +1,5 @@
+import { BotMessageSquare, type LucideIcon } from 'lucide-react'
+
 export interface ToolColor {
 	badge: string
 	border: string
@@ -11,6 +13,7 @@ export interface ToolProvider {
 	name: string
 	command: string
 	description: string
+	icon: LucideIcon
 	color: ToolColor
 	checkCommand: { linux: string; windows: string }
 	installInstructions: { linux: string; windows: string }
@@ -83,13 +86,15 @@ export const TOOL_PROVIDERS: ToolProvider[] = [
 		name: 'Ask AI',
 		command: 'ask',
 		description: 'Chat with AI assistant (OpenAI Codex)',
+		icon: BotMessageSquare,
 		color: {
 			badge: 'bg-primary text-primary-foreground',
 			border:
 				'border-primary/50 focus-within:border-primary focus-within:ring-primary/20',
 			icon: 'text-primary',
 			text: 'text-primary',
-			selectedBg: 'data-selected:bg-primary/10',
+			selectedBg:
+				'data-selected:bg-primary/10 data-selected:border-primary border',
 		},
 		checkCommand: { linux: 'which codex', windows: 'where codex' },
 		installInstructions: {
@@ -101,15 +106,17 @@ export const TOOL_PROVIDERS: ToolProvider[] = [
 	{
 		id: 'claude',
 		name: 'Claude Code',
-		command: 'ask',
+		command: 'claude',
 		description: 'Chat with AI assistant (Anthropic Claude Code)',
+		icon: BotMessageSquare,
 		color: {
 			badge: 'bg-amber-500 text-white',
 			border:
 				'border-amber-500/50 focus-within:border-amber-500 focus-within:ring-amber-500/20',
 			icon: 'text-amber-500',
 			text: 'text-amber-500',
-			selectedBg: 'data-selected:bg-amber-500/10',
+			selectedBg:
+				'data-selected:bg-amber-500/10 data-selected:border-amber-500 border',
 		},
 		checkCommand: { linux: 'which claude', windows: 'where claude' },
 		installInstructions: {

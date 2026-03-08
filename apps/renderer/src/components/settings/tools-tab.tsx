@@ -13,7 +13,9 @@ import {
 	ItemDescription,
 	ItemTitle,
 } from '@mrunner/ui/components/ui/item'
+import { cn } from '@mrunner/ui/lib/utils'
 import { invoke } from '@tauri-apps/api/core'
+import { Circle, CircleCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -62,115 +64,122 @@ export function ToolsSettingsTab() {
 	const reasoningLevels = currentModel?.supported_reasoning_levels ?? []
 
 	return (
-		<div className="space-y-4">
-			<h3 className="text-sm font-medium text-muted-foreground">
-				{t('tools.aiTools')}
-			</h3>
-
-			{/* Default provider selector */}
-			<div className="space-y-1.5">
-				<Label>{t('tools.defaultProvider')}</Label>
-				<Select
-					value={activeProvider}
-					onValueChange={(val) => {
-						void setProvider(val)
-					}}
-				>
-					<SelectTrigger>
-						<SelectValue placeholder={t('tools.selectProvider')} />
-					</SelectTrigger>
-					<SelectContent>
-						{TOOL_PROVIDERS.map((p) => (
-							<SelectItem key={p.id} value={p.id}>
-								{p.name}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
-			{/* Provider status */}
+		<div className="space-y-1.5">
+			<Label>{t('tools.defaultProvider')}</Label>
 			<div className="space-y-2">
 				{TOOL_PROVIDERS.map((provider) => {
 					const status = statuses[provider.id]
+					const isActive = activeProvider === provider.id
 					return (
-						<Item key={provider.id} variant="outline">
-							<ItemContent className="space-y-1">
-								<div className="flex items-center gap-2">
-									<ItemTitle>{provider.name}</ItemTitle>
-									{loading ? (
-										<Badge variant="outline">{t('tools.checking')}</Badge>
-									) : status?.installed ? (
-										<Badge variant="default">{t('tools.installed')}</Badge>
-									) : (
-										<Badge variant="destructive">
-											{t('tools.notInstalled')}
-										</Badge>
+						<Item
+							key={provider.id}
+							variant="outline"
+							className={cn(
+								'cursor-pointer flex-col items-stretch transition-colors',
+								isActive &&
+									'border-primary bg-primary/5 ring-1 ring-primary/20',
+							)}
+							onClick={() => {
+								if (!isActive) void setProvider(provider.id)
+							}}
+						>
+							<div className="flex items-center gap-3">
+								<ItemContent className="space-y-1">
+									<div className="flex items-center gap-2">
+										<ItemTitle>{provider.name}</ItemTitle>
+										{loading ? (
+											<Badge variant="outline">{t('tools.checking')}</Badge>
+										) : status?.installed ? (
+											<Badge variant="default">{t('tools.installed')}</Badge>
+										) : (
+											<Badge variant="destructive">
+												{t('tools.notInstalled')}
+											</Badge>
+										)}
+									</div>
+									<ItemDescription className="text-sm text-muted-foreground">
+										{provider.description}
+									</ItemDescription>
+									{status?.path && (
+										<p className="text-xs text-muted-foreground">
+											{t('tools.detectedPath', { path: status.path })}
+										</p>
+									)}
+								</ItemContent>
+								{isActive ? (
+									<CircleCheck className="size-5 shrink-0 text-primary" />
+								) : (
+									<Circle className="size-5 shrink-0 text-muted-foreground/40" />
+								)}
+							</div>
+
+							{isActive && !modelsLoading && models.length > 0 && (
+								<div className="flex flex-col gap-2 border-t border-border/50 pt-3 mt-1">
+									<div className="flex items-center gap-3">
+										<Label className="shrink-0 text-xs">
+											{t('tools.model')}
+										</Label>
+										<Select
+											value={selectedModel}
+											onValueChange={(val) => setModel(val)}
+										>
+											<SelectTrigger
+												className="h-7 text-xs"
+												onClick={(e) => e.stopPropagation()}
+											>
+												<SelectValue placeholder={t('tools.selectModel')}>
+													{(value: string) => {
+														if (!value) return t('tools.selectModel')
+														return (
+															models.find((m) => m.slug === value)
+																?.display_name ?? value
+														)
+													}}
+												</SelectValue>
+											</SelectTrigger>
+											<SelectContent>
+												{models.map((model) => (
+													<SelectItem key={model.slug} value={model.slug}>
+														{model.display_name}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+
+									{reasoningLevels.length > 0 && (
+										<div className="flex items-center gap-3">
+											<Label className="shrink-0 text-xs">
+												{t('tools.reasoningEffort')}
+											</Label>
+											<Select
+												value={selectedReasoning}
+												onValueChange={(val) => setReasoning(val)}
+											>
+												<SelectTrigger
+													className="h-7 text-xs"
+													onClick={(e) => e.stopPropagation()}
+												>
+													<SelectValue
+														placeholder={t('tools.selectReasoning')}
+													/>
+												</SelectTrigger>
+												<SelectContent>
+													{reasoningLevels.map((level) => (
+														<SelectItem key={level.effort} value={level.effort}>
+															{level.effort}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
 									)}
 								</div>
-								<ItemDescription className="text-sm text-muted-foreground">
-									{provider.description}
-								</ItemDescription>
-								{status?.path && (
-									<p className="text-xs text-muted-foreground">
-										{t('tools.detectedPath', { path: status.path })}
-									</p>
-								)}
-							</ItemContent>
+							)}
 						</Item>
 					)
 				})}
 			</div>
-
-			{/* Model selection */}
-			{!modelsLoading && models.length > 0 && (
-				<div className="space-y-3">
-					<div className="space-y-1.5">
-						<Label>{t('tools.model')}</Label>
-						<Select
-							value={selectedModel}
-							onValueChange={(val) => setModel(val)}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder={t('tools.selectModel')} />
-							</SelectTrigger>
-							<SelectContent>
-								{models.map((model) => (
-									<SelectItem key={model.slug} value={model.slug}>
-										{model.display_name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{currentModel?.description && (
-							<p className="text-xs text-muted-foreground">
-								{currentModel.description}
-							</p>
-						)}
-					</div>
-
-					{reasoningLevels.length > 0 && (
-						<div className="space-y-1.5">
-							<Label>{t('tools.reasoningEffort')}</Label>
-							<Select
-								value={selectedReasoning}
-								onValueChange={(val) => setReasoning(val)}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder={t('tools.selectReasoning')} />
-								</SelectTrigger>
-								<SelectContent>
-									{reasoningLevels.map((level) => (
-										<SelectItem key={level.effort} value={level.effort}>
-											{level.effort}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					)}
-				</div>
-			)}
 		</div>
 	)
 }
