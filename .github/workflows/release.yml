@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        required: false
+        type: string
   workflow_call:
     inputs:
       version:
@@ -27,8 +32,8 @@ jobs:
       - name: Get version from tag
         id: get_version
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
+          if [ -n "${{ inputs.version || github.event.inputs.version }}" ]; then
+            VERSION="${{ inputs.version || github.event.inputs.version }}"
           else
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
