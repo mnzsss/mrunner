@@ -30,13 +30,13 @@ export const ListItem = ({
 
 	return (
 		<CommandItem value={value} onSelect={() => onSelect(id)}>
-			<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-data-[selected=true]:bg-popover text-muted-foreground">
+			<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-data-[selected=true]:bg-popover">
 				<IconComponent className="size-4" aria-hidden="true" />
 			</div>
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-sm font-medium">{title}</div>
+				<div className="truncate font-medium text-sm">{title}</div>
 				{description && (
-					<div className="truncate text-xs text-muted-foreground">
+					<div className="truncate text-muted-foreground text-xs">
 						{description}
 					</div>
 				)}

@@ -1,0 +1,409 @@
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::io::{BufRead, BufReader};
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
+use tauri::{Emitter, State};
+
+#[derive(Serialize)]
+pub struct ToolStatus {
+    pub installed: bool,
+    pub path: Option<String>,
+}
+
+pub struct AiProcessState(pub Mutex<Option<Child>>);
+
+#[tauri::command]
+pub fn check_tool_installed(tool_id: String) -> Result<ToolStatus, String> {
+    let check_cmd = match tool_id.as_str() {
+        "codex" => {
+            #[cfg(target_os = "windows")]
+            {
+                "where codex"
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                "which codex"
+            }
+        }
+        "claude" => {
+            #[cfg(target_os = "windows")]
+            {
+                "where claude"
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                "which claude"
+            }
+        }
+        _ => return Err(format!("Unknown tool: {}", tool_id)),
+    };
+
+    let parts: Vec<&str> = check_cmd.split_whitespace().collect();
+    let output = Command::new(parts[0]).args(&parts[1..]).output();
+
+    match output {
+        Ok(out) if out.status.success() => {
+            let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            Ok(ToolStatus {
+                installed: true,
+                path: Some(path),
+            })
+        }
+        _ => Ok(ToolStatus {
+            installed: false,
+            path: None,
+        }),
+    }
+}
+
+// --- Model listing ---
+
+#[derive(Serialize, Clone)]
+pub struct AiReasoningLevel {
+    pub effort: String,
+    pub description: String,
+}
+
+#[derive(Serialize, Clone)]
+pub struct AiModel {
+    pub slug: String,
+    pub display_name: String,
+    pub description: String,
+    pub default_reasoning_level: String,
+    pub supported_reasoning_levels: Vec<AiReasoningLevel>,
+    pub provider: String,
+}
+
+#[derive(Deserialize)]
+struct ModelsCache {
+    models: Vec<ModelEntry>,
+}
+
+#[derive(Deserialize)]
+struct ModelEntry {
+    slug: String,
+    display_name: Option<String>,
+    description: Option<String>,
+    default_reasoning_level: Option<String>,
+    supported_reasoning_levels: Option<Vec<ReasoningEntry>>,
+    visibility: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ReasoningEntry {
+    effort: String,
+    description: Option<String>,
+}
+
+#[tauri::command]
+pub fn list_ai_models(provider: String) -> Result<Vec<AiModel>, String> {
+    match provider.as_str() {
+        "codex" => {
+            let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+            let cache_path = home.join(".codex").join("models_cache.json");
+
+            if !cache_path.exists() {
+                return Ok(vec![]);
+            }
+
+            let content = std::fs::read_to_string(&cache_path)
+                .map_err(|e| format!("Failed to read cache: {}", e))?;
+            let cache: ModelsCache = serde_json::from_str(&content)
+                .map_err(|e| format!("Failed to parse cache: {}", e))?;
+
+            let models = cache
+                .models
+                .into_iter()
+                .filter(|m| m.visibility.as_deref() == Some("list"))
+                .map(|m| AiModel {
+                    display_name: m.display_name.unwrap_or_else(|| m.slug.clone()),
+                    description: m.description.unwrap_or_default(),
+                    default_reasoning_level: m.default_reasoning_level.unwrap_or_default(),
+                    supported_reasoning_levels: m
+                        .supported_reasoning_levels
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|r| AiReasoningLevel {
+                            effort: r.effort,
+                            description: r.description.unwrap_or_default(),
+                        })
+                        .collect(),
+                    slug: m.slug,
+                    provider: "codex".to_string(),
+                })
+                .collect();
+
+            Ok(models)
+        }
+        "claude" => {
+            let levels = vec![
+                AiReasoningLevel { effort: "low".to_string(), description: "Low reasoning effort".to_string() },
+                AiReasoningLevel { effort: "medium".to_string(), description: "Medium reasoning effort".to_string() },
+                AiReasoningLevel { effort: "high".to_string(), description: "High reasoning effort".to_string() },
+            ];
+            let models = vec![
+                AiModel {
+                    slug: "claude-sonnet-4-6".to_string(),
+                    display_name: "Claude Sonnet 4.6".to_string(),
+                    description: "Balanced performance and speed".to_string(),
+                    default_reasoning_level: "medium".to_string(),
+                    supported_reasoning_levels: levels.clone(),
+                    provider: "claude".to_string(),
+                },
+                AiModel {
+                    slug: "claude-opus-4-6".to_string(),
+                    display_name: "Claude Opus 4.6".to_string(),
+                    description: "Most capable model".to_string(),
+                    default_reasoning_level: "medium".to_string(),
+                    supported_reasoning_levels: levels.clone(),
+                    provider: "claude".to_string(),
+                },
+                AiModel {
+                    slug: "claude-haiku-4-5".to_string(),
+                    display_name: "Claude Haiku 4.5".to_string(),
+                    description: "Fastest model".to_string(),
+                    default_reasoning_level: "low".to_string(),
+                    supported_reasoning_levels: levels,
+                    provider: "claude".to_string(),
+                },
+            ];
+            Ok(models)
+        }
+        _ => Err(format!("Unknown provider: {}", provider)),
+    }
+}
+
+// --- AI message handling ---
+
+#[derive(Serialize, Clone)]
+struct CodexItemEvent {
+    id: String,
+    item_type: String,
+    text: Option<String>,
+    command: Option<String>,
+    aggregated_output: Option<String>,
+    exit_code: Option<i64>,
+    status: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
+struct CodexTurnCompleted {
+    input_tokens: u64,
+    cached_input_tokens: u64,
+    output_tokens: u64,
+}
+
+fn extract_item_event(item: &Value) -> Option<CodexItemEvent> {
+    Some(CodexItemEvent {
+        id: item.get("id")?.as_str()?.to_string(),
+        item_type: item.get("type")?.as_str()?.to_string(),
+        text: item.get("text").and_then(|v| v.as_str()).map(String::from),
+        command: item.get("command").and_then(|v| v.as_str()).map(String::from),
+        aggregated_output: item
+            .get("aggregated_output")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+        exit_code: item.get("exit_code").and_then(|v| v.as_i64()),
+        status: item.get("status").and_then(|v| v.as_str()).map(String::from),
+    })
+}
+
+fn parse_codex_event(event: &Value, app_handle: &tauri::AppHandle) {
+    let event_type = event.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match event_type {
+        "item.started" | "item.completed" => {
+            if let Some(item) = event.get("item") {
+                if let Some(payload) = extract_item_event(item) {
+                    let tauri_event = if event_type == "item.started" {
+                        "ai-event-item-started"
+                    } else {
+                        "ai-event-item-completed"
+                    };
+                    let _ = app_handle.emit(tauri_event, &payload);
+                }
+            }
+        }
+        "turn.completed" => {
+            let usage = extract_usage(event);
+            let _ = app_handle.emit("ai-event-turn-completed", &usage);
+        }
+        _ => {}
+    }
+}
+
+fn parse_claude_event(event: &Value, app_handle: &tauri::AppHandle) {
+    let event_type = event.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match event_type {
+        "assistant" => {
+            if let Some(message) = event.get("message") {
+                if let Some(content) = message.get("content").and_then(|c| c.as_array()) {
+                    for block in content {
+                        let block_type = block.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                        let item_type = match block_type {
+                            "thinking" => "reasoning",
+                            _ => "agent_message",
+                        };
+                        let text = block.get("text").and_then(|v| v.as_str())
+                            .or_else(|| block.get("thinking").and_then(|v| v.as_str()))
+                            .map(String::from);
+                        let payload = CodexItemEvent {
+                            id: uuid_v4(),
+                            item_type: item_type.to_string(),
+                            text,
+                            command: None,
+                            aggregated_output: None,
+                            exit_code: None,
+                            status: Some("completed".to_string()),
+                        };
+                        let _ = app_handle.emit("ai-event-item-completed", &payload);
+                    }
+                }
+            }
+        }
+        "result" => {
+            let usage = extract_usage(event);
+            let _ = app_handle.emit("ai-event-turn-completed", &usage);
+        }
+        _ => {}
+    }
+}
+
+fn uuid_v4() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("claude-{}", t)
+}
+
+
+fn extract_usage(event: &Value) -> CodexTurnCompleted {
+    let usage = event.get("usage").cloned().unwrap_or(Value::Null);
+    CodexTurnCompleted {
+        input_tokens: usage
+            .get("input_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
+        cached_input_tokens: usage
+            .get("cached_input_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
+        output_tokens: usage
+            .get("output_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
+    }
+}
+
+#[tauri::command]
+pub fn send_ai_message(
+    provider: String,
+    message: String,
+    model: Option<String>,
+    reasoning_effort: Option<String>,
+    app: tauri::AppHandle,
+    state: State<'_, AiProcessState>,
+) -> Result<(), String> {
+    // Kill any existing process
+    if let Ok(mut guard) = state.0.lock() {
+        if let Some(mut child) = guard.take() {
+            let _ = child.kill();
+        }
+    }
+
+    let mut child = match provider.as_str() {
+        "claude" => {
+            let mut cmd = Command::new("claude");
+            cmd.arg("-p").arg("--output-format").arg("stream-json");
+            if let Some(ref m) = model {
+                if !m.is_empty() {
+                    cmd.arg("--model").arg(m);
+                }
+            }
+            cmd.arg(&message);
+            // Remove CLAUDECODE env var to avoid nested-session error
+            cmd.env_remove("CLAUDECODE");
+            cmd.stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|e| format!("Failed to start claude: {}", e))?
+        }
+        _ => {
+            // Default: codex
+            let mut cmd = Command::new("codex");
+            cmd.arg("exec").arg("--json");
+            if let Some(ref m) = model {
+                if !m.is_empty() {
+                    cmd.arg("--model").arg(m);
+                }
+            }
+            if let Some(ref effort) = reasoning_effort {
+                if !effort.is_empty() {
+                    cmd.arg("-c").arg(format!("model_reasoning_effort=\"{}\"", effort));
+                }
+            }
+            cmd.arg(&message);
+            cmd.stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|e| format!("Failed to start codex: {}", e))?
+        }
+    };
+
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+
+    // Store child process handle for cancellation
+    if let Ok(mut guard) = state.0.lock() {
+        *guard = Some(child);
+    }
+
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            match line {
+                Ok(text) => {
+                    let text = text.trim().to_string();
+                    if text.is_empty() {
+                        continue;
+                    }
+
+                    let event: Value = match serde_json::from_str(&text) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            let _ = app_handle.emit("ai-chat-chunk", &text);
+                            continue;
+                        }
+                    };
+
+                    if provider == "claude" {
+                        parse_claude_event(&event, &app_handle);
+                    } else {
+                        parse_codex_event(&event, &app_handle);
+                    }
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("ai-chat-error", e.to_string());
+                    break;
+                }
+            }
+        }
+        let _ = app_handle.emit("ai-chat-done", ());
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn cancel_ai_message(state: State<'_, AiProcessState>) -> Result<(), String> {
+    if let Ok(mut guard) = state.0.lock() {
+        if let Some(mut child) = guard.take() {
+            child
+                .kill()
+                .map_err(|e| format!("Failed to kill process: {}", e))?;
+        }
+    }
+    Ok(())
+}

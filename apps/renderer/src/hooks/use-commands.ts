@@ -6,6 +6,9 @@ import { useTranslation } from 'react-i18next'
 import type { Command, CommandResult } from '@/commands/types'
 import { getAppCommands, getFileCommands } from '@/commands'
 import { getMRunnerCommands } from '@/core/commands'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('commands')
 
 import { useChromeProfiles } from './use-chrome-profiles'
 import { useFolderSettings } from './use-folder-settings'
@@ -91,7 +94,7 @@ export function useCommands(): UseCommandsReturn {
 				}
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error)
-				console.error('Command execution failed:', message)
+				logger.error('Command execution failed', { error: message })
 				return { success: false, error: message }
 			}
 		},

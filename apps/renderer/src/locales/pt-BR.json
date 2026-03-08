@@ -69,7 +69,9 @@
 		"internal": "Atalhos Internos",
 		"custom": "Atalhos Customizados",
 		"conflictWarning": "Este atalho está em conflito com outro",
-		"resetTooltip": "Restaurar padrão"
+		"resetTooltip": "Restaurar padrão",
+		"pressKeys": "Pressione uma combinação de teclas...",
+		"clickToRecord": "Clique para gravar"
 	},
 	"actions": {
 		"skip": "Pular",
@@ -110,6 +112,7 @@
 		"bookmarkShortcuts": "Atalhos de Bookmarks",
 		"tabGlobal": "Global",
 		"tabBookmarks": "Bookmarks",
+		"tabTools": "Ferramentas",
 		"close": "fechar",
 		"navigate": "navegar",
 		"switchTab": "trocar aba",
@@ -135,6 +138,45 @@
 		"Bookmarks": "Bookmarks",
 		"Commands": "Comandos",
 		"Plugins": "Plugins",
-		"Chrome": "Chrome"
+		"Chrome": "Chrome",
+		"Tools": "Ferramentas"
+	},
+	"tools": {
+		"title": "Ferramentas",
+		"aiTools": "Ferramentas de IA",
+		"installed": "Instalado",
+		"notInstalled": "Não instalado",
+		"notInstalledTitle": "{{name}} não está instalado",
+		"notInstalledDescription": "Instale para usar esta ferramenta.",
+		"installLinux": "Instalar no Linux",
+		"installWindows": "Instalar no Windows",
+		"openDocs": "Ver documentação",
+		"detectedPath": "Caminho: {{path}}",
+		"model": "Modelo",
+		"selectModel": "Selecione um modelo",
+		"reasoningEffort": "Esforco de Raciocinio",
+		"selectReasoning": "Selecione o nivel de esforco",
+		"checking": "Verificando...",
+		"slashHint": "Tab para ativar",
+		"slashPlaceholder": "Digite / para ver ferramentas disponíveis",
+		"defaultProvider": "Provedor Padrão",
+		"selectProvider": "Selecione o provedor"
+	},
+	"chat": {
+		"title": "Perguntar à IA",
+		"placeholder": "Digite sua mensagem...",
+		"followUp": "Faça uma pergunta complementar...",
+		"send": "Enviar",
+		"stop": "Parar",
+		"back": "Voltar",
+		"thinking": "Pensando...",
+		"thoughtFor": "Pensou por {{seconds}}s",
+		"inputTokens": "In: {{count}}",
+		"outputTokens": "Out: {{count}}",
+		"errorGeneric": "Algo deu errado. Tente novamente.",
+		"errorNotInstalled": "Ferramenta de IA não disponível.",
+		"selectModel": "Selecionar modelo",
+		"searchModels": "Buscar modelos...",
+		"noModelsFound": "Nenhum modelo encontrado."
 	}
 }

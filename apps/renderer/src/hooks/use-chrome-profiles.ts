@@ -4,6 +4,12 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { Command } from '@/commands/types'
 import type { PlatformInfo } from '@/hooks/use-platform'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('chrome')
+
+// Module-level cache to avoid re-fetching on component remounts
+let profilesCache: ChromeProfile[] | null = null
 
 export interface ChromeProfile {
 	directory: string
@@ -52,16 +58,22 @@ export function useChromeProfiles(
 	const [error, setError] = useState<string | null>(null)
 
 	const refresh = useCallback(async () => {
+		if (profilesCache) {
+			setProfiles(profilesCache)
+			return
+		}
+
 		setLoading(true)
 		setError(null)
 		try {
 			const results = await invoke<ChromeProfile[]>('list_chrome_profiles')
-			console.log('Chrome profiles loaded:', results)
+			logger.info('Chrome profiles loaded', { count: results.length })
+			profilesCache = results
 			setProfiles(results)
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
 			setError(message)
-			console.error('Chrome profiles error:', message)
+			logger.error('Chrome profiles error', { error: message })
 		} finally {
 			setLoading(false)
 		}

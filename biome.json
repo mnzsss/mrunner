@@ -1,21 +1,24 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
-		"useIgnoreFile": true
+		"useIgnoreFile": true,
+		"defaultBranch": "master"
 	},
 	"files": {
 		"includes": [
 			"**",
 			"!**/dist",
 			"!src-tauri/gen",
+			"!apps/launcher/gen",
 			"!.claude"
 		]
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab"
+		"indentStyle": "tab",
+		"lineEnding": "lf"
 	},
 	"linter": {
 		"enabled": true,
@@ -26,15 +29,50 @@
 				"noLabelWithoutControl": "off"
 			},
 			"suspicious": {
-				"noArrayIndexKey": "off"
+				"noArrayIndexKey": "off",
+				"noConsole": {
+					"level": "warn",
+					"options": {
+						"allow": ["warn", "error", "info"]
+					}
+				}
+			},
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error"
+			},
+			"style": {
+				"useNamingConvention": {
+					"level": "warn",
+					"options": {
+						"strictCase": false,
+						"requireAscii": true
+					}
+				}
+			},
+			"complexity": {
+				"noExcessiveCognitiveComplexity": {
+					"level": "warn",
+					"options": {
+						"maxAllowedComplexity": 25
+					}
+				}
+			},
+			"nursery": {
+				"useSortedClasses": {
+					"level": "warn",
+					"fix": "safe",
+					"options": {
+						"functions": ["cn", "clsx", "cva"]
+					}
+				}
 			}
 		}
 	},
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
-			"semicolons": "asNeeded",
-			"indentStyle": "tab"
+			"semicolons": "asNeeded"
 		}
 	},
 	"css": {
@@ -51,9 +89,36 @@
 	},
 	"json": {
 		"formatter": {
-			"enabled": false
+			"enabled": true,
+			"indentStyle": "tab"
 		}
 	},
+	"overrides": [
+		{
+			"includes": [
+				"apps/renderer/src/core/types/tools.ts",
+				"apps/renderer/src/hooks/use-platform.ts",
+				"apps/renderer/src/lib/hotkey-adapter.ts"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"useNamingConvention": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/vite.config.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useNamingConvention": "off"
+					}
+				}
+			}
+		}
+	],
 	"assist": {
 		"enabled": true,
 		"actions": {
@@ -63,18 +128,10 @@
 					"options": {
 						"groups": [
 							{
-								"source": [
-									":PACKAGE:",
-									":NODE:",
-									"!@/**"
-								],
+								"source": [":PACKAGE:", ":NODE:", "!@/**"],
 								"type": true
 							},
-							[
-								":PACKAGE:",
-								":NODE:",
-								"!@/**"
-							],
+							[":PACKAGE:", ":NODE:", "!@/**"],
 							":BLANK_LINE:",
 							{
 								"source": "@/**",

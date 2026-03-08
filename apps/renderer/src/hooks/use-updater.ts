@@ -2,6 +2,10 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { check, type Update } from '@tauri-apps/plugin-updater'
 import { useCallback, useEffect, useState } from 'react'
 
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('updater')
+
 export interface UpdateProgress {
 	downloaded: number
 	total: number | null
@@ -27,6 +31,9 @@ export function useUpdater(): UseUpdaterReturn {
 	const [dismissed, setDismissed] = useState(false)
 
 	const checkForUpdates = useCallback(async () => {
+		// Skip update checks in dev mode (no releases exist yet)
+		if (import.meta.env.DEV) return
+
 		setChecking(true)
 		setError(null)
 
@@ -37,11 +44,22 @@ export function useUpdater(): UseUpdaterReturn {
 			}
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
-			// Don't show error for network issues during check
-			if (!message.includes('network') && !message.includes('fetch')) {
+			const lowerMessage = message.toLowerCase()
+
+			// Silently ignore non-actionable errors:
+			// - network/fetch failures (offline, DNS, etc.)
+			// - 404 / missing release JSON (no releases published yet)
+			const isIgnorable =
+				lowerMessage.includes('network') ||
+				lowerMessage.includes('fetch') ||
+				lowerMessage.includes('status code') ||
+				lowerMessage.includes('release json') ||
+				lowerMessage.includes('404')
+
+			if (!isIgnorable) {
 				setError(message)
 			}
-			console.error('Update check failed:', message)
+			logger.error('Update check failed', { error: message })
 		} finally {
 			setChecking(false)
 		}
@@ -74,7 +92,7 @@ export function useUpdater(): UseUpdaterReturn {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
 			setError(message)
-			console.error('Update failed:', message)
+			logger.error('Update failed', { error: message })
 		} finally {
 			setDownloading(false)
 		}
