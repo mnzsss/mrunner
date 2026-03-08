@@ -31,6 +31,9 @@ export function useUpdater(): UseUpdaterReturn {
 	const [dismissed, setDismissed] = useState(false)
 
 	const checkForUpdates = useCallback(async () => {
+		// Skip update checks in dev mode (no releases exist yet)
+		if (import.meta.env.DEV) return
+
 		setChecking(true)
 		setError(null)
 
@@ -41,8 +44,19 @@ export function useUpdater(): UseUpdaterReturn {
 			}
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
-			// Don't show error for network issues during check
-			if (!message.includes('network') && !message.includes('fetch')) {
+			const lowerMessage = message.toLowerCase()
+
+			// Silently ignore non-actionable errors:
+			// - network/fetch failures (offline, DNS, etc.)
+			// - 404 / missing release JSON (no releases published yet)
+			const isIgnorable =
+				lowerMessage.includes('network') ||
+				lowerMessage.includes('fetch') ||
+				lowerMessage.includes('status code') ||
+				lowerMessage.includes('release json') ||
+				lowerMessage.includes('404')
+
+			if (!isIgnorable) {
 				setError(message)
 			}
 			logger.error('Update check failed', { error: message })
