@@ -1,0 +1,55 @@
+# Ralph Progress Log
+Started: Sat Mar  8 02:00:00 PM -03 2026
+---
+
+## Codebase Patterns
+- pnpm check = biome lint/format only (exit 0 = pass). tsc must be run separately in apps/renderer.
+- cargo check -p mrunner validates all Rust changes.
+- All frontend user-facing text must use t() with keys in both en.json and pt-BR.json.
+- UserPreferences stored in ~/.config/mrunner[-dev]/preferences.json, validated with UserPreferencesSchema (zod).
+- Tauri commands registered in apps/launcher/src/lib.rs invoke_handler array.
+- @mrunner/ui exports from packages/ui/src/index.ts; ai-elements via @mrunner/ui/ai-elements/*.
+- Config file I/O is now centralized in apps/renderer/src/lib/config-file.ts: getConfigFilePath, ensureConfigDir, readConfigFile<T>, writeConfigFile<T>. Import from @/lib/config-file.
+- Keyboard shortcuts types in apps/renderer/src/core/types/shortcuts.ts: Hotkey { modifiers: Modifier[], key: string }, ShortcutConfig { id, type, context, hotkey, action, enabled, isCustom }.
+- Global shortcuts sync to Rust via invoke('sync_global_shortcuts') — only type=global shortcuts.
+- Internal shortcuts now use getHotkeyManager().register() from @tanstack/react-hotkeys — only type=internal, context=launcher. HotkeysProvider wraps app in main.tsx.
+- HotkeyPicker at apps/renderer/src/components/shortcuts/hotkey-picker.tsx records via onKeyDown.
+- @tanstack/react-hotkeys installed (v0.4.0). Adapter at apps/renderer/src/lib/hotkey-adapter.ts: hotkeyToTanStack(Hotkey)->string, tanStackToHotkey(string)->Hotkey. Mod=Super on Linux, Mod=Meta on Mac.
+- Shortcut consumers: App.tsx, settings-sheet.tsx, setup.tsx, shortcut-item.tsx.
+- command.ts (347 lines) has types (lines 5-117), guards (lines 153-183), Zod schemas (lines 185-270), plugin functions (lines 306-346). 19 files import from it via @/commands/types or @/core/types.
+- useBookmarks has 6 responsibilities: CRUD, interactions (open/copy), tag management, state, Tauri invocations, parseQuery utility.
+---
+
+## 2026-03-08 - US-001
+- Created apps/renderer/src/lib/config-file.ts with getConfigFilePath, ensureConfigDir, readConfigFile<T>, writeConfigFile<T>
+- Refactored use-shortcuts-settings.ts to remove getConfigPath/ensureConfigDir and use readConfigFile/writeConfigFile
+- Refactored use-folder-settings.ts to remove getConfigPath/ensureConfigDir and use readConfigFile/writeConfigFile
+- Files changed: apps/renderer/src/lib/config-file.ts (new), apps/renderer/src/hooks/use-shortcuts-settings.ts, apps/renderer/src/hooks/use-folder-settings.ts
+- **Learnings for future iterations:**
+  - readConfigFile<T> returns T (already JSON.parsed) or the fallback — callers don't need to JSON.parse again
+  - CONFIG_DIR uses DEV mode suffix in config-file.ts, so useFolderSettings (which had hardcoded mrunner without -dev) now correctly respects dev mode
+  - Pre-existing tsc errors exist in ai-chat-view.tsx, tools-tab.tsx, use-ai-models.ts — not introduced by this story
+---
+
+## 2026-03-08 - US-002
+- Installed @tanstack/react-hotkeys in apps/renderer
+- Created apps/renderer/src/lib/hotkey-adapter.ts with hotkeyToTanStack and tanStackToHotkey
+- Files changed: apps/renderer/package.json, pnpm-lock.yaml, apps/renderer/src/lib/hotkey-adapter.ts (new)
+- **Learnings for future iterations:**
+  - @tanstack/react-hotkeys v0.4.0 exists; API: useHotkey, useHotkeyRecorder, formatForDisplay, getHotkeyManager from @tanstack/react-hotkeys
+  - TanStack 'Mod' = Meta on macOS, Control elsewhere. MRunner uses Super (Linux global) and Meta (Mac); both collapse to Mod in hotkeyToTanStack
+  - tanStackToHotkey resolves Mod -> Super (Linux) or Meta (macOS) via navigator.userAgent check
+  - Platform detection: /Mac/i.test(navigator.userAgent) is reliable for renderer context (Tauri WebView)
+  - hotkeyToTanStack deduplicates via Set — safe if both Meta and Super appear in modifiers array
+---
+
+## 2026-03-08 - US-003
+- Added HotkeysProvider from @tanstack/react-hotkeys wrapping BrowserRouter in apps/renderer/src/main.tsx
+- Rewrote useKeyboardShortcuts to use getHotkeyManager().register() instead of window.addEventListener('keydown')
+- Each active internal launcher shortcut registers via hotkeyToTanStack conversion; all handles unregistered on cleanup
+- Files changed: apps/renderer/src/hooks/use-keyboard-shortcuts.ts, apps/renderer/src/main.tsx
+- **Learnings for future iterations:**
+  - TanStack's Hotkey type is a complex template literal union — plain strings must be cast as `unknown as RegisterableHotkey` to satisfy the type
+  - HotkeysProvider is required in the React tree for hooks (useHotkey etc.) but getHotkeyManager() singleton works without it; add HotkeysProvider anyway for consistency
+  - pnpm check (biome) reorders type imports before value imports automatically
+---
