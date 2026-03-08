@@ -11,6 +11,7 @@
 	"dependencies": {
 		"@mrunner/ui": "workspace:*",
 		"@sentry/react": "^8.52.0",
+		"@tanstack/react-hotkeys": "^0.4.0",
 		"@tauri-apps/api": "^2.1.1",
 		"@tauri-apps/plugin-clipboard-manager": "^2.0.1",
 		"@tauri-apps/plugin-dialog": "^2.4.2",
