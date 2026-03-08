@@ -1,13 +1,11 @@
 {
 	"git": {
 		"commitMessage": "chore(release): v${version}",
-		"tagName": "v${version}",
-		"tagAnnotation": "Release v${version}",
+		"tag": false,
 		"requireBranch": false,
 		"requireCleanWorkingDir": true,
 		"requireUpstream": true,
-		"push": true,
-		"pushArgs": ["--follow-tags"]
+		"push": true
 	},
 	"npm": {
 		"publish": false
