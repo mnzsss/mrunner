@@ -209,6 +209,76 @@ fn extract_item_event(item: &Value) -> Option<CodexItemEvent> {
     })
 }
 
+fn parse_codex_event(event: &Value, app_handle: &tauri::AppHandle) {
+    let event_type = event.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match event_type {
+        "item.started" | "item.completed" => {
+            if let Some(item) = event.get("item") {
+                if let Some(payload) = extract_item_event(item) {
+                    let tauri_event = if event_type == "item.started" {
+                        "ai-event-item-started"
+                    } else {
+                        "ai-event-item-completed"
+                    };
+                    let _ = app_handle.emit(tauri_event, &payload);
+                }
+            }
+        }
+        "turn.completed" => {
+            let usage = extract_usage(event);
+            let _ = app_handle.emit("ai-event-turn-completed", &usage);
+        }
+        _ => {}
+    }
+}
+
+fn parse_claude_event(event: &Value, app_handle: &tauri::AppHandle) {
+    let event_type = event.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match event_type {
+        "assistant" => {
+            if let Some(message) = event.get("message") {
+                if let Some(content) = message.get("content").and_then(|c| c.as_array()) {
+                    for block in content {
+                        let block_type = block.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                        let item_type = match block_type {
+                            "thinking" => "reasoning",
+                            _ => "agent_message",
+                        };
+                        let text = block.get("text").and_then(|v| v.as_str())
+                            .or_else(|| block.get("thinking").and_then(|v| v.as_str()))
+                            .map(String::from);
+                        let payload = CodexItemEvent {
+                            id: uuid_v4(),
+                            item_type: item_type.to_string(),
+                            text,
+                            command: None,
+                            aggregated_output: None,
+                            exit_code: None,
+                            status: Some("completed".to_string()),
+                        };
+                        let _ = app_handle.emit("ai-event-item-completed", &payload);
+                    }
+                }
+            }
+        }
+        "result" => {
+            let usage = extract_usage(event);
+            let _ = app_handle.emit("ai-event-turn-completed", &usage);
+        }
+        _ => {}
+    }
+}
+
+fn uuid_v4() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("claude-{}", t)
+}
+
+
 fn extract_usage(event: &Value) -> CodexTurnCompleted {
     let usage = event.get("usage").cloned().unwrap_or(Value::Null);
     CodexTurnCompleted {
@@ -308,29 +378,10 @@ pub fn send_ai_message(
                         }
                     };
 
-                    let event_type = event
-                        .get("type")
-                        .and_then(|t| t.as_str())
-                        .unwrap_or("");
-
-                    match event_type {
-                        "item.started" | "item.completed" => {
-                            if let Some(item) = event.get("item") {
-                                if let Some(payload) = extract_item_event(item) {
-                                    let tauri_event = if event_type == "item.started" {
-                                        "ai-event-item-started"
-                                    } else {
-                                        "ai-event-item-completed"
-                                    };
-                                    let _ = app_handle.emit(tauri_event, &payload);
-                                }
-                            }
-                        }
-                        "turn.completed" => {
-                            let usage = extract_usage(&event);
-                            let _ = app_handle.emit("ai-event-turn-completed", &usage);
-                        }
-                        _ => {}
+                    if provider == "claude" {
+                        parse_claude_event(&event, &app_handle);
+                    } else {
+                        parse_codex_event(&event, &app_handle);
                     }
                 }
                 Err(e) => {
