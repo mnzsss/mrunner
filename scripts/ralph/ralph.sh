@@ -7,7 +7,7 @@ set -e
 
 # Parse arguments
 TOOL="claude"
-MODEL="claude-sonnet-4.6"
+MODEL="claude-sonnet-4-6"
 MAX_ITERATIONS=10
 LOOP_MODE=false
 
