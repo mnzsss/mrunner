@@ -26,6 +26,16 @@ pub fn check_tool_installed(tool_id: String) -> Result<ToolStatus, String> {
                 "which codex"
             }
         }
+        "claude" => {
+            #[cfg(target_os = "windows")]
+            {
+                "where claude"
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                "which claude"
+            }
+        }
         _ => return Err(format!("Unknown tool: {}", tool_id)),
     };
 
