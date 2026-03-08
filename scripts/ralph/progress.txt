@@ -129,3 +129,17 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - ValidatedPluginConfig is z.infer<typeof PluginConfigSchema> — it moves to plugin-loader.ts with the schema
   - 4 pre-existing tsc errors (ai-chat-view, tools-tab, use-ai-models) are unrelated to this split
 ---
+
+## 2026-03-08 - US-010
+- pnpm check passes (biome, 128 files, no fixes needed)
+- cargo check -p mrunner passes
+- CGC re-analysis: deleted stale graph, re-indexed 198 files
+- useBookmarks: CC=30 → CC=20 (extracted tags + actions hooks)
+- useKeyboardShortcuts: CC=25 → no longer in top 10 (TanStack migration)
+- command.ts: 0 functions remain (all 11 extracted to command-guards.ts and plugin-loader.ts)
+- No new lint or type errors introduced (4 pre-existing tsc errors unchanged)
+- Files changed: scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - CGC requires delete+re-add to pick up changes (add_code_to_graph returns "already indexed" on existing repos)
+  - After re-index, complexity results reflect the refactored codebase accurately
+---

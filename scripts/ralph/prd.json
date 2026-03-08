@@ -154,7 +154,7 @@
         "No new lint or type errors introduced"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Use CodeGraphContext MCP tools for re-analysis. May need to re-index the repo first via add_code_to_graph."
     }
   ]
