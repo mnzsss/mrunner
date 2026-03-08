@@ -116,3 +116,16 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - bookmark-actions.tsx did NOT destructure bookmarks previously — must add it when refactoring to pass to the new actions hook
   - useBookmarkActions is "stateless" in the sense of no useState, but accepts bookmarks[] as parameter for the fallback behavior
 ---
+
+## 2026-03-08 - US-009
+- Created apps/renderer/src/core/types/command-guards.ts with 7 type guard functions (isShellAction, isOpenAction, isUrlAction, isFunctionAction, isSubmenuAction, isInputAction, isDialogAction)
+- Created apps/renderer/src/core/types/plugin-loader.ts with PluginConfigSchema, ValidatedPluginConfig, validatePluginConfig, parsePluginConfig, safeParsePluginConfig, pluginToCommand; imports CommandIconSchema from command.ts
+- Cleaned up command.ts: removed guard functions and all plugin-specific Zod/functions; exported CommandIconSchema (needed by plugin-loader.ts and FolderConfigSchema)
+- Updated core/types/index.ts to re-export from all 3 files; all 19 importing files resolve via the barrel without changes
+- Files changed: apps/renderer/src/core/types/command.ts, apps/renderer/src/core/types/command-guards.ts (new), apps/renderer/src/core/types/plugin-loader.ts (new), apps/renderer/src/core/types/index.ts
+- **Learnings for future iterations:**
+  - CommandIconSchema must be exported from command.ts because both FolderConfigSchema (stays in command.ts) and PluginConfigSchema (in plugin-loader.ts) use it
+  - The barrel index.ts means no consumer files need to change when splitting internal modules
+  - ValidatedPluginConfig is z.infer<typeof PluginConfigSchema> — it moves to plugin-loader.ts with the schema
+  - 4 pre-existing tsc errors (ai-chat-view, tools-tab, use-ai-models) are unrelated to this split
+---

@@ -139,7 +139,7 @@
         "pnpm check passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "command.ts is at apps/renderer/src/core/types/command.ts. The barrel re-export at apps/renderer/src/core/types/index.ts must re-export everything for backward compatibility. 19 files import from @/commands/types or @/core/types. Guards are lines ~153-183, plugin functions lines ~306-346, Zod schemas lines ~185-270."
     },
     {
