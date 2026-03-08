@@ -13,7 +13,7 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
 - Keyboard shortcuts types in apps/renderer/src/core/types/shortcuts.ts: Hotkey { modifiers: Modifier[], key: string }, ShortcutConfig { id, type, context, hotkey, action, enabled, isCustom }.
 - Global shortcuts sync to Rust via invoke('sync_global_shortcuts') — only type=global shortcuts.
 - Internal shortcuts now use getHotkeyManager().register() from @tanstack/react-hotkeys — only type=internal, context=launcher. HotkeysProvider wraps app in main.tsx.
-- HotkeyPicker at apps/renderer/src/components/shortcuts/hotkey-picker.tsx records via onKeyDown.
+- HotkeyPicker at apps/renderer/src/components/shortcuts/hotkey-picker.tsx uses useHotkeyRecorder; recording starts on click, cancels on blur/Escape. Display via formatForDisplay(hotkeyToTanStack(value)).
 - @tanstack/react-hotkeys installed (v0.4.0). Adapter at apps/renderer/src/lib/hotkey-adapter.ts: hotkeyToTanStack(Hotkey)->string, tanStackToHotkey(string)->Hotkey. Mod=Super on Linux, Mod=Meta on Mac.
 - Shortcut consumers: App.tsx, settings-sheet.tsx, setup.tsx, shortcut-item.tsx.
 - command.ts (347 lines) has types (lines 5-117), guards (lines 153-183), Zod schemas (lines 185-270), plugin functions (lines 306-346). 19 files import from it via @/commands/types or @/core/types.
@@ -52,4 +52,20 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - TanStack's Hotkey type is a complex template literal union — plain strings must be cast as `unknown as RegisterableHotkey` to satisfy the type
   - HotkeysProvider is required in the React tree for hooks (useHotkey etc.) but getHotkeyManager() singleton works without it; add HotkeysProvider anyway for consistency
   - pnpm check (biome) reorders type imports before value imports automatically
+---
+
+## 2026-03-08 - US-004
+- Rewrote apps/renderer/src/components/shortcuts/hotkey-picker.tsx to use useHotkeyRecorder from @tanstack/react-hotkeys
+- onRecord converts TanStack Hotkey string to MRunner Hotkey via tanStackToHotkey; cast as string since TanStack Hotkey IS a string union
+- Display uses formatForDisplay(hotkeyToTanStack(value)) for platform-aware rendering; live preview uses formatForDisplay(recorder.recordedHotkey)
+- Recording starts on click, cancels on blur via cancelRecording(); Escape handled automatically by TanStack
+- Added i18n keys shortcuts.pressKeys and shortcuts.clickToRecord to en.json and pt-BR.json
+- Removed Kbd overlay chips — display is now the formatted string in the Input value
+- Files changed: apps/renderer/src/components/shortcuts/hotkey-picker.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+- **Learnings for future iterations:**
+  - useHotkeyRecorder options: onRecord (required), onCancel/onClear (optional) — omit optional callbacks if no-op
+  - recordedHotkey is Hotkey | null — safe to pass to formatForDisplay when non-null
+  - formatForDisplay accepts Hotkey | (string & {}) | ParsedHotkey — plain string from hotkeyToTanStack works
+  - setup.tsx passes placeholder={t('setup.hotkeyPlaceholder')} — kept placeholder prop in HotkeyPickerProps for compatibility
+  - US-005 i18n keys (pressKeys/clickToRecord) added here since CLAUDE.md mandates i18n for all user-facing text
 ---

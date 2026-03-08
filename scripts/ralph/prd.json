@@ -63,7 +63,7 @@
         "pnpm check passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Import useHotkeyRecorder and formatForDisplay from @tanstack/react-hotkeys. Import hotkeyToTanStack/tanStackToHotkey from @/lib/hotkey-adapter. Current component is at apps/renderer/src/components/shortcuts/hotkey-picker.tsx."
     },
     {
