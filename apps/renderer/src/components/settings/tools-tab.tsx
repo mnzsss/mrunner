@@ -29,9 +29,11 @@ export function ToolsSettingsTab() {
 		models,
 		selectedModel,
 		selectedReasoning,
+		activeProvider,
 		loading: modelsLoading,
 		setModel,
 		setReasoning,
+		setProvider,
 	} = useAIModels()
 
 	useEffect(() => {
@@ -64,6 +66,28 @@ export function ToolsSettingsTab() {
 			<h3 className="text-sm font-medium text-muted-foreground">
 				{t('tools.aiTools')}
 			</h3>
+
+			{/* Default provider selector */}
+			<div className="space-y-1.5">
+				<Label>{t('tools.defaultProvider')}</Label>
+				<Select
+					value={activeProvider}
+					onValueChange={(val) => {
+						void setProvider(val)
+					}}
+				>
+					<SelectTrigger>
+						<SelectValue placeholder={t('tools.selectProvider')} />
+					</SelectTrigger>
+					<SelectContent>
+						{TOOL_PROVIDERS.map((p) => (
+							<SelectItem key={p.id} value={p.id}>
+								{p.name}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
 
 			{/* Provider status */}
 			<div className="space-y-2">
