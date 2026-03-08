@@ -22,6 +22,7 @@ export interface UseDialogManagerReturn {
 	isFolderManagerOpen: boolean
 	isSettingsOpen: boolean
 	activeDialogs: number
+	nativeDialogCount: number
 
 	// Setters
 	setIsAddBookmarkOpen: (open: boolean) => void
@@ -165,6 +166,7 @@ export function useDialogManager({
 		isFolderManagerOpen,
 		isSettingsOpen,
 		activeDialogs,
+		nativeDialogCount: nestedDialogs,
 		setIsAddBookmarkOpen,
 		setEditDialog,
 		setDeleteDialog,

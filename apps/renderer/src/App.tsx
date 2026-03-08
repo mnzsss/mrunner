@@ -57,7 +57,7 @@ function App() {
 			setQuery('')
 			requestAnimationFrame(() => inputRef.current?.focus())
 		},
-		activeDialogs: dialogManager.activeDialogs + (isChatMode ? 1 : 0),
+		activeDialogs: dialogManager.nativeDialogCount + (isChatMode ? 1 : 0),
 	})
 
 	// Command data hook
