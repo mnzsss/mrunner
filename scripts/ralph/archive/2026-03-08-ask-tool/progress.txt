@@ -1,0 +1,41 @@
+# Ralph Progress Log
+Started: Sun Mar  8 02:43:50 AM -03 2026
+---
+
+## 2026-03-08T05:44 - US-001
+- Added 'claude' match arm to check_tool_installed in apps/launcher/src/tools.rs
+- Files changed: apps/launcher/src/tools.rs
+- **Learnings for future iterations:**
+  - check_tool_installed uses cfg macros for windows/non-windows to pick 'where' vs 'which'
+  - cargo check -p mrunner runs quickly (~0.5s) once built
+---
+
+## 2026-03-08T06:10 - US-001 through US-011 (batch)
+- US-001: Added 'claude' match arm to check_tool_installed in apps/launcher/src/tools.rs
+- US-002: Renamed CodexModel→AiModel, CodexReasoningLevel→AiReasoningLevel; added list_ai_models(provider) Tauri command; removed list_codex_models
+- US-003: Added provider param to send_ai_message; Claude spawns with -p --output-format stream-json; removed CLAUDECODE env var
+- US-004: Extracted parse_codex_event() and parse_claude_event() helpers; dispatch based on provider in streaming thread
+- US-005: Added AiModel/AiReasoningLevel to tools.ts; added Claude to TOOL_PROVIDERS; updated UserPreferences.tools.ai schema to activeProvider/providers[id] format
+- US-006: Added tools.defaultProvider, tools.selectProvider, chat.selectModel, chat.searchModels, chat.noModelsFound to en.json and pt-BR.json
+- US-007: Refactored useAIModels hook with activeProvider state, setProvider(), per-provider model/reasoning persistence, migration from old flat format
+- US-008: Added provider to UseAIChatOptions; pass provider to send_ai_message; checkToolInstalled uses active provider
+- US-009: Created packages/ui/src/components/ai-elements/model-selector.tsx with all compound components
+- US-010: Integrated ModelSelector into AIChatView; dynamic provider lookup; model selector in PromptInputTools
+- US-011: Added 'Default Provider' select dropdown to ToolsSettingsTab; uses activeProvider/setProvider
+- Files changed: apps/launcher/src/tools.rs, apps/launcher/src/lib.rs, apps/renderer/src/core/types/tools.ts, apps/renderer/src/core/types/command.ts, apps/renderer/src/hooks/use-ai-models.ts, apps/renderer/src/hooks/use-ai-chat.ts, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json, apps/renderer/src/components/ai-chat/ai-chat-view.tsx, apps/renderer/src/components/settings/tools-tab.tsx, packages/ui/src/components/ai-elements/model-selector.tsx
+- **Learnings for future iterations:**
+  - pnpm check runs biome only (not tsc); cargo check -p mrunner checks Rust
+  - UserPreferencesSchema uses zod with z.record() for provider map
+  - TOOL_PROVIDERS array drives both settings UI and chat UI - keep in sync with Rust check_tool_installed
+  - ModelSelector is exportable from @mrunner/ui/ai-elements/model-selector
+  - Claude stream-json events: type "assistant" with content array (text/thinking blocks); type "result" for completion
+  - Remove CLAUDECODE env var before spawning claude subprocess to avoid nested session errors
+---
+
+## Codebase Patterns
+- pnpm check = biome lint/format only (exit 0 = pass). tsc must be run separately in apps/renderer.
+- cargo check -p mrunner validates all Rust changes.
+- All frontend user-facing text must use t() with keys in both en.json and pt-BR.json.
+- UserPreferences stored in ~/.config/mrunner[-dev]/preferences.json, validated with UserPreferencesSchema (zod).
+- Tauri commands registered in apps/launcher/src/lib.rs invoke_handler array.
+- @mrunner/ui exports from packages/ui/src/index.ts; ai-elements via @mrunner/ui/ai-elements/*.
