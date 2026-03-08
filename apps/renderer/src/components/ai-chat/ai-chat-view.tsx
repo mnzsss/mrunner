@@ -11,6 +11,18 @@ import {
 	MessageResponse,
 } from '@mrunner/ui/ai-elements/message'
 import {
+	ModelSelector,
+	ModelSelectorContent,
+	ModelSelectorEmpty,
+	ModelSelectorGroup,
+	ModelSelectorInput,
+	ModelSelectorItem,
+	ModelSelectorList,
+	ModelSelectorLogo,
+	ModelSelectorName,
+	ModelSelectorTrigger,
+} from '@mrunner/ui/ai-elements/model-selector'
+import {
 	PromptInput,
 	PromptInputBody,
 	PromptInputFooter,
@@ -140,7 +152,8 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 	const sentInitialRef = useRef(false)
 
-	const { selectedModel, selectedReasoning } = useAIModels()
+	const { selectedModel, selectedReasoning, activeProvider, models, setModel } =
+		useAIModels()
 
 	const {
 		messages,
@@ -151,7 +164,11 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 		checkToolInstalled,
 		cancelStream,
 		clearChat,
-	} = useAIChat({ model: selectedModel, reasoningEffort: selectedReasoning })
+	} = useAIChat({
+		provider: activeProvider,
+		model: selectedModel,
+		reasoningEffort: selectedReasoning,
+	})
 
 	// Check tool on mount and send initial message
 	useEffect(() => {
@@ -230,7 +247,8 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 		)
 	}
 
-	const provider = TOOL_PROVIDERS[0]
+	const provider =
+		TOOL_PROVIDERS.find((p) => p.id === activeProvider) ?? TOOL_PROVIDERS[0]
 	if (!provider) return null
 
 	if (toolStatus && !toolStatus.installed) {
@@ -260,7 +278,9 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 				<Badge className={provider.color.badge}>/{provider.command}</Badge>
 				<span className="text-sm text-muted-foreground">{provider.name}</span>
 				{selectedModel && (
-					<span className="text-xs text-muted-foreground">{selectedModel}</span>
+					<span className="ml-1 text-xs text-muted-foreground">
+						{selectedModel}
+					</span>
 				)}
 				{isStreaming && (
 					<span className="ml-auto">
@@ -297,6 +317,41 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 					</PromptInputBody>
 					<PromptInputFooter>
 						<PromptInputTools>
+							<ModelSelector>
+								<ModelSelectorTrigger asChild>
+									<button
+										type="button"
+										className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+									>
+										<ModelSelectorLogo provider={activeProvider} />
+										<span>{selectedModel || t('chat.selectModel')}</span>
+									</button>
+								</ModelSelectorTrigger>
+								<ModelSelectorContent title={t('chat.selectModel')}>
+									<ModelSelectorInput placeholder={t('chat.searchModels')} />
+									<ModelSelectorList>
+										<ModelSelectorEmpty>
+											{t('chat.noModelsFound')}
+										</ModelSelectorEmpty>
+										<ModelSelectorGroup heading={provider.name}>
+											{models.map((m) => (
+												<ModelSelectorItem
+													key={m.slug}
+													value={m.display_name}
+													onSelect={() => {
+														void setModel(m.slug)
+													}}
+												>
+													<ModelSelectorLogo provider={m.provider} />
+													<ModelSelectorName>
+														{m.display_name}
+													</ModelSelectorName>
+												</ModelSelectorItem>
+											))}
+										</ModelSelectorGroup>
+									</ModelSelectorList>
+								</ModelSelectorContent>
+							</ModelSelector>
 							<Badge className={provider.color.badge}>
 								/{provider.command}
 							</Badge>
