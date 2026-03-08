@@ -8,6 +8,9 @@ import { createLogger } from '@/lib/logger'
 
 const logger = createLogger('chrome')
 
+// Module-level cache to avoid re-fetching on component remounts
+let profilesCache: ChromeProfile[] | null = null
+
 export interface ChromeProfile {
 	directory: string
 	name: string
@@ -55,11 +58,17 @@ export function useChromeProfiles(
 	const [error, setError] = useState<string | null>(null)
 
 	const refresh = useCallback(async () => {
+		if (profilesCache) {
+			setProfiles(profilesCache)
+			return
+		}
+
 		setLoading(true)
 		setError(null)
 		try {
 			const results = await invoke<ChromeProfile[]>('list_chrome_profiles')
 			logger.info('Chrome profiles loaded', { count: results.length })
+			profilesCache = results
 			setProfiles(results)
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)

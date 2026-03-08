@@ -20,6 +20,9 @@ const CONFIG_DIR = import.meta.env.DEV
 	: '.config/mrunner'
 const CONFIG_FILE = 'preferences.json'
 
+// Module-level cache to avoid re-fetching on component remounts
+const modelsCache = new Map<string, AiModel[]>()
+
 async function readPreferencesFile(
 	configPath: string,
 ): Promise<UserPreferences | null> {
@@ -65,13 +68,24 @@ export function useAIModels(): UseAIModelsReturn {
 
 	const loadModelsForProvider = useCallback(
 		async (provider: string) => {
-			logger.debug('loadModelsForProvider', { provider })
+			const cached = modelsCache.get(provider)
+			if (cached) {
+				logger.debug('loadModelsForProvider (cached)', { provider })
+				setModels(cached)
+			} else {
+				logger.debug('loadModelsForProvider', { provider })
+			}
 			setLoading(true)
 			try {
 				const [modelList, configPath] = await Promise.all([
-					invoke<AiModel[]>('list_ai_models', { provider }),
+					cached
+						? Promise.resolve(cached)
+						: invoke<AiModel[]>('list_ai_models', { provider }),
 					getConfigPath(),
 				])
+				if (!cached) {
+					modelsCache.set(provider, modelList)
+				}
 				logger.debug('models fetched', {
 					provider,
 					count: modelList.length,
