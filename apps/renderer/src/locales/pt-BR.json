@@ -69,7 +69,9 @@
 		"internal": "Atalhos Internos",
 		"custom": "Atalhos Customizados",
 		"conflictWarning": "Este atalho está em conflito com outro",
-		"resetTooltip": "Restaurar padrão"
+		"resetTooltip": "Restaurar padrão",
+		"pressKeys": "Pressione uma combinação de teclas...",
+		"clickToRecord": "Clique para gravar"
 	},
 	"actions": {
 		"skip": "Pular",

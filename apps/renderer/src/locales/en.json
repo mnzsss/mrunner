@@ -69,7 +69,9 @@
 		"internal": "Internal Shortcuts",
 		"custom": "Custom Shortcuts",
 		"conflictWarning": "This shortcut conflicts with another",
-		"resetTooltip": "Restore default"
+		"resetTooltip": "Restore default",
+		"pressKeys": "Press a key combination...",
+		"clickToRecord": "Click to record"
 	},
 	"actions": {
 		"skip": "Skip",
