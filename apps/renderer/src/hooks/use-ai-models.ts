@@ -19,15 +19,18 @@ const CONFIG_FILE = 'preferences.json'
 
 export interface UseAIModelsReturn {
 	models: AiModel[]
+	activeProvider: string
 	selectedModel: string
 	selectedReasoning: string
 	loading: boolean
+	setProvider: (provider: string) => Promise<void>
 	setModel: (slug: string) => Promise<void>
 	setReasoning: (effort: string) => Promise<void>
 }
 
 export function useAIModels(): UseAIModelsReturn {
 	const [models, setModels] = useState<AiModel[]>([])
+	const [activeProvider, setActiveProvider] = useState('codex')
 	const [selectedModel, setSelectedModel] = useState('')
 	const [selectedReasoning, setSelectedReasoning] = useState('')
 	const [loading, setLoading] = useState(true)
@@ -46,12 +49,12 @@ export function useAIModels(): UseAIModelsReturn {
 		}
 	}, [])
 
-	// Load models from backend + saved preference
-	useEffect(() => {
-		async function load() {
+	const loadModelsForProvider = useCallback(
+		async (provider: string) => {
+			setLoading(true)
 			try {
 				const [modelList, configPath] = await Promise.all([
-					invoke<AiModel[]>('list_ai_models', { provider: 'codex' }),
+					invoke<AiModel[]>('list_ai_models', { provider }),
 					getConfigPath(),
 				])
 				setModels(modelList)
@@ -63,31 +66,66 @@ export function useAIModels(): UseAIModelsReturn {
 					const result = UserPreferencesSchema.safeParse(json)
 					if (result.success && result.data.tools?.ai) {
 						const aiPrefs = result.data.tools.ai
-						// Support old flat format migration
-						const providerPrefs =
-							'providers' in aiPrefs
-								? aiPrefs.providers?.['codex']
-								: {
-										model: (aiPrefs as { model?: string }).model,
-										reasoningEffort: (aiPrefs as { reasoningEffort?: string })
-											.reasoningEffort,
-									}
-						if (providerPrefs?.model) setSelectedModel(providerPrefs.model)
-						if (providerPrefs?.reasoningEffort)
-							setSelectedReasoning(providerPrefs.reasoningEffort)
+						// Migrate old flat format: { provider, model, reasoningEffort }
+						if (!('providers' in aiPrefs)) {
+							const old = aiPrefs as {
+								provider?: string
+								model?: string
+								reasoningEffort?: string
+							}
+							if (old.model) setSelectedModel(old.model)
+							if (old.reasoningEffort) setSelectedReasoning(old.reasoningEffort)
+						} else {
+							const providerPrefs = aiPrefs.providers?.[provider]
+							setSelectedModel(providerPrefs?.model ?? '')
+							setSelectedReasoning(providerPrefs?.reasoningEffort ?? '')
+						}
+					} else {
+						setSelectedModel('')
+						setSelectedReasoning('')
 					}
+				} else {
+					setSelectedModel('')
+					setSelectedReasoning('')
 				}
 			} catch (e) {
 				console.error('Failed to load AI models:', e)
 			} finally {
 				setLoading(false)
 			}
+		},
+		[getConfigPath],
+	)
+
+	// Load initial state
+	useEffect(() => {
+		async function init() {
+			try {
+				const configPath = await getConfigPath()
+				let initialProvider = 'codex'
+				if (await exists(configPath)) {
+					const content = await readTextFile(configPath)
+					const json: unknown = JSON.parse(content)
+					const result = UserPreferencesSchema.safeParse(json)
+					if (result.success && result.data.tools?.ai) {
+						const aiPrefs = result.data.tools.ai
+						if ('activeProvider' in aiPrefs && aiPrefs.activeProvider) {
+							initialProvider = aiPrefs.activeProvider
+						}
+					}
+				}
+				setActiveProvider(initialProvider)
+				await loadModelsForProvider(initialProvider)
+			} catch (e) {
+				console.error('Failed to initialize AI models:', e)
+				setLoading(false)
+			}
 		}
-		load()
-	}, [getConfigPath])
+		init()
+	}, [getConfigPath, loadModelsForProvider])
 
 	const saveToolPrefs = useCallback(
-		async (model: string, reasoning: string) => {
+		async (provider: string, model: string, reasoning: string) => {
 			await ensureConfigDir()
 			const configPath = await getConfigPath()
 
@@ -108,14 +146,18 @@ export function useAIModels(): UseAIModelsReturn {
 				}
 			}
 
+			const currentAi = currentPrefs.tools?.ai
+			const existingProviders =
+				currentAi && 'providers' in currentAi ? currentAi.providers : {}
+
 			const updatedPrefs = {
 				...currentPrefs,
 				tools: {
 					ai: {
-						activeProvider: currentPrefs.tools?.ai?.activeProvider ?? 'codex',
+						activeProvider: provider,
 						providers: {
-							...currentPrefs.tools?.ai?.providers,
-							codex: {
+							...existingProviders,
+							[provider]: {
 								model: model || undefined,
 								reasoningEffort: reasoning || undefined,
 							},
@@ -129,27 +171,38 @@ export function useAIModels(): UseAIModelsReturn {
 		[ensureConfigDir, getConfigPath],
 	)
 
+	const setProvider = useCallback(
+		async (provider: string) => {
+			setActiveProvider(provider)
+			await saveToolPrefs(provider, selectedModel, selectedReasoning)
+			await loadModelsForProvider(provider)
+		},
+		[saveToolPrefs, selectedModel, selectedReasoning, loadModelsForProvider],
+	)
+
 	const setModel = useCallback(
 		async (slug: string) => {
 			setSelectedModel(slug)
-			await saveToolPrefs(slug, selectedReasoning)
+			await saveToolPrefs(activeProvider, slug, selectedReasoning)
 		},
-		[saveToolPrefs, selectedReasoning],
+		[saveToolPrefs, activeProvider, selectedReasoning],
 	)
 
 	const setReasoning = useCallback(
 		async (effort: string) => {
 			setSelectedReasoning(effort)
-			await saveToolPrefs(selectedModel, effort)
+			await saveToolPrefs(activeProvider, selectedModel, effort)
 		},
-		[saveToolPrefs, selectedModel],
+		[saveToolPrefs, activeProvider, selectedModel],
 	)
 
 	return {
 		models,
+		activeProvider,
 		selectedModel,
 		selectedReasoning,
 		loading,
+		setProvider,
 		setModel,
 		setReasoning,
 	}
