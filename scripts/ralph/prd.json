@@ -93,7 +93,7 @@
         "pnpm check passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "parseQuery is defined inside use-bookmarks.ts. It's a pure function that takes a string and returns parsed query parts. See apps/renderer/src/hooks/use-bookmarks.ts."
     },
     {

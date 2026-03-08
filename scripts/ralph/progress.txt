@@ -18,6 +18,7 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
 - Shortcut consumers: App.tsx, settings-sheet.tsx, setup.tsx, shortcut-item.tsx.
 - command.ts (347 lines) has types (lines 5-117), guards (lines 153-183), Zod schemas (lines 185-270), plugin functions (lines 306-346). 19 files import from it via @/commands/types or @/core/types.
 - useBookmarks has 6 responsibilities: CRUD, interactions (open/copy), tag management, state, Tauri invocations, parseQuery utility.
+- Pure utilities extracted from hooks go in apps/renderer/src/lib/. Module-level functions are stable refs — no useCallback needed when re-exporting imports.
 ---
 
 ## 2026-03-08 - US-001
@@ -68,6 +69,16 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - formatForDisplay accepts Hotkey | (string & {}) | ParsedHotkey — plain string from hotkeyToTanStack works
   - setup.tsx passes placeholder={t('setup.hotkeyPlaceholder')} — kept placeholder prop in HotkeyPickerProps for compatibility
   - US-005 i18n keys (pressKeys/clickToRecord) added here since CLAUDE.md mandates i18n for all user-facing text
+---
+
+## 2026-03-08 - US-006
+- Created apps/renderer/src/lib/parse-query.ts with the parseQuery pure function moved from use-bookmarks.ts
+- Updated use-bookmarks.ts to import parseQuery from @/lib/parse-query; removed useCallback wrapper (module-level function is stable)
+- No consumer changes needed — useBookmarks still returns parseQuery, so App.tsx and use-bookmark-search.ts are unaffected
+- Files changed: apps/renderer/src/lib/parse-query.ts (new), apps/renderer/src/hooks/use-bookmarks.ts
+- **Learnings for future iterations:**
+  - Module-level functions are stable references — no need for useCallback when a hook just re-exports an imported pure function
+  - Consumers that destructure parseQuery from useBookmarks continue to work without changes; only internal structure of the hook changed
 ---
 
 ## 2026-03-08 - US-005
