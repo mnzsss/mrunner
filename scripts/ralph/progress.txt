@@ -91,3 +91,15 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - setup.tsx compatibility check is trivial: HotkeyPicker props (value, onChange, placeholder) are the same interface
   - formatForDisplay from @tanstack/react-hotkeys renders platform-specific symbols (e.g. ⌘ on Mac, Ctrl on Linux) automatically
 ---
+
+## 2026-03-08 - US-007
+- Created apps/renderer/src/hooks/use-bookmark-tags.ts with listTags, renameTag, deleteTag + own state (tags, loadingTags)
+- Removed tag operations and tags state from use-bookmarks.ts; updated UseBookmarksReturn interface
+- Moved Tag type export to use-bookmark-tags.ts; updated hooks/index.ts to export Tag from new file and export useBookmarkTags
+- No consumer changes needed — no external code destructured tag functions from useBookmarks
+- Files changed: apps/renderer/src/hooks/use-bookmark-tags.ts (new), apps/renderer/src/hooks/use-bookmarks.ts, apps/renderer/src/hooks/index.ts
+- **Learnings for future iterations:**
+  - Before extracting hook operations, grep for external consumers first — if none exist, no consumer updates needed
+  - hooks/index.ts re-exports types; when moving a type to a new file, update the index to export from the new location
+  - loadingTags is separate from loading in useBookmarks — avoids shared loading state confusion between CRUD and tag ops
+---

@@ -108,7 +108,7 @@
         "pnpm check passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Check which components destructure listTags/renameTag/deleteTag from useBookmarks. See apps/renderer/src/hooks/use-bookmarks.ts for current tag operations."
     },
     {
