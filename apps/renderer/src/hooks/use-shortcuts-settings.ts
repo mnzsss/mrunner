@@ -83,9 +83,6 @@ export function useShortcutsSettings(): UseShortcutsSettingsReturn {
 
 			setShortcuts(loadedShortcuts)
 			setConflicts(detectConflicts(loadedShortcuts))
-
-			// Sync global shortcuts with backend on initial load
-			await syncGlobalShortcuts(loadedShortcuts)
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
 			setError(message)

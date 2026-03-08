@@ -2,6 +2,7 @@ mod bookmarks;
 mod chrome;
 mod platform;
 mod shortcuts;
+mod tools;
 
 use std::process::Command;
 use std::sync::Mutex;
@@ -99,6 +100,7 @@ pub fn run() {
         .manage(Mutex::new(RegisteredShortcuts {
             registered: vec![],
         }))
+        .manage(tools::AiProcessState(Mutex::new(None)))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -210,6 +212,10 @@ pub fn run() {
             bookmarks::bookmark_list_tags,
             bookmarks::bookmark_rename_tag,
             bookmarks::bookmark_delete_tag,
+            tools::check_tool_installed,
+            tools::list_codex_models,
+            tools::send_ai_message,
+            tools::cancel_ai_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

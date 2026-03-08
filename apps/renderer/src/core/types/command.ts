@@ -30,6 +30,7 @@ export type DialogType =
 	| 'bookmark-delete'
 	| 'folder-manager'
 	| 'settings'
+	| 'ai-chat'
 
 export interface DialogAction {
 	type: 'dialog'
@@ -227,6 +228,7 @@ export interface UserPreferences {
 	customFolders: FolderConfig[]
 	hiddenSystemFolders: string[]
 	shortcuts: ShortcutsSettings
+	tools?: { ai: { provider: string; model?: string; reasoningEffort?: string } }
 }
 
 // Simplified schema that doesn't require circular imports
@@ -240,6 +242,15 @@ export const UserPreferencesSchema = z.object({
 		.object({
 			shortcuts: z.array(z.any()).default([]),
 			conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
+		})
+		.optional(),
+	tools: z
+		.object({
+			ai: z.object({
+				provider: z.string(),
+				model: z.string().optional(),
+				reasoningEffort: z.string().optional(),
+			}),
 		})
 		.optional(),
 })

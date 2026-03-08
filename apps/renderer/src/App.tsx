@@ -34,6 +34,8 @@ const FolderManager = lazy(() =>
 
 function App() {
 	const [query, setQuery] = useState('')
+	const [isChatMode, setIsChatMode] = useState(false)
+	const [chatInitialMessage, setChatInitialMessage] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	// Core data hooks
@@ -55,7 +57,7 @@ function App() {
 			setQuery('')
 			requestAnimationFrame(() => inputRef.current?.focus())
 		},
-		activeDialogs: dialogManager.activeDialogs,
+		activeDialogs: dialogManager.activeDialogs + (isChatMode ? 1 : 0),
 	})
 
 	// Command data hook
@@ -137,6 +139,19 @@ function App() {
 		[allItems, executeCommand, hideWindow, openBookmark, dialogManager],
 	)
 
+	const handleStartChat = useCallback((message: string) => {
+		setChatInitialMessage(message)
+		setIsChatMode(true)
+	}, [])
+
+	const handleExitChat = useCallback(() => {
+		setIsChatMode(false)
+		setChatInitialMessage('')
+		setQuery('')
+		// Wait for command palette to mount before focusing input
+		setTimeout(() => inputRef.current?.focus(), 50)
+	}, [])
+
 	return (
 		<div className="h-screen w-screen">
 			<BookmarkDialog
@@ -196,6 +211,10 @@ function App() {
 				onHideWindow={hideWindow}
 				executeCommand={executeCommand}
 				onOpenFolderManager={() => dialogManager.setIsFolderManagerOpen(true)}
+				isChatMode={isChatMode}
+				chatInitialMessage={chatInitialMessage}
+				onStartChat={handleStartChat}
+				onExitChat={handleExitChat}
 			/>
 		</div>
 	)

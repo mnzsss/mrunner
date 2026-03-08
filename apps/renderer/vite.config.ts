@@ -38,6 +38,10 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, './src'),
+			'@mrunner/ui/ai-elements': path.resolve(
+				__dirname,
+				'../../packages/ui/src/components/ai-elements',
+			),
 			'@mrunner/ui': path.resolve(__dirname, '../../packages/ui/src'),
 		},
 	},

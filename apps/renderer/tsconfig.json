@@ -20,6 +20,7 @@
 		"paths": {
 			"@/*": ["./src/*"],
 			"@mrunner/ui": ["../../packages/ui/src"],
+			"@mrunner/ui/ai-elements/*": ["../../packages/ui/src/components/ai-elements/*"],
 			"@mrunner/ui/*": ["../../packages/ui/src/*"]
 		}
 	},

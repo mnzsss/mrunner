@@ -8,6 +8,9 @@ import {
 	SheetHeader,
 	SheetTitle,
 	Switch,
+	Tabs,
+	TabsList,
+	TabsTrigger,
 } from '@mrunner/ui'
 import {
 	Item,
@@ -16,15 +19,15 @@ import {
 	ItemTitle,
 } from '@mrunner/ui/components/ui/item'
 import { invoke } from '@tauri-apps/api/core'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { LanguageSelector } from '@/components/language-selector'
+import { ToolsSettingsTab } from '@/components/settings/tools-tab'
 import { ShortcutItem } from '@/components/shortcuts/shortcut-item'
 import { useShortcutsSettings } from '@/hooks/use-shortcuts-settings'
 
-const TABS = ['Global', 'Bookmarks'] as const
-type Tab = (typeof TABS)[number]
+const TAB_VALUES = ['global', 'bookmarks', 'tools'] as const
 
 interface SettingsSheetProps {
 	open: boolean
@@ -33,9 +36,8 @@ interface SettingsSheetProps {
 
 export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 	const { t } = useTranslation()
-	const [activeTab, setActiveTab] = useState<Tab>('Global')
+	const [activeTab, setActiveTab] = useState<string>('global')
 	const [autostartEnabled, setAutostartEnabled] = useState(false)
-	const tabsRef = useRef<HTMLDivElement>(null)
 
 	const {
 		shortcuts,
@@ -70,43 +72,14 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 		}
 	}
 
-	const handleKeyDown = useCallback(
-		(e: React.KeyboardEvent) => {
-			// Alt+1/2 to jump to tab
-			if (e.altKey && e.key >= '1' && e.key <= '2') {
-				e.preventDefault()
-				const index = parseInt(e.key, 10) - 1
-				const tab = TABS[index]
-				if (tab) {
-					setActiveTab(tab)
-					// Focus the tab button
-					const buttons = tabsRef.current?.querySelectorAll('button')
-					buttons?.[index]?.focus()
-				}
-				return
-			}
-
-			// Arrow keys when focus is on tabs
-			const tabsContainer = tabsRef.current
-			if (
-				tabsContainer?.contains(document.activeElement) &&
-				(e.key === 'ArrowLeft' || e.key === 'ArrowRight')
-			) {
-				e.preventDefault()
-				const currentIndex = TABS.indexOf(activeTab)
-				const nextIndex =
-					e.key === 'ArrowRight'
-						? (currentIndex + 1) % TABS.length
-						: (currentIndex - 1 + TABS.length) % TABS.length
-				const nextTab = TABS[nextIndex]
-				if (nextTab) setActiveTab(nextTab)
-
-				const buttons = tabsContainer.querySelectorAll('button')
-				buttons[nextIndex]?.focus()
-			}
-		},
-		[activeTab],
-	)
+	const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+		if (e.altKey && e.key >= '1' && e.key <= '3') {
+			e.preventDefault()
+			const index = Number.parseInt(e.key, 10) - 1
+			const tab = TAB_VALUES[index]
+			if (tab) setActiveTab(tab)
+		}
+	}, [])
 
 	const globalShortcuts = shortcuts.filter(
 		(sc) =>
@@ -116,6 +89,12 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 	const bookmarkShortcuts = shortcuts.filter(
 		(sc) => sc.type === 'internal' && sc.action.includes('bookmark'),
 	)
+
+	const tabLabels: Record<string, string> = {
+		global: t('settings.tabGlobal'),
+		bookmarks: t('settings.tabBookmarks'),
+		tools: t('settings.tabTools'),
+	}
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
@@ -135,36 +114,20 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 						</div>
 					</div>
 
-					<div
-						ref={tabsRef}
-						role="tablist"
-						className="mt-3 flex gap-1 rounded-lg bg-muted p-1"
-					>
-						{TABS.map((tab, index) => (
-							<button
-								key={tab}
-								role="tab"
-								type="button"
-								aria-selected={activeTab === tab}
-								tabIndex={activeTab === tab ? 0 : -1}
-								className={`flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors inline-flex ${
-									activeTab === tab
-										? 'bg-background text-foreground shadow-sm'
-										: 'text-muted-foreground hover:text-foreground'
-								}`}
-								onClick={() => setActiveTab(tab)}
-							>
-								{tab === 'Global'
-									? t('settings.tabGlobal')
-									: t('settings.tabBookmarks')}
-								<Kbd className="opacity-60">{`Alt+${index + 1}`}</Kbd>
-							</button>
-						))}
-					</div>
+					<Tabs value={activeTab} onValueChange={setActiveTab} className="mt-3">
+						<TabsList>
+							{TAB_VALUES.map((tab, index) => (
+								<TabsTrigger key={tab} value={tab}>
+									{tabLabels[tab]}
+									<Kbd className="opacity-60">{`Alt+${index + 1}`}</Kbd>
+								</TabsTrigger>
+							))}
+						</TabsList>
+					</Tabs>
 				</SheetHeader>
 
 				<SheetBody>
-					{activeTab === 'Global' && (
+					{activeTab === 'global' && (
 						<div className="space-y-6">
 							<div className="space-y-3">
 								<h3 className="text-sm font-medium text-muted-foreground">
@@ -250,7 +213,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 						</div>
 					)}
 
-					{activeTab === 'Bookmarks' && (
+					{activeTab === 'bookmarks' && (
 						<div className="space-y-3">
 							<h3 className="text-sm font-medium text-muted-foreground">
 								{t('settings.bookmarkShortcuts')}
@@ -271,6 +234,8 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							</div>
 						</div>
 					)}
+
+					{activeTab === 'tools' && <ToolsSettingsTab />}
 				</SheetBody>
 
 				<div className="flex items-center gap-4 border-t px-6 py-3 text-xs text-muted-foreground">

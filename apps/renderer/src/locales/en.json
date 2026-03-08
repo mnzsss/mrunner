@@ -110,6 +110,7 @@
 		"bookmarkShortcuts": "Bookmark Shortcuts",
 		"tabGlobal": "Global",
 		"tabBookmarks": "Bookmarks",
+		"tabTools": "Tools",
 		"close": "close",
 		"navigate": "navigate",
 		"switchTab": "switch tab",
@@ -135,6 +136,40 @@
 		"Bookmarks": "Bookmarks",
 		"Commands": "Commands",
 		"Plugins": "Plugins",
-		"Chrome": "Chrome"
+		"Chrome": "Chrome",
+		"Tools": "Tools"
+	},
+	"tools": {
+		"title": "Tools",
+		"aiTools": "AI Tools",
+		"installed": "Installed",
+		"notInstalled": "Not installed",
+		"notInstalledTitle": "{{name}} is not installed",
+		"notInstalledDescription": "Install it to use this tool.",
+		"installLinux": "Install on Linux",
+		"installWindows": "Install on Windows",
+		"openDocs": "View documentation",
+		"detectedPath": "Path: {{path}}",
+		"model": "Model",
+		"selectModel": "Select a model",
+		"reasoningEffort": "Reasoning Effort",
+		"selectReasoning": "Select effort level",
+		"checking": "Checking...",
+		"slashHint": "Tab to activate",
+		"slashPlaceholder": "Type / to see available tools"
+	},
+	"chat": {
+		"title": "Ask AI",
+		"placeholder": "Type your message...",
+		"followUp": "Ask a follow-up...",
+		"send": "Send",
+		"stop": "Stop",
+		"back": "Back",
+		"thinking": "Thinking...",
+		"thoughtFor": "Thought for {{seconds}}s",
+		"inputTokens": "In: {{count}}",
+		"outputTokens": "Out: {{count}}",
+		"errorGeneric": "Something went wrong. Try again.",
+		"errorNotInstalled": "AI tool is not available."
 	}
 }
