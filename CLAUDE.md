@@ -21,3 +21,7 @@
 - Biome for lint/format — run `pnpm check` before finishing
 - `cargo check -p mrunner` for Rust changes
 - No emojis as icons — use Lucide or HugeIcons SVG icons
+
+## Documentation
+
+- **Always** use the `context7` MCP server (`resolve-library-id` + `query-docs`) to look up documentation for any library before implementing or troubleshooting — never rely on memory alone
