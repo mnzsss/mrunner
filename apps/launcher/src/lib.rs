@@ -29,10 +29,10 @@ fn is_command_allowed(cmd: &str) -> bool {
 
 #[tauri::command]
 fn run_shell_command(command: &str) -> Result<String, String> {
-    println!("[DEBUG] run_shell_command called with: {}", command);
+    log::debug!("run_shell_command called with: {}", command);
 
     if !is_command_allowed(command) {
-        println!("[DEBUG] Command not allowed: {}", command);
+        log::warn!("Command not allowed: {}", command);
         return Err(format!(
             "Command not allowed. Only these executables are permitted: {:?}",
             platform::get_allowed_commands()
@@ -101,6 +101,22 @@ pub fn run() {
             registered: vec![],
         }))
         .manage(tools::AiProcessState(Mutex::new(None)))
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: None,
+                    }),
+                ])
+                .level(if cfg!(debug_assertions) {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Info
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -188,7 +204,7 @@ pub fn run() {
 
             // Load saved shortcuts from preferences on startup
             if let Err(e) = load_saved_shortcuts(app.handle()) {
-                println!("[shortcuts] Failed to load saved shortcuts: {}", e);
+                log::warn!("Failed to load saved shortcuts: {}", e);
             }
 
             Ok(())

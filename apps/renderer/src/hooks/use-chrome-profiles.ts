@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { Command } from '@/commands/types'
 import type { PlatformInfo } from '@/hooks/use-platform'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('chrome')
 
 export interface ChromeProfile {
 	directory: string
@@ -56,12 +59,12 @@ export function useChromeProfiles(
 		setError(null)
 		try {
 			const results = await invoke<ChromeProfile[]>('list_chrome_profiles')
-			console.log('Chrome profiles loaded:', results)
+			logger.info('Chrome profiles loaded', { count: results.length })
 			setProfiles(results)
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
 			setError(message)
-			console.error('Chrome profiles error:', message)
+			logger.error('Chrome profiles error', { error: message })
 		} finally {
 			setLoading(false)
 		}

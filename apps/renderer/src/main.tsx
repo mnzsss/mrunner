@@ -1,6 +1,9 @@
+import { attachConsole } from '@tauri-apps/plugin-log'
+
 import { initSentry } from '@/lib/sentry'
 
 initSentry()
+attachConsole()
 
 import '@/lib/i18n'
 

@@ -26,6 +26,9 @@ import { LanguageSelector } from '@/components/language-selector'
 import { ToolsSettingsTab } from '@/components/settings/tools-tab'
 import { ShortcutItem } from '@/components/shortcuts/shortcut-item'
 import { useShortcutsSettings } from '@/hooks/use-shortcuts-settings'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('settings')
 
 const TAB_VALUES = ['global', 'bookmarks', 'tools'] as const
 
@@ -55,7 +58,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 				const enabled = await invoke<boolean>('is_autostart_enabled')
 				setAutostartEnabled(enabled)
 			} catch (error) {
-				console.error('Failed to load autostart state:', error)
+				logger.error('Failed to load autostart state', { error: String(error) })
 			}
 		}
 
@@ -67,7 +70,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 			await invoke('toggle_autostart', { enable: checked })
 			setAutostartEnabled(checked)
 		} catch (error) {
-			console.error('Failed to toggle autostart:', error)
+			logger.error('Failed to toggle autostart', { error: String(error) })
 			setAutostartEnabled(!checked)
 		}
 	}

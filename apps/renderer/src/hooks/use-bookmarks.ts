@@ -6,6 +6,9 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Tag } from '@/commands/types'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('bookmarks')
 
 export type { Bookmark, Tag }
 
@@ -73,7 +76,7 @@ export function useBookmarks(): UseBookmarksReturn {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
 			setError(message)
-			console.error('Bookmark list error:', message)
+			logger.error('Bookmark list error', { error: message })
 			return []
 		} finally {
 			setLoading(false)
@@ -112,7 +115,7 @@ export function useBookmarks(): UseBookmarksReturn {
 			const result = await invoke<Bookmark | null>('bookmark_get_by_id', { id })
 			return result
 		} catch (err) {
-			console.error('Bookmark get error:', err)
+			logger.error('Bookmark get error', { error: String(err) })
 			return null
 		}
 	}, [])
@@ -182,7 +185,7 @@ export function useBookmarks(): UseBookmarksReturn {
 				setBookmarks((prev) => prev.filter((b) => b.index !== id))
 				return true
 			} catch (err) {
-				console.error('Bookmark delete error:', err)
+				logger.error('Bookmark delete error', { error: String(err) })
 				return false
 			}
 		},
@@ -233,7 +236,7 @@ export function useBookmarks(): UseBookmarksReturn {
 			setTags(results)
 			return results
 		} catch (err) {
-			console.error('Bookmark list tags error:', err)
+			logger.error('Bookmark list tags error', { error: String(err) })
 			return []
 		} finally {
 			setLoading(false)
@@ -251,7 +254,7 @@ export function useBookmarks(): UseBookmarksReturn {
 				await listTags()
 				return true
 			} catch (err) {
-				console.error('Bookmark rename tag error:', err)
+				logger.error('Bookmark rename tag error', { error: String(err) })
 				return false
 			}
 		},
@@ -269,7 +272,7 @@ export function useBookmarks(): UseBookmarksReturn {
 				await listTags()
 				return true
 			} catch (err) {
-				console.error('Bookmark delete tag error:', err)
+				logger.error('Bookmark delete tag error', { error: String(err) })
 				return false
 			}
 		},

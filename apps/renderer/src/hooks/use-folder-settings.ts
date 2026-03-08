@@ -11,6 +11,9 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CommandIcon, FolderConfig, UserDirectory } from '@/commands/types'
 import { UserPreferencesSchema } from '@/commands/types'
 import { SYSTEM_ICON_TO_COMMAND_ICON } from '@/lib/constants'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('folders')
 
 const CONFIG_DIR = '.config/mrunner'
 const CONFIG_FILE = 'preferences.json'
@@ -64,7 +67,7 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 			setSystemDirectories(dirs)
 			return dirs
 		} catch (e) {
-			console.error('Failed to load system directories:', e)
+			logger.error('Failed to load system directories', { error: String(e) })
 			return []
 		}
 	}, [])
@@ -93,10 +96,14 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 						customFolders = result.data.customFolders
 						hiddenFolders = result.data.hiddenSystemFolders
 					} else {
-						console.warn('Invalid preferences config:', result.error.issues)
+						logger.warn('Invalid preferences config', {
+							error: String(result.error.issues),
+						})
 					}
 				} catch (e) {
-					console.error('Failed to parse preferences config:', e)
+					logger.error('Failed to parse preferences config', {
+						error: String(e),
+					})
 				}
 			}
 
@@ -116,7 +123,7 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 			setFolders([...systemFolders, ...customFolders])
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
-			console.error('Failed to load folders:', message)
+			logger.error('Failed to load folders', { error: message })
 			setError(message)
 		} finally {
 			setLoading(false)
@@ -137,7 +144,7 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 				await writeTextFile(configPath, JSON.stringify(preferences, null, 2))
 			} catch (e) {
 				const message = e instanceof Error ? e.message : String(e)
-				console.error('Failed to save preferences:', message)
+				logger.error('Failed to save preferences', { error: message })
 				throw new Error(message)
 			}
 		},

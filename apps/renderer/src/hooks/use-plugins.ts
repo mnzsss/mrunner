@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { Command } from '@/commands/types'
 import { pluginToCommand, safeParsePluginConfig } from '@/commands/types'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('plugins')
 
 interface UsePluginsReturn {
 	plugins: Command[]
@@ -46,23 +49,24 @@ export function usePlugins(): UsePluginsReturn {
 					const result = safeParsePluginConfig(json)
 
 					if (!result.success) {
-						console.warn(
-							`Invalid plugin config in ${entry.name}:`,
-							result.error.issues,
-						)
+						logger.warn(`Invalid plugin config in ${entry.name}`, {
+							error: String(result.error.issues),
+						})
 						continue
 					}
 
 					loadedPlugins.push(pluginToCommand(result.data))
 				} catch (e) {
-					console.error(`Failed to load plugin ${entry.name}:`, e)
+					logger.error(`Failed to load plugin ${entry.name}`, {
+						error: String(e),
+					})
 				}
 			}
 
 			setPlugins(loadedPlugins)
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
-			console.error('Failed to load plugins:', message)
+			logger.error('Failed to load plugins', { error: message })
 			setError(message)
 		} finally {
 			setLoading(false)

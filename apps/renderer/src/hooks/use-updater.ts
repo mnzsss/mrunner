@@ -2,6 +2,10 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { check, type Update } from '@tauri-apps/plugin-updater'
 import { useCallback, useEffect, useState } from 'react'
 
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('updater')
+
 export interface UpdateProgress {
 	downloaded: number
 	total: number | null
@@ -41,7 +45,7 @@ export function useUpdater(): UseUpdaterReturn {
 			if (!message.includes('network') && !message.includes('fetch')) {
 				setError(message)
 			}
-			console.error('Update check failed:', message)
+			logger.error('Update check failed', { error: message })
 		} finally {
 			setChecking(false)
 		}
@@ -74,7 +78,7 @@ export function useUpdater(): UseUpdaterReturn {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)
 			setError(message)
-			console.error('Update failed:', message)
+			logger.error('Update failed', { error: message })
 		} finally {
 			setDownloading(false)
 		}

@@ -1,7 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { type WithTranslation, withTranslation } from 'react-i18next'
 
+import { createLogger } from '@/lib/logger'
 import { Sentry } from '@/lib/sentry'
+
+const logger = createLogger('error-boundary')
 
 interface Props extends WithTranslation {
 	children: ReactNode
@@ -52,7 +55,7 @@ class ErrorBoundaryInner extends Component<Props, State> {
 	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
 		const errorLog = createErrorLog(error, errorInfo)
 
-		console.error('[ErrorBoundary] Uncaught error:', errorLog)
+		logger.error('Uncaught error', { error: String(errorLog.error.message) })
 
 		Sentry.withScope((scope) => {
 			scope.setTag('error.boundary', 'true')

@@ -15,6 +15,9 @@ import {
 	detectConflicts,
 	hotkeyToString,
 } from '@/core/types/shortcuts'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('shortcuts')
 
 // Use separate config directory in development to avoid conflicts with installed version
 const CONFIG_DIR = import.meta.env.DEV
@@ -77,7 +80,7 @@ export function useShortcutsSettings(): UseShortcutsSettingsReturn {
 						loadedShortcuts = result.data.shortcuts.shortcuts
 					}
 				} catch (e) {
-					console.error('Failed to parse shortcuts config:', e)
+					logger.error('Failed to parse shortcuts config', { error: String(e) })
 				}
 			}
 
@@ -219,7 +222,7 @@ async function syncGlobalShortcuts(shortcuts: ShortcutConfig[]): Promise<void> {
 			})),
 		})
 	} catch (e) {
-		console.error('Failed to sync global shortcuts:', e)
+		logger.error('Failed to sync global shortcuts', { error: String(e) })
 		// Non-fatal error - shortcuts will still be saved to config
 	}
 }

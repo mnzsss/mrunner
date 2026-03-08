@@ -17,6 +17,9 @@ import { useTranslation } from 'react-i18next'
 
 import type { CommandIcon, FolderConfig, UserDirectory } from '@/commands/types'
 import { ICON_MAP } from '@/lib/constants'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('folders')
 
 interface FolderManagerProps {
 	open: boolean
@@ -154,7 +157,7 @@ export function FolderManager({
 				}
 			}
 		} catch (e) {
-			console.error('Failed to select folder:', e)
+			logger.error('Failed to select folder', { error: String(e) })
 		} finally {
 			onDialogStateChange(-1)
 		}
@@ -173,7 +176,7 @@ export function FolderManager({
 			setFolderPath('')
 			nameInputRef.current?.focus()
 		} catch (e) {
-			console.error('Failed to add folder:', e)
+			logger.error('Failed to add folder', { error: String(e) })
 		} finally {
 			setLoading(false)
 		}

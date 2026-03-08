@@ -11,6 +11,9 @@ import { useCallback, useEffect, useState } from 'react'
 import type { UserPreferences } from '@/commands/types'
 import type { AiModel } from '@/core/types/tools'
 import { UserPreferencesSchema } from '@/commands/types'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('ai-models')
 
 const CONFIG_DIR = import.meta.env.DEV
 	? '.config/mrunner-dev'
@@ -51,12 +54,17 @@ export function useAIModels(): UseAIModelsReturn {
 
 	const loadModelsForProvider = useCallback(
 		async (provider: string) => {
+			logger.debug('loadModelsForProvider', { provider })
 			setLoading(true)
 			try {
 				const [modelList, configPath] = await Promise.all([
 					invoke<AiModel[]>('list_ai_models', { provider }),
 					getConfigPath(),
 				])
+				logger.debug('models fetched', {
+					provider,
+					count: modelList.length,
+				})
 				setModels(modelList)
 
 				const configExists = await exists(configPath)
@@ -66,6 +74,9 @@ export function useAIModels(): UseAIModelsReturn {
 					const result = UserPreferencesSchema.safeParse(json)
 					if (result.success && result.data.tools?.ai) {
 						const aiPrefs = result.data.tools.ai
+						logger.debug('loaded ai prefs from config', {
+							aiPrefs,
+						})
 						// Migrate old flat format: { provider, model, reasoningEffort }
 						if (!('providers' in aiPrefs)) {
 							const old = aiPrefs as {
@@ -77,19 +88,25 @@ export function useAIModels(): UseAIModelsReturn {
 							if (old.reasoningEffort) setSelectedReasoning(old.reasoningEffort)
 						} else {
 							const providerPrefs = aiPrefs.providers?.[provider]
+							logger.debug('restoring provider prefs', {
+								provider,
+								providerPrefs,
+							})
 							setSelectedModel(providerPrefs?.model ?? '')
 							setSelectedReasoning(providerPrefs?.reasoningEffort ?? '')
 						}
 					} else {
+						logger.debug('no ai prefs in config, resetting')
 						setSelectedModel('')
 						setSelectedReasoning('')
 					}
 				} else {
+					logger.debug('config file not found, resetting')
 					setSelectedModel('')
 					setSelectedReasoning('')
 				}
 			} catch (e) {
-				console.error('Failed to load AI models:', e)
+				logger.error('Failed to load AI models', { error: String(e) })
 			} finally {
 				setLoading(false)
 			}
@@ -117,7 +134,7 @@ export function useAIModels(): UseAIModelsReturn {
 				setActiveProvider(initialProvider)
 				await loadModelsForProvider(initialProvider)
 			} catch (e) {
-				console.error('Failed to initialize AI models:', e)
+				logger.error('Failed to initialize AI models', { error: String(e) })
 				setLoading(false)
 			}
 		}
@@ -126,6 +143,11 @@ export function useAIModels(): UseAIModelsReturn {
 
 	const saveToolPrefs = useCallback(
 		async (provider: string, model: string, reasoning: string) => {
+			logger.debug('saveToolPrefs called', {
+				provider,
+				model,
+				reasoning,
+			})
 			await ensureConfigDir()
 			const configPath = await getConfigPath()
 
@@ -166,6 +188,10 @@ export function useAIModels(): UseAIModelsReturn {
 				},
 			}
 
+			logger.debug('writing config', {
+				path: configPath,
+				ai: updatedPrefs.tools.ai,
+			})
 			await writeTextFile(configPath, JSON.stringify(updatedPrefs, null, 2))
 		},
 		[ensureConfigDir, getConfigPath],
@@ -173,6 +199,11 @@ export function useAIModels(): UseAIModelsReturn {
 
 	const setProvider = useCallback(
 		async (provider: string) => {
+			logger.debug('setProvider', {
+				provider,
+				prevModel: selectedModel,
+				prevReasoning: selectedReasoning,
+			})
 			setActiveProvider(provider)
 			await saveToolPrefs(provider, selectedModel, selectedReasoning)
 			await loadModelsForProvider(provider)
@@ -182,6 +213,7 @@ export function useAIModels(): UseAIModelsReturn {
 
 	const setModel = useCallback(
 		async (slug: string) => {
+			logger.debug('setModel', { slug, activeProvider })
 			setSelectedModel(slug)
 			await saveToolPrefs(activeProvider, slug, selectedReasoning)
 		},
@@ -190,6 +222,11 @@ export function useAIModels(): UseAIModelsReturn {
 
 	const setReasoning = useCallback(
 		async (effort: string) => {
+			logger.debug('setReasoning', {
+				effort,
+				activeProvider,
+				selectedModel,
+			})
 			setSelectedReasoning(effort)
 			await saveToolPrefs(activeProvider, selectedModel, effort)
 		},
