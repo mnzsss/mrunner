@@ -12,6 +12,7 @@ import type {
 } from '@/core/types/tools'
 
 export interface UseAIChatOptions {
+	provider?: string
 	model?: string
 	reasoningEffort?: string
 }
@@ -28,7 +29,7 @@ export interface UseAIChatReturn {
 }
 
 export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
-	const { model, reasoningEffort } = options
+	const { provider = 'codex', model, reasoningEffort } = options
 	const [messages, setMessages] = useState<ChatMessage[]>([])
 	const [isStreaming, setIsStreaming] = useState(false)
 	const [toolStatus, setToolStatus] = useState<ToolStatus | null>(null)
@@ -206,7 +207,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 		setIsCheckingTool(true)
 		try {
 			const status = await invoke<ToolStatus>('check_tool_installed', {
-				toolId: 'codex',
+				toolId: provider,
 			})
 			setToolStatus(status)
 		} catch {
@@ -214,7 +215,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 		} finally {
 			setIsCheckingTool(false)
 		}
-	}, [])
+	}, [provider])
 
 	const sendMessage = useCallback(
 		(content: string) => {
@@ -240,6 +241,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 			setIsStreaming(true)
 
 			invoke('send_ai_message', {
+				provider: provider,
 				message: content,
 				model: model || null,
 				reasoningEffort: reasoningEffort || null,
@@ -255,7 +257,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 				streamingIdRef.current = null
 			})
 		},
-		[model, reasoningEffort],
+		[provider, model, reasoningEffort],
 	)
 
 	const cancelStream = useCallback(() => {
