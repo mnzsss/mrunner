@@ -202,9 +202,9 @@ export const UserPreferencesSchema = z.object({
 	shortcuts: z
 		.object({
 			shortcuts: z.array(z.any()).default([]),
-			conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
+			conflictResolution: z.enum(['warn', 'block', 'override']).default('warn'),
 		})
-		.optional(),
+		.default({ shortcuts: [], conflictResolution: 'warn' }),
 	tools: z
 		.object({
 			ai: z.object({

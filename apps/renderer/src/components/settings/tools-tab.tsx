@@ -121,7 +121,7 @@ export function ToolsSettingsTab() {
 										</Label>
 										<Select
 											value={selectedModel}
-											onValueChange={(val) => setModel(val)}
+											onValueChange={(val) => val && setModel(val)}
 										>
 											<SelectTrigger
 												className="h-7 text-xs"
@@ -154,7 +154,7 @@ export function ToolsSettingsTab() {
 											</Label>
 											<Select
 												value={selectedReasoning}
-												onValueChange={(val) => setReasoning(val)}
+												onValueChange={(val) => val && setReasoning(val)}
 											>
 												<SelectTrigger
 													className="h-7 text-xs"

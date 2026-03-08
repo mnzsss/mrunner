@@ -318,14 +318,16 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 					<PromptInputFooter>
 						<PromptInputTools>
 							<ModelSelector>
-								<ModelSelectorTrigger asChild>
-									<button
-										type="button"
-										className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-									>
-										<ModelSelectorLogo provider={activeProvider} />
-										<span>{selectedModel || t('chat.selectModel')}</span>
-									</button>
+								<ModelSelectorTrigger
+									render={
+										<button
+											type="button"
+											className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+										/>
+									}
+								>
+									<ModelSelectorLogo provider={activeProvider} />
+									<span>{selectedModel || t('chat.selectModel')}</span>
 								</ModelSelectorTrigger>
 								<ModelSelectorContent title={t('chat.selectModel')}>
 									<ModelSelectorInput placeholder={t('chat.searchModels')} />
