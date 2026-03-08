@@ -103,3 +103,16 @@ Started: Sat Mar  8 02:00:00 PM -03 2026
   - hooks/index.ts re-exports types; when moving a type to a new file, update the index to export from the new location
   - loadingTags is separate from loading in useBookmarks — avoids shared loading state confusion between CRUD and tag ops
 ---
+
+## 2026-03-08 - US-008
+- Created apps/renderer/src/hooks/use-bookmark-actions.ts with openBookmark(id), copyUrl(bookmark), copyMarkdown(bookmark); accepts bookmarks[] param for openBookmark fallback
+- Removed openBookmark, copyUrl, copyMarkdown + related imports (writeText, open) from use-bookmarks.ts
+- Updated App.tsx: destructures bookmarks from useBookmarks(), passes to useBookmarkActions(bookmarks) for openBookmark
+- Updated bookmark-actions.tsx: destructures bookmarks from useBookmarks(), uses useBookmarkActions(bookmarks) for openBookmark + copyUrl
+- Exported useBookmarkActions from hooks/index.ts
+- Files changed: apps/renderer/src/hooks/use-bookmark-actions.ts (new), apps/renderer/src/hooks/use-bookmarks.ts, apps/renderer/src/hooks/index.ts, apps/renderer/src/App.tsx, apps/renderer/src/components/bookmark/bookmark-actions.tsx
+- **Learnings for future iterations:**
+  - openBookmark(id) has a fallback that needs bookmarks[] state — pass it as a hook parameter instead of changing the API signature
+  - bookmark-actions.tsx did NOT destructure bookmarks previously — must add it when refactoring to pass to the new actions hook
+  - useBookmarkActions is "stateless" in the sense of no useState, but accepts bookmarks[] as parameter for the fallback behavior
+---
