@@ -156,7 +156,9 @@
 		"selectReasoning": "Selecione o nivel de esforco",
 		"checking": "Verificando...",
 		"slashHint": "Tab para ativar",
-		"slashPlaceholder": "Digite / para ver ferramentas disponíveis"
+		"slashPlaceholder": "Digite / para ver ferramentas disponíveis",
+		"defaultProvider": "Provedor Padrão",
+		"selectProvider": "Selecione o provedor"
 	},
 	"chat": {
 		"title": "Perguntar à IA",
@@ -170,6 +172,9 @@
 		"inputTokens": "In: {{count}}",
 		"outputTokens": "Out: {{count}}",
 		"errorGeneric": "Algo deu errado. Tente novamente.",
-		"errorNotInstalled": "Ferramenta de IA não disponível."
+		"errorNotInstalled": "Ferramenta de IA não disponível.",
+		"selectModel": "Selecionar modelo",
+		"searchModels": "Buscar modelos...",
+		"noModelsFound": "Nenhum modelo encontrado."
 	}
 }

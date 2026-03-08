@@ -156,7 +156,9 @@
 		"selectReasoning": "Select effort level",
 		"checking": "Checking...",
 		"slashHint": "Tab to activate",
-		"slashPlaceholder": "Type / to see available tools"
+		"slashPlaceholder": "Type / to see available tools",
+		"defaultProvider": "Default Provider",
+		"selectProvider": "Select provider"
 	},
 	"chat": {
 		"title": "Ask AI",
@@ -170,6 +172,9 @@
 		"inputTokens": "In: {{count}}",
 		"outputTokens": "Out: {{count}}",
 		"errorGeneric": "Something went wrong. Try again.",
-		"errorNotInstalled": "AI tool is not available."
+		"errorNotInstalled": "AI tool is not available.",
+		"selectModel": "Select model",
+		"searchModels": "Search models...",
+		"noModelsFound": "No models found."
 	}
 }
