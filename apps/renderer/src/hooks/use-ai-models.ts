@@ -9,7 +9,7 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 
 import type { UserPreferences } from '@/commands/types'
-import type { CodexModel } from '@/core/types/tools'
+import type { AiModel } from '@/core/types/tools'
 import { UserPreferencesSchema } from '@/commands/types'
 
 const CONFIG_DIR = import.meta.env.DEV
@@ -18,7 +18,7 @@ const CONFIG_DIR = import.meta.env.DEV
 const CONFIG_FILE = 'preferences.json'
 
 export interface UseAIModelsReturn {
-	models: CodexModel[]
+	models: AiModel[]
 	selectedModel: string
 	selectedReasoning: string
 	loading: boolean
@@ -27,7 +27,7 @@ export interface UseAIModelsReturn {
 }
 
 export function useAIModels(): UseAIModelsReturn {
-	const [models, setModels] = useState<CodexModel[]>([])
+	const [models, setModels] = useState<AiModel[]>([])
 	const [selectedModel, setSelectedModel] = useState('')
 	const [selectedReasoning, setSelectedReasoning] = useState('')
 	const [loading, setLoading] = useState(true)
@@ -51,7 +51,7 @@ export function useAIModels(): UseAIModelsReturn {
 		async function load() {
 			try {
 				const [modelList, configPath] = await Promise.all([
-					invoke<CodexModel[]>('list_codex_models'),
+					invoke<AiModel[]>('list_ai_models', { provider: 'codex' }),
 					getConfigPath(),
 				])
 				setModels(modelList)
@@ -62,9 +62,19 @@ export function useAIModels(): UseAIModelsReturn {
 					const json: unknown = JSON.parse(content)
 					const result = UserPreferencesSchema.safeParse(json)
 					if (result.success && result.data.tools?.ai) {
-						const { model, reasoningEffort } = result.data.tools.ai
-						if (model) setSelectedModel(model)
-						if (reasoningEffort) setSelectedReasoning(reasoningEffort)
+						const aiPrefs = result.data.tools.ai
+						// Support old flat format migration
+						const providerPrefs =
+							'providers' in aiPrefs
+								? aiPrefs.providers?.['codex']
+								: {
+										model: (aiPrefs as { model?: string }).model,
+										reasoningEffort: (aiPrefs as { reasoningEffort?: string })
+											.reasoningEffort,
+									}
+						if (providerPrefs?.model) setSelectedModel(providerPrefs.model)
+						if (providerPrefs?.reasoningEffort)
+							setSelectedReasoning(providerPrefs.reasoningEffort)
 					}
 				}
 			} catch (e) {
@@ -102,9 +112,14 @@ export function useAIModels(): UseAIModelsReturn {
 				...currentPrefs,
 				tools: {
 					ai: {
-						provider: currentPrefs.tools?.ai?.provider ?? 'codex',
-						model: model || undefined,
-						reasoningEffort: reasoning || undefined,
+						activeProvider: currentPrefs.tools?.ai?.activeProvider ?? 'codex',
+						providers: {
+							...currentPrefs.tools?.ai?.providers,
+							codex: {
+								model: model || undefined,
+								reasoningEffort: reasoning || undefined,
+							},
+						},
 					},
 				},
 			}

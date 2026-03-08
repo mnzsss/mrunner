@@ -47,17 +47,18 @@ export interface ChatMessage {
 	usage?: TokenUsage
 }
 
-export interface CodexReasoningLevel {
+export interface AiReasoningLevel {
 	effort: string
 	description: string
 }
 
-export interface CodexModel {
+export interface AiModel {
 	slug: string
 	display_name: string
 	description: string
 	default_reasoning_level: string
-	supported_reasoning_levels: CodexReasoningLevel[]
+	supported_reasoning_levels: AiReasoningLevel[]
+	provider: string
 }
 
 export interface CodexItemEventPayload {
@@ -96,5 +97,25 @@ export const TOOL_PROVIDERS: ToolProvider[] = [
 			windows: 'npm install -g @openai/codex',
 		},
 		docsUrl: 'https://github.com/openai/codex',
+	},
+	{
+		id: 'claude',
+		name: 'Claude Code',
+		command: 'ask',
+		description: 'Chat with AI assistant (Anthropic Claude Code)',
+		color: {
+			badge: 'bg-amber-500 text-white',
+			border:
+				'border-amber-500/50 focus-within:border-amber-500 focus-within:ring-amber-500/20',
+			icon: 'text-amber-500',
+			text: 'text-amber-500',
+			selectedBg: 'data-selected:bg-amber-500/10',
+		},
+		checkCommand: { linux: 'which claude', windows: 'where claude' },
+		installInstructions: {
+			linux: 'npm install -g @anthropic-ai/claude-code',
+			windows: 'npm install -g @anthropic-ai/claude-code',
+		},
+		docsUrl: 'https://github.com/anthropics/claude-code',
 	},
 ]

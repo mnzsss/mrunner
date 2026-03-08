@@ -228,7 +228,12 @@ export interface UserPreferences {
 	customFolders: FolderConfig[]
 	hiddenSystemFolders: string[]
 	shortcuts: ShortcutsSettings
-	tools?: { ai: { provider: string; model?: string; reasoningEffort?: string } }
+	tools?: {
+		ai: {
+			activeProvider: string
+			providers: { [id: string]: { model?: string; reasoningEffort?: string } }
+		}
+	}
 }
 
 // Simplified schema that doesn't require circular imports
@@ -247,9 +252,14 @@ export const UserPreferencesSchema = z.object({
 	tools: z
 		.object({
 			ai: z.object({
-				provider: z.string(),
-				model: z.string().optional(),
-				reasoningEffort: z.string().optional(),
+				activeProvider: z.string(),
+				providers: z.record(
+					z.string(),
+					z.object({
+						model: z.string().optional(),
+						reasoningEffort: z.string().optional(),
+					}),
+				),
 			}),
 		})
 		.optional(),
