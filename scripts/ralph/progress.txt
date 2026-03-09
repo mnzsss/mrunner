@@ -3,6 +3,7 @@
 - All Rust types that cross the Tauri IPC boundary use `#[serde(rename_all = "camelCase")]` for frontend interop
 - Cargo workspace dependencies (serde, serde_json, dirs) are referenced via `dep.workspace = true` — no version needed
 - `cargo check -p mrunner` is the quality gate for Rust changes (not `cargo build`)
+- tsup bypasses `noEmit: true` in tsconfig.json (uses esbuild internally) — safe to use even with type-only tsconfig
 
 # Ralph Progress Log
 Started: Mon Mar  9 12:36:44 PM -03 2026
@@ -59,4 +60,21 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `private: false` is required in package.json for a publishable SDK package
   - Optional methods in abstract classes: `onItemSelect?(...)` syntax (no `async` keyword in declaration)
   - biome auto-fixed one file (likely trailing whitespace/formatting in the new src/index.ts)
+---
+
+## 2026-03-09 - US-005
+- Created `packages/plugin/src/runner.ts` as a CLI entrypoint
+- Runner reads CommandContext JSON from stdin, dynamically imports command module from argv[2]
+- Uses `tsx/esm/api` register() to support importing TypeScript command files at runtime
+- Validates exported default is a function, instantiates it, calls run(context), writes JSON to stdout
+- Errors written to stderr with exit code 1
+- Added tsup as devDep for building; tsx as runtime dep
+- Added `bin.mrunner-plugin-runner` entry pointing to `./dist/runner.js`
+- Added `scripts.build` to compile runner with tsup (ESM, node20 target)
+- Files changed: packages/plugin/src/runner.ts, packages/plugin/package.json, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - `tsx/esm/api` `register()` returns an `unregister` function — call it after the dynamic import
+  - tsup build config can be entirely inline as CLI args, no tsup.config.ts needed
+  - `biome check . --write` auto-reorganizes imports (merged two import statements into one)
+  - `tsconfig.json` had `noEmit: true` — tsup bypasses this (uses esbuild, not tsc) so build still works
 ---

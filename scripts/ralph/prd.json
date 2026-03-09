@@ -83,7 +83,7 @@
         "pnpm check passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Invocation: node packages/plugin/dist/runner.js /path/to/command.ts. The runner is what Rust spawns. Use process.stdin for reading, process.stdout.write for output. Handle the case where the imported module doesn't export a Command subclass."
     },
     {
