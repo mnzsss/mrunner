@@ -182,12 +182,81 @@ pub async fn run_command(
 ) -> Result<serde_json::Value, String> {
     match command_id {
         "github:cmd_hub" => cmd_hub(context).await,
-        "github:cmd_repos" => Ok(json!({ "items": [] })),
+        "github:cmd_repos" => cmd_repos(context).await,
         "github:cmd_prs" => Ok(json!({ "items": [] })),
         "github:cmd_issues" => Ok(json!({ "items": [] })),
         "github:cmd_actions" => Ok(json!({ "items": [] })),
         _ => Err(format!("Unknown github command: {}", command_id)),
     }
+}
+
+async fn cmd_repos(context: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = context["query"].as_str().unwrap_or("").trim().to_string();
+
+    let items = if query.is_empty() {
+        let stdout = gh_exec(&[
+            "repo",
+            "list",
+            "--json",
+            "name,owner,description,url,isPrivate,stargazerCount,updatedAt",
+            "-L",
+            "30",
+        ])
+        .await?;
+
+        let repos: Vec<GhRepo> =
+            serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse repos: {}", e))?;
+
+        repos
+            .into_iter()
+            .map(|r| {
+                let full_name = r.full_name();
+                let mut accessories = vec![json!({ "text": format!("★ {}", r.stargazer_count) })];
+                if r.is_private {
+                    accessories.push(json!({ "text": "Private", "tag": "warning" }));
+                }
+                json!({
+                    "id": full_name,
+                    "title": r.name,
+                    "subtitle": r.description.unwrap_or_default(),
+                    "icon": "github",
+                    "accessories": accessories,
+                    "actions": [{ "type": "url", "url": r.url }]
+                })
+            })
+            .collect::<Vec<_>>()
+    } else {
+        let stdout = gh_exec(&[
+            "search",
+            "repos",
+            &query,
+            "--json",
+            "fullName,description,url,stargazerCount",
+            "-L",
+            "20",
+        ])
+        .await?;
+
+        let repos: Vec<GhSearchRepo> = serde_json::from_str(&stdout)
+            .map_err(|e| format!("Failed to parse search repos: {}", e))?;
+
+        repos
+            .into_iter()
+            .map(|r| {
+                let accessories = vec![json!({ "text": format!("★ {}", r.stargazer_count) })];
+                json!({
+                    "id": r.full_name,
+                    "title": r.full_name,
+                    "subtitle": r.description.unwrap_or_default(),
+                    "icon": "github",
+                    "accessories": accessories,
+                    "actions": [{ "type": "url", "url": r.url }]
+                })
+            })
+            .collect::<Vec<_>>()
+    };
+
+    Ok(json!({ "items": items }))
 }
 
 async fn cmd_hub(context: &serde_json::Value) -> Result<serde_json::Value, String> {
