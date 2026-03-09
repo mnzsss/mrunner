@@ -10,6 +10,7 @@ export type CommandAction =
 	| SubmenuAction
 	| InputAction
 	| DialogAction
+	| ScriptableAction
 
 export interface Bookmark {
 	index: number
@@ -35,6 +36,15 @@ export interface DialogAction {
 	type: 'dialog'
 	dialog: DialogType
 	bookmark?: Bookmark
+}
+
+export type CommandMode = 'list' | 'detail' | 'action'
+
+export interface ScriptableAction {
+	type: 'scriptable'
+	commandId: string
+	mode: CommandMode
+	pluginName: string
 }
 
 export interface ShellAction {
@@ -179,6 +189,12 @@ export function isInputAction(action: CommandAction): action is InputAction {
 
 export function isDialogAction(action: CommandAction): action is DialogAction {
 	return action.type === 'dialog'
+}
+
+export function isScriptableAction(
+	action: CommandAction,
+): action is ScriptableAction {
+	return action.type === 'scriptable'
 }
 
 // Zod schemas for plugin validation
