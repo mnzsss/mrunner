@@ -186,7 +186,7 @@ pub async fn run_command(
         "github:cmd_repos" => cmd_repos(context).await,
         "github:cmd_prs" => cmd_prs(context).await,
         "github:cmd_issues" => cmd_issues(context).await,
-        "github:cmd_actions" => Ok(json!({ "items": [] })),
+        "github:cmd_actions" => cmd_actions(context).await,
         _ => Err(format!("Unknown github command: {}", command_id)),
     }
 }
@@ -382,6 +382,105 @@ async fn cmd_issues(context: &serde_json::Value) -> Result<serde_json::Value, St
             })
         })
         .collect::<Vec<_>>();
+
+    Ok(json!({ "items": items }))
+}
+
+async fn gh_exec_owned(args: Vec<String>) -> Result<String, String> {
+    let output = tokio::process::Command::new("gh")
+        .args(&args)
+        .output()
+        .await
+        .map_err(|e| format!("Failed to spawn gh: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+async fn cmd_actions(context: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = context["query"].as_str().unwrap_or("").to_lowercase();
+
+    let stdout = gh_exec(&["repo", "list", "--json", "nameWithOwner", "-L", "5"]).await?;
+    let repos: Vec<GhRepoListItem> = serde_json::from_str(&stdout)
+        .map_err(|e| format!("Failed to parse repos for actions: {}", e))?;
+
+    let mut handles = Vec::new();
+    for repo in repos {
+        let repo_name = repo.name_with_owner.clone();
+        let handle = tokio::spawn(async move {
+            let args = vec![
+                "run".to_string(),
+                "list".to_string(),
+                "--repo".to_string(),
+                repo_name.clone(),
+                "--json".to_string(),
+                "databaseId,displayTitle,status,conclusion,url,createdAt".to_string(),
+                "-L".to_string(),
+                "3".to_string(),
+            ];
+            let result = gh_exec_owned(args).await;
+            result.map(|stdout| {
+                let runs: Vec<GhRun> = serde_json::from_str(&stdout).unwrap_or_default();
+                (repo_name, runs)
+            })
+        });
+        handles.push(handle);
+    }
+
+    let mut all_runs: Vec<(String, GhRun)> = Vec::new();
+    for handle in handles {
+        if let Ok(Ok((repo_name, runs))) = handle.await {
+            for run in runs {
+                all_runs.push((repo_name.clone(), run));
+            }
+        }
+    }
+
+    all_runs.sort_by(|a, b| {
+        let a_date = a.1.created_at.as_deref().unwrap_or("");
+        let b_date = b.1.created_at.as_deref().unwrap_or("");
+        b_date.cmp(a_date)
+    });
+
+    let items: Vec<_> = all_runs
+        .into_iter()
+        .filter(|(repo_name, run)| {
+            if query.is_empty() {
+                return true;
+            }
+            run.display_title.to_lowercase().contains(&query)
+                || repo_name.to_lowercase().contains(&query)
+        })
+        .map(|(repo_name, run)| {
+            let status_accessory = match run.conclusion.as_deref() {
+                Some("success") => json!({ "text": "Passed", "tag": "success" }),
+                Some("failure") => json!({ "text": "Failed", "tag": "error" }),
+                _ => {
+                    if run.status == "in_progress" {
+                        json!({ "text": "Running", "tag": "warning" })
+                    } else {
+                        json!({ "text": run.status })
+                    }
+                }
+            };
+            let date_text = run
+                .created_at
+                .as_deref()
+                .map(relative_time)
+                .unwrap_or_default();
+            json!({
+                "id": format!("run:{}", run.database_id),
+                "title": run.display_title,
+                "subtitle": repo_name,
+                "icon": "github",
+                "accessories": [status_accessory, { "text": date_text }],
+                "actions": [{ "type": "url", "url": run.url }]
+            })
+        })
+        .collect();
 
     Ok(json!({ "items": items }))
 }
