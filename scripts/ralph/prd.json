@@ -1,283 +1,192 @@
 {
   "project": "MRunner",
   "branchName": "feat/plugin-system",
-  "description": "Scriptable Plugin System - Process-based plugin execution model where plugins are scripts (JS/TS) that run as separate OS processes, communicating with MRunner via JSON stdin/stdout",
+  "description": "Native GitHub Plugin - A built-in MRunner plugin that uses the gh CLI to browse repositories, PRs, issues, and workflow runs from the command palette. Introduces PluginTier::Native for plugins implemented directly in Rust, bypassing the Node.js process runner while reusing the existing frontend PluginCommandView.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add Rust types for scriptable plugins",
-      "description": "As a developer, I need the core Rust types for the plugin system so that discovery, registration, and execution have a shared type foundation.",
+      "title": "Add PluginTier::Native variant to plugins.rs",
+      "description": "As a developer, I need a Native variant in the PluginTier enum so the system can distinguish built-in Rust plugins from Tier 1 JSON and Tier 2 scriptable plugins.",
       "acceptanceCriteria": [
-        "Create apps/launcher/src/plugins.rs module",
-        "Define PluginTier enum: Json, Scriptable (with serde Serialize/Deserialize)",
-        "Define CommandMode enum: List, Detail, Action (with serde)",
-        "Define RegisteredCommand struct: id (String), title, description, icon, mode (CommandMode), keywords (Vec<String>), script_path (PathBuf)",
-        "Define RegisteredPlugin struct: plugin_id, plugin_name, plugin_icon, runtime, commands (Vec<RegisteredCommand>), tier (PluginTier)",
-        "Add mod plugins to lib.rs",
-        "cargo check -p mrunner passes"
+        "Add Native variant to the PluginTier enum in apps/launcher/src/plugins.rs",
+        "Make script_path field on RegisteredCommand an Option<PathBuf> instead of PathBuf (native commands have no script file)",
+        "Update all existing code that constructs or accesses script_path to handle Option (load_scriptable_plugin, run_plugin_command, etc.)",
+        "Ensure serde serialization still works (camelCase rename, Option serializes as null)",
+        "cargo check -p mrunner passes with no warnings related to these changes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Types defined in design doc section 7. Use #[derive(Debug, Clone, Serialize, Deserialize)] on all types. serde rename_all = camelCase for JSON interop with frontend."
+      "notes": "The PluginTier enum is at plugins.rs:48. RegisteredCommand is at plugins.rs:62. script_path is used in run_plugin_command() when spawning the child process \u2014 the None case will be handled in US-003 when native dispatch is wired up. For now just make it compile."
     },
     {
       "id": "US-002",
-      "title": "Implement plugin directory scanner",
-      "description": "As a developer, I need a function that scans ~/.config/mrunner/plugins/ and discovers both Tier 1 JSON files and Tier 2 scriptable plugin directories.",
+      "title": "Create github.rs module with models, gh_exec helper, and command scaffolds",
+      "description": "As a developer, I need the github.rs module with shared infrastructure (gh CLI executor, serde models for gh JSON output) and stub functions for each command so the module compiles and can be wired in.",
       "acceptanceCriteria": [
-        "Add discover_plugins() function in plugins.rs that scans the plugins directory",
-        "Tier 1: detect *.json files directly in plugins/ (existing behavior, just collect paths)",
-        "Tier 2: detect */plugin.json directories, parse plugin.json manifest",
-        "For Tier 2: scan src/commands/*/config.json within each plugin dir, parse each config.json",
-        "Build Vec<RegisteredPlugin> from discovered Tier 2 plugins with command IDs as 'plugin-id:command-name'",
-        "Handle missing/invalid files gracefully with error logging (don't crash on bad plugins)",
+        "Create apps/launcher/src/github.rs module",
+        "Add mod github to lib.rs",
+        "Implement async fn gh_exec(args: &[&str]) -> Result<String, String> that spawns gh with given args, captures stdout/stderr, returns Ok(stdout) or Err(stderr)",
+        "Define serde Deserialize structs for gh CLI JSON output: GhRepo (name, owner as nested {login}, description, url, isPrivate, stargazerCount, updatedAt), GhSearchRepo (fullName, description, url, stargazerCount), GhPr and GhIssue (number, title, repository as nested {nameWithOwner}, url, createdAt), GhRun (databaseId, displayTitle, status, conclusion, url, createdAt), GhRepoListItem (nameWithOwner)",
+        "Implement pub fn register() -> RegisteredPlugin that returns a RegisteredPlugin with plugin_id 'github', plugin_name 'GitHub', tier Native, runtime 'native', and RegisteredCommand entries for: cmd_hub, cmd_repos, cmd_prs, cmd_issues, cmd_actions (all with script_path: None, mode: List)",
+        "Implement pub async fn run_command(command_id: &str, context: &serde_json::Value) -> Result<serde_json::Value, String> that matches on command_id suffix and returns empty list results as placeholder (Ok(json!({\"items\": []})))",
         "cargo check -p mrunner passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Plugins dir: ~/.config/mrunner/plugins/ (use dirs::config_dir or tauri path API). plugin.json fields: id, name, version, description, author, icon, runtime. config.json fields: title, description, icon, mode, keywords. Command ID format: '{plugin_id}:{command_dir_name}'. Script path: {plugin_dir}/src/commands/{command_name}/command.ts."
+      "notes": "Use tokio::process::Command for gh_exec. The command_id format is 'github:cmd_hub', 'github:cmd_repos', etc. The register() function builds the full RegisteredPlugin struct matching the existing pattern. Use serde_json::json! macro for placeholder returns. Hub command keywords: ['gh', 'git']. Repos keywords: ['repositories']. PRs keywords: ['pull requests', 'merge']. Issues keywords: ['bugs', 'tickets']. Actions keywords: ['ci', 'cd', 'workflows', 'runs']. All command icons should be 'github' (will be added to frontend in US-009)."
     },
     {
       "id": "US-003",
-      "title": "Add discover_plugins Tauri command",
-      "description": "As a frontend developer, I need a Tauri IPC command to get the list of discovered plugins so the renderer can display them.",
+      "title": "Wire native plugins into discover_plugins and run_plugin_command",
+      "description": "As a developer, I need the plugin system to include native plugins in discovery and route their execution through the Rust module instead of spawning a child process.",
       "acceptanceCriteria": [
-        "Create #[tauri::command] async fn discover_plugins() that calls the scanner from US-002",
-        "Return Vec<RegisteredPlugin> serialized as JSON to the frontend",
-        "Register the command in the invoke_handler in lib.rs",
+        "In discover_plugins() in plugins.rs, append github::register() to the returned Vec<RegisteredPlugin>",
+        "In run_plugin_command() in plugins.rs (or lib.rs \u2014 wherever the Tauri command is), add a match arm: if the resolved plugin's tier is PluginTier::Native, call github::run_command(command_id, context).await instead of spawning a child process",
+        "The existing Scriptable tier path remains unchanged",
+        "Verify that invoking discover_plugins from frontend would now include the GitHub plugin",
+        "Verify that invoking run_plugin_command with command_id 'github:cmd_hub' returns the placeholder empty list",
         "cargo check -p mrunner passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Register in apps/launcher/src/lib.rs invoke_handler array. Tauri commands registered there are available via invoke() in the renderer. Follow the pattern of existing commands in lib.rs."
+      "passes": false,
+      "notes": "run_plugin_command is a #[tauri::command] in lib.rs. It looks up the plugin from PluginState, then calls run_plugin_command_internal in plugins.rs. The tier match should happen in run_plugin_command_internal before the child process spawn. The script_path being None is fine because native tier never reaches the spawn code path."
     },
     {
       "id": "US-004",
-      "title": "Create @mrunner/plugin SDK package with types and Command class",
-      "description": "As a plugin author, I need an npm package with the abstract Command class and TypeScript types so I can build plugins with type safety.",
+      "title": "Implement cmd_hub - GitHub hub menu with push navigation",
+      "description": "As a user, I want a top-level 'GitHub' command in MRunner that shows a menu of sub-commands (Repos, PRs, Issues, Actions) so I can navigate to any GitHub feature.",
       "acceptanceCriteria": [
-        "Create packages/plugin/ directory with package.json (name: @mrunner/plugin, private: false)",
-        "Add tsconfig.json extending the monorepo base config",
-        "Create src/index.ts exporting: Command abstract class, CommandContext interface, ListItem interface, Action type union, ListResult/DetailResult/ActionResult/CommandResult types, Accessory type",
-        "Command class has abstract run(context: CommandContext): Promise<CommandResult> and optional onItemSelect(itemId: string, context: CommandContext): Promise<CommandResult>",
-        "Action type union includes: url, open, copy, shell, notification, push variants as defined in the design doc",
-        "Add packages/plugin to pnpm-workspace.yaml if not already covered by glob",
-        "pnpm install succeeds and package is recognized in workspace"
+        "Implement cmd_hub in github.rs that returns a ListResult with 4 items: Repositories, Pull Requests, Issues, Workflow Runs",
+        "Each item has: title, subtitle with brief description, icon 'github', and a primary action of type 'push' targeting the respective command ID (e.g., {type: 'push', commandId: 'github:cmd_repos'})",
+        "Items appear regardless of query (hub is a static menu)",
+        "If query is non-empty, filter items client-side by title match (case-insensitive contains)",
+        "cargo check -p mrunner passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Design doc section 2 has exact type definitions. CommandContext has query (string), preferences (Record<string, unknown>), environment ({ locale, theme, platform, homeDir }). Keep it minimal - no runtime dependencies. Build with tsup or tsc."
+      "passes": false,
+      "notes": "The push action type is already supported in the frontend's execute-plugin-action.ts. The ListResult format matches what PluginCommandView expects: {items: [{id, title, subtitle, icon, accessories, actions}]}. Each action: {type: 'push', commandId: 'github:cmd_repos'}."
     },
     {
       "id": "US-005",
-      "title": "Add SDK runner CLI entrypoint",
-      "description": "As a plugin system, I need a runner script that handles stdin/stdout plumbing so plugin authors never touch process I/O directly.",
+      "title": "Implement cmd_repos - list and search repositories",
+      "description": "As a user, I want to browse my GitHub repositories and search for any public repo so I can quickly open them in the browser.",
       "acceptanceCriteria": [
-        "Create packages/plugin/src/runner.ts as a CLI entrypoint",
-        "Runner reads JSON from stdin (CommandContext)",
-        "Runner dynamically imports the command module path from argv[1]",
-        "Runner instantiates the exported default class (must extend Command)",
-        "Runner calls run(context) and writes JSON result to stdout",
-        "Runner writes errors to stderr and exits with code 1 on failure",
-        "Add bin entry in package.json pointing to the compiled runner",
-        "pnpm check passes"
+        "When query is empty: run 'gh repo list --json name,owner,description,url,isPrivate,stargazerCount,updatedAt -L 30' and return results as ListItems",
+        "When query is non-empty: run 'gh search repos <query> --json fullName,description,url,stargazerCount -L 20' and return results as ListItems",
+        "Each ListItem has: id (repo full name), title (repo name or fullName), subtitle (description or empty), icon 'github'",
+        "Each ListItem has accessories showing star count and private/public badge where applicable",
+        "Primary action on each item: {type: 'url', url: <repo_url>} to open in browser",
+        "Handle gh CLI errors gracefully (return error string, don't panic)",
+        "cargo check -p mrunner passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Invocation: node packages/plugin/dist/runner.js /path/to/command.ts. The runner is what Rust spawns. Use process.stdin for reading, process.stdout.write for output. Handle the case where the imported module doesn't export a Command subclass."
+      "passes": false,
+      "notes": "The owner field from gh repo list is a nested object {login: 'username'}. Construct fullName as '{owner.login}/{name}'. For accessories, use the format [{text: '\u2605 42'}, {text: 'Private', tag: 'warning'}] or similar based on existing Accessory type in the SDK. Parse gh JSON output using serde_json::from_str with the GhRepo/GhSearchRepo structs."
     },
     {
       "id": "US-006",
-      "title": "Add JSON schemas for plugin.json and command config.json",
-      "description": "As a plugin author, I need JSON schemas so I get IntelliSense in VS Code when editing plugin.json and config.json files.",
+      "title": "Implement cmd_prs - list open Pull Requests",
+      "description": "As a user, I want to see my open pull requests across all repos so I can quickly jump to any PR.",
       "acceptanceCriteria": [
-        "Create packages/plugin/schemas/plugin.schema.json with properties: id, name, version, description, author, icon, runtime (enum: node, deno, bun, python, bash)",
-        "Create packages/plugin/schemas/command.schema.json with properties: title, description, icon, mode (enum: list, detail, action), keywords (array of strings)",
-        "Both schemas have $schema draft-07 reference and required fields",
-        "Icon field has enum values matching MRunner's predefined icon set",
-        "pnpm check passes"
+        "Run 'gh search prs --author=@me --state=open --json number,title,repository,url,createdAt -L 30'",
+        "If query is non-empty, add the query as search terms to the gh command",
+        "Return results as ListItems with: id (unique), title (PR title), subtitle (repo#number), icon 'github'",
+        "Each ListItem has accessories showing the created date in relative format (e.g., '2d ago')",
+        "Primary action: {type: 'url', url: <pr_url>}",
+        "Handle gh CLI errors gracefully",
+        "cargo check -p mrunner passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Referenced via $schema in plugin files: node_modules/@mrunner/plugin/schemas/plugin.schema.json. Check existing icon names from the codebase (Lucide icons used in command palette). mode enum: list, detail, action."
+      "passes": false,
+      "notes": "The repository field from gh search prs is a nested object {nameWithOwner: 'owner/repo'}. For relative date formatting, compute the difference from now in Rust using chrono or manual arithmetic. Format: '2h ago', '3d ago', '1w ago'. If chrono is not in Cargo.toml, either add it or use a simple manual calculation."
     },
     {
       "id": "US-007",
-      "title": "Implement plugin command process spawner in Rust",
-      "description": "As the system, I need to spawn plugin commands as child processes with stdin/stdout JSON communication and timeout enforcement.",
+      "title": "Implement cmd_issues - list open Issues",
+      "description": "As a user, I want to see my open issues across all repos so I can quickly jump to any issue.",
       "acceptanceCriteria": [
-        "Add run_plugin_command() function in plugins.rs",
-        "Function takes command_id (String) and context (JSON value) as parameters",
-        "Resolve the plugin's runtime (node/deno/bun) and script path from RegisteredPlugin data",
-        "Spawn child process: {runtime} {runner_path} {script_path}",
-        "Write context as JSON to child's stdin, then close stdin",
-        "Read stdout as JSON result with 10-second timeout",
-        "Capture stderr for error reporting",
-        "Return Result with parsed JSON on success, or error with stderr content on failure",
-        "Kill process on timeout and return timeout error",
+        "Run 'gh search issues --author=@me --state=open --json number,title,repository,url,createdAt -L 30'",
+        "If query is non-empty, add the query as search terms to the gh command",
+        "Return results as ListItems with: id (unique), title (issue title), subtitle (repo#number), icon 'github'",
+        "Each ListItem has accessories showing the created date in relative format",
+        "Primary action: {type: 'url', url: <issue_url>}",
+        "Handle gh CLI errors gracefully",
         "cargo check -p mrunner passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Use tokio::process::Command for async spawning. Runner path: find @mrunner/plugin/dist/runner.js relative to the plugin's node_modules. For timeout, use tokio::time::timeout. Non-zero exit code should be treated as an error. The runner path may need to be resolved from the plugin directory's node_modules."
+      "passes": false,
+      "notes": "This is structurally identical to cmd_prs (US-006). The gh command differs only in 'issues' vs 'prs'. Consider extracting a shared helper for formatting PR/issue items since the JSON shape is the same (GhPr and GhIssue use the same struct)."
     },
     {
       "id": "US-008",
-      "title": "Add run_plugin_command Tauri command",
-      "description": "As a frontend developer, I need a Tauri IPC command to execute a scriptable plugin command and get the result.",
+      "title": "Implement cmd_actions - list recent workflow runs",
+      "description": "As a user, I want to see recent CI/CD workflow runs across my repos so I can monitor build status and jump to failing runs.",
       "acceptanceCriteria": [
-        "Create #[tauri::command] async fn run_plugin_command(command_id: String, context: serde_json::Value) -> Result<serde_json::Value, String>",
-        "Command looks up the RegisteredPlugin/RegisteredCommand by command_id",
-        "Calls the process spawner from US-007",
-        "Returns the JSON result on success or error message on failure",
-        "Register the command in the invoke_handler in lib.rs",
+        "Fetch recent repos: 'gh repo list --json nameWithOwner -L 5' to get the user's 5 most recent repos",
+        "For each repo, fetch runs: 'gh run list --repo <nameWithOwner> --json databaseId,displayTitle,status,conclusion,url,createdAt -L 3'",
+        "Run repo fetches concurrently using tokio::join or similar",
+        "Return combined results as ListItems sorted by createdAt descending",
+        "Each ListItem has: title (run display title), subtitle (repo name), icon 'github'",
+        "Accessories show status badge: success (green 'Passed'), failure (red 'Failed'), in_progress (yellow 'Running'), other (gray status text)",
+        "Primary action: {type: 'url', url: <run_url>}",
+        "If query is non-empty, filter results by title/repo containing the query",
+        "Handle gh CLI errors gracefully (if one repo fails, still show others)",
         "cargo check -p mrunner passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Plugin state (discovered plugins) needs to be accessible from the Tauri command. Use tauri::State<T> with a Mutex<Vec<RegisteredPlugin>> or similar pattern. command_id format: 'plugin-id:command-name'."
+      "passes": false,
+      "notes": "Use futures::future::join_all or tokio::join! to run the per-repo gh commands concurrently. If futures crate is not in Cargo.toml, add it or use tokio::spawn + JoinHandle. The conclusion field is null for in-progress runs \u2014 check status field too. Sorting: parse createdAt as a datetime string and sort descending."
     },
     {
       "id": "US-009",
-      "title": "Extend use-plugins hook for Tier 2 plugins",
-      "description": "As a frontend developer, I need the use-plugins hook to load both Tier 1 JSON plugins and Tier 2 scriptable plugins from the new discover_plugins command.",
+      "title": "Add github icon to frontend ICON_MAP and types",
+      "description": "As a developer, I need the 'github' icon value to be recognized by the frontend so native plugin commands render their icon correctly.",
       "acceptanceCriteria": [
-        "Update apps/renderer/src/hooks/use-plugins.ts to call invoke('discover_plugins') on mount",
-        "Add TypeScript types matching the Rust RegisteredPlugin/RegisteredCommand structs",
-        "Merge Tier 2 plugins into the existing plugin/command list alongside Tier 1",
-        "Tier 2 commands get a 'scriptable' flag or tier field to distinguish them in the UI",
-        "Loading and error states handled for the discovery call",
+        "Add 'github' entry to ICON_MAP in apps/renderer/src/lib/constants.ts, mapping to the Lucide Github icon component",
+        "Add 'github' to the CommandIcon type union in apps/renderer/src/core/types/command.ts (if it's a string literal union)",
+        "Add 'github' to the icon enum in packages/plugin/schemas/command.schema.json",
+        "Add 'github' to the icon enum in packages/plugin/schemas/plugin.schema.json",
+        "Verify the Github icon is available from lucide-react (import { Github } from 'lucide-react')",
         "pnpm check passes"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "Existing use-plugins.ts handles Tier 1 JSON plugins. The hook should unify both tiers into a single commands list for the palette. Check the current hook implementation for the existing pattern."
+      "passes": false,
+      "notes": "ICON_MAP in constants.ts maps string keys to Lucide icon components. The existing pattern is like: { terminal: Terminal, globe: Globe, ... }. Lucide has a Github icon. Check the exact import name \u2014 it might be 'Github' or 'GithubIcon'. The CommandIcon type may be inferred from ICON_MAP keys rather than a separate union \u2014 check the actual implementation."
     },
     {
       "id": "US-010",
-      "title": "Show scriptable plugin commands in CommandPalette",
-      "description": "As a user, I want to see scriptable plugin commands in the command palette, grouped by plugin name, so I can discover and launch them.",
+      "title": "Add native tier type to use-plugins.ts",
+      "description": "As a frontend developer, I need the TypeScript types in use-plugins.ts to recognize the 'native' plugin tier so native plugins from discover_plugins are properly typed.",
       "acceptanceCriteria": [
-        "Tier 2 plugin commands appear in the CommandPalette list",
-        "Commands are grouped/labeled by their parent plugin name",
-        "Each command shows its title, description, and icon",
-        "Selecting a list-mode command transitions to a sub-view for that command's results",
-        "Selecting an action-mode command triggers immediate execution via invoke('run_plugin_command')",
-        "Add i18n keys for any new user-facing text (en.json and pt-BR.json)",
+        "Add 'native' to the PluginTier type in apps/renderer/src/hooks/use-plugins.ts (alongside 'json' and 'scriptable')",
+        "Ensure the RegisteredCommand TypeScript type has script_path as optional (string | null) to match the Rust Option<PathBuf>",
+        "Verify that native plugins from discover_plugins flow through to the command palette without errors",
+        "No filtering or special-casing of native tier needed \u2014 they should behave identically to scriptable plugins from the frontend's perspective",
         "pnpm check passes"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "Check how existing commands render in the palette to match the pattern. list mode should show a loading state while the command runs. action mode should show a notification on completion. Keywords from config.json should be searchable."
+      "passes": false,
+      "notes": "The PluginTier type in use-plugins.ts mirrors the Rust enum. Since Rust serializes with camelCase rename_all, the value will be 'native' (lowercase). The scriptPath field will be null for native commands. Check if any frontend code assumes scriptPath is always present and guard accordingly."
     },
     {
       "id": "US-011",
-      "title": "Implement list mode execution with dynamic results",
-      "description": "As a user, I want list-mode plugin commands to show their results in the palette and re-execute when I change my search query.",
+      "title": "Add native plugin section to plugins-tab with validate and setup instructions",
+      "description": "As a user, I want to see native plugins (like GitHub) in the Settings Plugins tab with a validation button that checks if gh CLI is installed and authenticated, showing setup instructions if not.",
       "acceptanceCriteria": [
-        "When a list-mode command is active, invoke('run_plugin_command') with current query",
-        "Display returned ListItem[] in the palette (title, subtitle, icon, accessories)",
-        "Re-execute the command with debounce (300ms) when the search input changes",
-        "Show loading indicator during execution",
-        "Show error state if command fails or times out",
-        "Selecting a list item triggers its first action (or shows action menu if multiple)",
-        "pnpm check passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Use a debounced effect for re-execution on query change. The CommandContext.query field carries the current search text. ListItem has actions[] array - the primary action fires on Enter, secondary actions could show in a submenu."
-    },
-    {
-      "id": "US-012",
-      "title": "Implement detail mode and action mode rendering",
-      "description": "As a user, I want detail-mode commands to show markdown content and action-mode commands to execute immediately with a notification.",
-      "acceptanceCriteria": [
-        "Detail mode: render the returned markdown string in a panel (reuse existing Streamdown/markdown renderer)",
-        "Detail mode: show action buttons if the result includes actions[]",
-        "Action mode: execute immediately when command is selected, no sub-view",
-        "Action mode: show OS notification on success (title from command config)",
-        "Action mode: show error notification on failure",
-        "Add i18n keys for loading/error/success states (en.json and pt-BR.json)",
-        "pnpm check passes"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Check for an existing markdown renderer in the codebase (Streamdown is mentioned in the design doc). Action mode is fire-and-forget from the user's perspective. Use Tauri notification plugin or existing notification pattern."
-    },
-    {
-      "id": "US-013",
-      "title": "Implement plugin action type handlers",
-      "description": "As a user, I want all plugin action types (url, open, copy, shell, notification, push) to work when I interact with plugin results.",
-      "acceptanceCriteria": [
-        "url action: opens URL in default browser via Tauri shell plugin",
-        "open action: opens file/folder in system default via Tauri shell plugin",
-        "copy action: copies content string to clipboard",
-        "shell action: executes command through existing is_command_allowed() whitelist check",
-        "notification action: shows OS notification with title and message",
-        "push action: navigates to another plugin command by command ID",
-        "All actions dispatched from a shared executeAction(action) utility function",
-        "pnpm check passes"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Most of these handlers likely already exist for Tier 1 plugins (url, open, copy, shell). Check existing action execution code and reuse. The 'push' action is new - it should set the active command in the palette to the target command ID."
-    },
-    {
-      "id": "US-014",
-      "title": "Create Settings Plugins tab with installed plugins list",
-      "description": "As a user, I want a Plugins tab in Settings where I can see my installed plugins and enable/disable them.",
-      "acceptanceCriteria": [
-        "Create apps/renderer/src/components/settings/plugins-tab.tsx",
-        "List all installed plugins with name, version, author, and icon",
-        "Each plugin has an enable/disable toggle that persists to preferences.json",
-        "Expandable section per plugin showing its commands (title, description, mode)",
-        "Add 'Open Plugins Folder' button that opens ~/.config/mrunner/plugins/ in file manager",
-        "Wire the tab into the existing settings sheet/dialog",
-        "Add i18n keys for all labels (en.json and pt-BR.json)",
-        "pnpm check passes"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "Plugin enabled/disabled state stored in preferences.json under plugins key. Follow the existing settings tab pattern (check other tabs in the settings directory). Use @mrunner/ui components. The 'Open Plugins Folder' button uses Tauri shell plugin's open() with the directory path."
-    },
-    {
-      "id": "US-015",
-      "title": "Add git-based plugin installation from URL",
-      "description": "As a user, I want to install plugins from a Git URL so I can add community plugins to my MRunner setup.",
-      "acceptanceCriteria": [
-        "Add 'Install from Git URL' input field in the Plugins settings tab",
-        "Create Rust Tauri command install_plugin(git_url: String) that: git clones to plugins dir, validates plugin.json, runs npm install if package.json exists",
-        "Show installation progress/status in the UI",
-        "On success: re-discover plugins and refresh the list",
-        "On failure: show error message and clean up the cloned directory",
-        "Add confirmation dialog before installation showing plugin name, author, and source",
-        "Register install_plugin in invoke_handler",
-        "Add i18n keys for install UI (en.json and pt-BR.json)",
+        "Add a 'Native Plugins' section to apps/renderer/src/components/settings/plugins-tab.tsx, visually separated from the existing scriptable plugins sections",
+        "Show the GitHub plugin with its name, description, and icon",
+        "Add a 'Validate' button that invokes a new Tauri command validate_native_plugin(plugin_id: String)",
+        "Create the validate_native_plugin Tauri command in lib.rs that for plugin_id 'github': runs 'gh --version' and 'gh auth status', returns JSON with {installed: bool, authenticated: bool, version: string|null, error: string|null}",
+        "Register validate_native_plugin in the invoke_handler",
+        "Display validation results: green checkmark badge if both installed and authenticated, yellow warning if installed but not authenticated, red X if not installed",
+        "Show setup instructions when validation fails: link to https://cli.github.com for installation, 'gh auth login' command for authentication",
+        "Add i18n keys for all new labels to en.json and pt-BR.json",
         "cargo check -p mrunner passes",
         "pnpm check passes"
       ],
-      "priority": 15,
-      "passes": true,
-      "notes": "Use std::process::Command to run git clone and npm install. Clone target: ~/.config/mrunner/plugins/{plugin-id}/. The plugin-id comes from the cloned plugin.json. Validate plugin.json schema before accepting. Security: show user what they're installing before proceeding."
-    },
-    {
-      "id": "US-016",
-      "title": "Add plugin registry browsing and update checking",
-      "description": "As a user, I want to browse available plugins from the official registry and check for updates to my installed plugins.",
-      "acceptanceCriteria": [
-        "Add 'Browse Plugins' section in Settings Plugins tab that fetches plugins/registry.json from the MRunner repo raw URL",
-        "Display registry plugins with name, description, author, tags, and verified badge",
-        "Show 'Install' button for plugins not yet installed, 'Installed' badge for ones already present",
-        "Add 'Check for Updates' button that runs git pull on each installed Tier 2 plugin directory",
-        "Show update results (updated/up-to-date/error per plugin)",
-        "If updates found: re-run npm install and re-discover plugins",
-        "Cache registry locally, refresh every 24h or on manual refresh",
-        "Add i18n keys for browse/update UI (en.json and pt-BR.json)",
-        "pnpm check passes"
-      ],
-      "priority": 16,
+      "priority": 11,
       "passes": false,
-      "notes": "Create plugins/registry.json in the MRunner repo root with the format from design doc section 4. Registry URL: raw GitHub URL of the main repo's plugins/registry.json. For updates, use Rust Tauri command that runs git -C <plugin-dir> pull. Cache registry in ~/.config/mrunner/plugin-registry-cache.json with timestamp."
+      "notes": "The plugins-tab.tsx already has sections for browsing and managing scriptable plugins. Add the native section above or below with clear visual distinction (e.g., a 'Built-in Plugins' heading). The validate_native_plugin command runs gh CLI directly via tokio::process::Command (same pattern as gh_exec in github.rs \u2014 consider reusing it). For the frontend, use a useState for validation results and show loading state while validating. Follow existing UI patterns from the plugins tab (badges, buttons, etc.)."
     }
   ]
 }

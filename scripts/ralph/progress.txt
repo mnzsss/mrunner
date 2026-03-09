@@ -259,3 +259,52 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `complete_plugin_install` returns `Vec<RegisteredPlugin>` (re-discovered) so the Tauri command can update both the state cache and the UI in one round-trip
   - `AlertDialog` from `@mrunner/ui` provides `onOpenChange` for handling close via Escape/backdrop click — must call cancel logic there
 ---
+
+## 2026-03-09 - US-016
+- Created `plugins/registry.json` in repo root with `{ version, updatedAt, plugins: [] }` format
+- Added `UpdateResult` struct (pluginId, pluginName, status, message) to `plugins.rs`
+- Implemented `check_plugin_updates(plugins)`: iterates Scriptable-tier plugins, checks for `.git` dir, runs `git -C <dir> pull`, re-runs npm install if updated and package.json present, returns status (updated/up-to-date/error/skipped) per plugin
+- Added `check_plugin_updates` Tauri command in `lib.rs` (reads registry from state, returns Vec<UpdateResult>), registered in invoke_handler
+- Updated `plugins-tab.tsx`:
+  - Added `RegistryPlugin`, `RegistryCache`, `UpdateResult` TypeScript interfaces
+  - Registry fetch with 24h local cache in `~/.config/mrunner/plugin-registry-cache.json`
+  - "Browse Plugins" section: shows registry entries with name, description, author, verified badge, Install/Installed status button
+  - Clicking "Install" from registry pre-fills the git URL input field
+  - "Check for Updates" section: shows per-plugin update status after running `check_plugin_updates`
+  - Manual refresh button for registry
+- Added 14 new i18n keys for registry/update UI in en.json and pt-BR.json
+- Files changed: plugins/registry.json (new), apps/launcher/src/plugins.rs, apps/launcher/src/lib.rs, apps/renderer/src/components/settings/plugins-tab.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+- **Learnings for future iterations:**
+  - Registry fetch uses `window.fetch()` directly (Tauri allows external fetch in renderer) — no need for a Rust HTTP client for read-only data
+  - Cache stored in same `~/.config/mrunner/` dir as preferences — reuse `ensureConfigDir()` before writing
+  - `git -C <dir> pull` stdout containing "Already up to date" is the reliable signal for no-change — not the exit code
+  - `Badge` component available in `@mrunner/ui` — import it alongside Button/Switch/etc.
+  - "Install from registry" pre-fills the git URL input rather than triggering install directly — gives user visibility into what URL is being used
+---
+
+## 2026-03-09 - US-001 (Native GitHub Plugin PRD)
+- Added `Native` variant to `PluginTier` enum in `apps/launcher/src/plugins.rs`
+- Changed `script_path` field on `RegisteredCommand` from `PathBuf` to `Option<PathBuf>`
+- Updated `load_commands()` to wrap script_path in `Some(...)`
+- Updated `run_plugin_command()` to unwrap `script_path` with `.ok_or_else(...)` returning a descriptive error for native commands (native dispatch will be wired in US-003)
+- `cargo check -p mrunner` passes with no warnings
+- Files changed: apps/launcher/src/plugins.rs
+- **Learnings for future iterations:**
+  - `check_plugin_updates` uses `matches!(plugin.tier, PluginTier::Scriptable)` pattern — works fine after adding new variants since it's explicit matching
+  - `script_path` is now `Option<PathBuf>`; any new code constructing `RegisteredCommand` must use `Some(path)` for scriptable or `None` for native commands
+---
+
+## 2026-03-09 - US-002
+- Created `apps/launcher/src/github.rs` module with gh CLI infrastructure and plugin scaffolds
+- Added `pub mod github` to `apps/launcher/src/lib.rs`
+- Implemented `async fn gh_exec(args: &[&str]) -> Result<String, String>` using `tokio::process::Command`
+- Defined serde Deserialize structs: GhOwner, GhRepo, GhSearchRepo, GhPrRepository, GhPr, GhIssue, GhRun, GhRepoListItem
+- Added accessor methods (`full_name()`, `repo_name()`) on structs with private nested types to avoid visibility warnings
+- Implemented `pub fn register() -> RegisteredPlugin` returning all 5 commands (cmd_hub, cmd_repos, cmd_prs, cmd_issues, cmd_actions) with `tier: PluginTier::Native`, `script_path: None`, `plugin_dir: PathBuf::new()`
+- Implemented `pub async fn run_command(command_id, context)` returning placeholder `{"items": []}` for each command
+- Files changed: apps/launcher/src/github.rs (new), apps/launcher/src/lib.rs
+- **Learnings for future iterations:**
+  - Private nested struct types used as pub fields cause `private_interfaces` warnings — either make the type pub(crate) or add accessor methods and keep fields private
+  - `plugin_dir: PathBuf::new()` is the correct placeholder for native plugins (no filesystem directory)
+  - `pub mod github` in lib.rs is needed (not just `mod github`) so the module is accessible from sibling modules and Tauri commands
+---
