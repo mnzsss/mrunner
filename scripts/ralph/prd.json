@@ -201,7 +201,7 @@
         "pnpm check passes"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Check for an existing markdown renderer in the codebase (Streamdown is mentioned in the design doc). Action mode is fire-and-forget from the user's perspective. Use Tauri notification plugin or existing notification pattern."
     },
     {

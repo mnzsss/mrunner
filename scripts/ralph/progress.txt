@@ -182,3 +182,29 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `shouldFilter={false}` is needed on the cmdk Command component when items are managed externally (no client-side filtering)
   - Use `search.empty` key for "no results" message (not `search.noResults`)
 ---
+
+## 2026-03-09 - US-012
+- Added `react-markdown` dependency to apps/renderer for markdown rendering
+- Updated `plugin-command-view.tsx`:
+  - Added `DetailResult` import from `@mrunner/plugin` and `isDetailResult` type guard
+  - Added `sendNotification` from `@tauri-apps/plugin-notification` for notification actions
+  - Added `ReactMarkdown` import for rendering detail mode content
+  - Added `detailResult` state alongside existing `items`/`loading`/`error` states
+  - `runCommand` now dispatches to `setDetailResult` or `setItems` based on result type
+  - Detail mode renders markdown via `<ReactMarkdown>` with action buttons below
+  - List mode: 300ms debounce; detail mode: runs immediately (0ms delay)
+  - `notification` action case now calls `sendNotification` (previously just `console.info`)
+  - Search input hidden for detail mode (no query-driven filtering)
+- Updated `App.tsx`:
+  - Added `sendNotification` import from `@tauri-apps/plugin-notification`
+  - Added `t` to `useTranslation()` destructuring
+  - Action mode now shows OS success notification (`plugins.success`) on success
+  - Action mode now shows OS error notification (`plugins.error`) on failure
+  - Added `t` to `handleSelect` useCallback dependency array
+- Files changed: apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/src/App.tsx, apps/renderer/package.json, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - `react-markdown` v10 is ESM-only; works fine with Vite (no extra config needed)
+  - `DetailResult.actions` items each optionally have a `title` field — use it for button labels with fallback to `action.type`
+  - Detail mode should NOT show `CommandInput` (no query-based filtering makes sense for static markdown)
+  - The existing `plugins.success` / `plugins.error` / `plugins.running` i18n keys were sufficient — no new keys needed
+---
