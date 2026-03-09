@@ -29,6 +29,9 @@ importers:
 
   apps/renderer:
     dependencies:
+      '@mrunner/plugin':
+        specifier: workspace:*
+        version: link:../../packages/plugin
       '@mrunner/ui':
         specifier: workspace:*
         version: link:../../packages/ui
