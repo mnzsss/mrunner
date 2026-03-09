@@ -80,7 +80,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "The owner field from gh repo list is a nested object {login: 'username'}. Construct fullName as '{owner.login}/{name}'. For accessories, use the format [{text: '★ 42'}, {text: 'Private', tag: 'warning'}] or similar based on existing Accessory type in the SDK. Parse gh JSON output using serde_json::from_str with the GhRepo/GhSearchRepo structs."
     },
     {

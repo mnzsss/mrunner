@@ -332,3 +332,16 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - Context query accessed via `context["query"].as_str().unwrap_or("")` — always use unwrap_or for safe defaults
   - `run_command` signature changed from `_context` to `context` now that it's consumed
 ---
+
+## 2026-03-09 - US-005
+- Implemented `cmd_repos` in `apps/launcher/src/github.rs`
+- Empty query: calls `gh repo list --json name,owner,description,url,isPrivate,stargazerCount,updatedAt -L 30`, deserializes with `GhRepo`, returns items with star count accessory and Private badge if applicable
+- Non-empty query: calls `gh search repos <query> --json fullName,description,url,stargazerCount -L 20`, deserializes with `GhSearchRepo`, returns items with star count accessory
+- Each item has `{type: 'url', url: ...}` as primary action
+- Wired `cmd_repos` into `run_command` dispatch (replaced placeholder)
+- Files changed: apps/launcher/src/github.rs
+- **Learnings for future iterations:**
+  - `GhRepo.full_name()` method already builds `owner/name` — use it consistently for the list item `id` field
+  - For accessories, use `json!({ "text": "...", "tag": "warning" })` for badges; `tag` field provides styling
+  - Query trimming with `.trim()` before checking `is_empty()` avoids whitespace-only queries triggering the list path
+---
