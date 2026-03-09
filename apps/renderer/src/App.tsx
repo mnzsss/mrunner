@@ -196,6 +196,20 @@ function App() {
 		],
 	)
 
+	const handlePushCommand = useCallback(
+		(pluginCommandId: string) => {
+			const target = allItems.find(
+				(c) =>
+					isScriptableAction(c.action) &&
+					c.action.commandId === pluginCommandId,
+			)
+			if (!target) return
+			setQuery('')
+			setActiveScriptableCommand(target)
+		},
+		[allItems],
+	)
+
 	return (
 		<div className="h-screen w-screen">
 			<BookmarkDialog
@@ -247,6 +261,7 @@ function App() {
 					query={query}
 					onQueryChange={setQuery}
 					inputRef={inputRef}
+					onPushCommand={handlePushCommand}
 					onBack={() => {
 						setActiveScriptableCommand(null)
 						setQuery('')

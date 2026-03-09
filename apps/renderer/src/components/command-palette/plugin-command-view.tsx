@@ -1,11 +1,8 @@
-import type { Action, DetailResult, ListItem } from '@mrunner/plugin'
+import type { DetailResult, ListItem } from '@mrunner/plugin'
 import type { RefObject } from 'react'
 import { Command, CommandInput, CommandItem, CommandList } from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
 import { homeDir } from '@tauri-apps/api/path'
-import { writeText } from '@tauri-apps/plugin-clipboard-manager'
-import { sendNotification } from '@tauri-apps/plugin-notification'
-import { open } from '@tauri-apps/plugin-shell'
 import { ChevronLeft, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +12,7 @@ import type { Command as CommandType } from '@/commands/types'
 import { isScriptableAction } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
 import { ICON_MAP } from '@/lib/constants'
+import { executePluginAction } from '@/lib/execute-plugin-action'
 
 export interface PluginCommandViewProps {
 	command: CommandType
@@ -22,6 +20,8 @@ export interface PluginCommandViewProps {
 	onQueryChange: (query: string) => void
 	inputRef: RefObject<HTMLInputElement | null>
 	onBack: () => void
+	/** Called when a plugin fires a 'push' action to navigate to another command. */
+	onPushCommand?: (commandId: string) => void
 }
 
 interface ListResult {
@@ -46,37 +46,13 @@ function isDetailResult(value: unknown): value is DetailResult {
 	)
 }
 
-async function executeAction(action: Action): Promise<void> {
-	switch (action.type) {
-		case 'url':
-			await open(action.url)
-			break
-		case 'open':
-			await open(action.path)
-			break
-		case 'copy':
-			await writeText(action.content)
-			break
-		case 'shell': {
-			await invoke('run_shell_command', { command: action.command })
-			break
-		}
-		case 'notification':
-			await sendNotification({ title: action.title, body: action.message })
-			break
-		case 'push':
-			// push requires app-level navigation; logged for US-013 to handle fully
-			console.info('Push action to command:', action.command)
-			break
-	}
-}
-
 export function PluginCommandView({
 	command,
 	query,
 	onQueryChange,
 	inputRef,
 	onBack,
+	onPushCommand,
 }: PluginCommandViewProps) {
 	const { t, i18n } = useTranslation()
 	const [items, setItems] = useState<ListItem[]>([])
@@ -155,12 +131,15 @@ export function PluginCommandView({
 			window.removeEventListener('keydown', handleKeyDown, { capture: true })
 	}, [onBack])
 
-	const handleItemSelect = useCallback(async (item: ListItem) => {
-		if (!item.actions || item.actions.length === 0) return
-		const firstAction = item.actions[0]
-		if (!firstAction) return
-		await executeAction(firstAction)
-	}, [])
+	const handleItemSelect = useCallback(
+		async (item: ListItem) => {
+			if (!item.actions || item.actions.length === 0) return
+			const firstAction = item.actions[0]
+			if (!firstAction) return
+			await executePluginAction(firstAction, { onPush: onPushCommand })
+		},
+		[onPushCommand],
+	)
 
 	return (
 		<Command
@@ -214,7 +193,9 @@ export function PluginCommandView({
 									<button
 										key={i}
 										type="button"
-										onClick={() => executeAction(action)}
+										onClick={() =>
+											executePluginAction(action, { onPush: onPushCommand })
+										}
 										className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
 									>
 										{'title' in action && action.title
