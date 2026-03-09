@@ -165,3 +165,20 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - The `isScriptableAction` type guard is exported from `@/commands/types` (re-exported barrel)
   - `PluginCommandView` uses an empty `<div>` loading placeholder in `CommandList` rather than `CommandEmpty` (which only shows when there are no matching items, not when waiting for results)
 ---
+
+## 2026-03-09 - US-011
+- Updated `PluginCommandView` to execute list-mode plugin commands with debouncing and display results
+- Added `@mrunner/plugin` as workspace dep in renderer's package.json (types pointed to src/index.ts)
+- `runCommand` uses `invoke('run_plugin_command')` with current query as CommandContext
+- Debounced effect (300ms) re-executes command on query change; runs immediately on mount
+- Loading indicator shown inline in header; error state shown in list area
+- `ListItem[]` rendered using `CommandItem` from @mrunner/ui with icon, title, subtitle, accessories
+- Item selection triggers `executeAction(item.actions[0])` — handles url/open/copy/shell/notification/push
+- `shouldFilter={false}` on Command component since filtering is handled server-side by the plugin
+- Files changed: apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/package.json, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - `@mrunner/plugin` package exports directly from `src/index.ts` — no build needed for type imports in renderer
+  - `item.actions[0]` can be `undefined` even when `actions.length > 0` in TypeScript strict mode — use explicit null check
+  - `shouldFilter={false}` is needed on the cmdk Command component when items are managed externally (no client-side filtering)
+  - Use `search.empty` key for "no results" message (not `search.noResults`)
+---

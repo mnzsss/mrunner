@@ -184,7 +184,7 @@
         "pnpm check passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Use a debounced effect for re-execution on query change. The CommandContext.query field carries the current search text. ListItem has actions[] array - the primary action fires on Enter, secondary actions could show in a submenu."
     },
     {

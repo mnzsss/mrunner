@@ -1,13 +1,15 @@
-import type { Action, ListItem } from '@mrunner/plugin'
+import type { Action, DetailResult, ListItem } from '@mrunner/plugin'
 import type { RefObject } from 'react'
 import { Command, CommandInput, CommandItem, CommandList } from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
 import { homeDir } from '@tauri-apps/api/path'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
+import { sendNotification } from '@tauri-apps/plugin-notification'
 import { open } from '@tauri-apps/plugin-shell'
 import { ChevronLeft, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import ReactMarkdown from 'react-markdown'
 
 import type { Command as CommandType } from '@/commands/types'
 import { isScriptableAction } from '@/commands/types'
@@ -35,6 +37,15 @@ function isListResult(value: unknown): value is ListResult {
 	)
 }
 
+function isDetailResult(value: unknown): value is DetailResult {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'markdown' in value &&
+		typeof (value as DetailResult).markdown === 'string'
+	)
+}
+
 async function executeAction(action: Action): Promise<void> {
 	switch (action.type) {
 		case 'url':
@@ -51,8 +62,7 @@ async function executeAction(action: Action): Promise<void> {
 			break
 		}
 		case 'notification':
-			// Notification actions are handled by the OS; minimal handling here
-			console.info('Notification action:', action.title, action.message)
+			await sendNotification({ title: action.title, body: action.message })
 			break
 		case 'push':
 			// push requires app-level navigation; logged for US-013 to handle fully
@@ -70,9 +80,12 @@ export function PluginCommandView({
 }: PluginCommandViewProps) {
 	const { t, i18n } = useTranslation()
 	const [items, setItems] = useState<ListItem[]>([])
+	const [detailResult, setDetailResult] = useState<DetailResult | null>(null)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	const mode = isScriptableAction(command.action) ? command.action.mode : 'list'
 
 	const runCommand = useCallback(
 		async (currentQuery: string) => {
@@ -94,15 +107,21 @@ export function PluginCommandView({
 						},
 					},
 				})
-				if (isListResult(result)) {
+				if (isDetailResult(result)) {
+					setDetailResult(result)
+					setItems([])
+				} else if (isListResult(result)) {
 					setItems(result.items)
+					setDetailResult(null)
 				} else {
 					setItems([])
+					setDetailResult(null)
 				}
 			} catch (e) {
 				const msg = e instanceof Error ? e.message : String(e)
 				setError(msg)
 				setItems([])
+				setDetailResult(null)
 			} finally {
 				setLoading(false)
 			}
@@ -110,16 +129,17 @@ export function PluginCommandView({
 		[command, i18n.language],
 	)
 
-	// Run on mount and debounce on query change
+	// Run immediately for detail mode, debounce for list mode on query change
 	useEffect(() => {
 		if (debounceRef.current) clearTimeout(debounceRef.current)
+		const delay = mode === 'detail' ? 0 : 300
 		debounceRef.current = setTimeout(() => {
 			runCommand(query)
-		}, 300)
+		}, delay)
 		return () => {
 			if (debounceRef.current) clearTimeout(debounceRef.current)
 		}
-	}, [query, runCommand])
+	}, [query, runCommand, mode])
 
 	// Escape key to go back
 	useEffect(() => {
@@ -165,21 +185,45 @@ export function PluginCommandView({
 					</span>
 				)}
 			</div>
-			<CommandInput
-				ref={inputRef}
-				value={query}
-				onValueChange={onQueryChange}
-				placeholder={t('search.placeholder')}
-				autoFocus
-			/>
+			{mode !== 'detail' && (
+				<CommandInput
+					ref={inputRef}
+					value={query}
+					onValueChange={onQueryChange}
+					placeholder={t('search.placeholder')}
+					autoFocus
+				/>
+			)}
 			<CommandList className="flex-1 overflow-y-auto p-2">
 				{error ? (
 					<div className="py-6 text-center text-sm text-destructive">
 						{t('plugins.error')}: {error}
 					</div>
-				) : loading && items.length === 0 ? (
+				) : loading && !detailResult && items.length === 0 ? (
 					<div className="py-6 text-center text-sm text-muted-foreground">
 						{t('plugins.running')}
+					</div>
+				) : detailResult ? (
+					<div className="p-4">
+						<div className="prose prose-sm dark:prose-invert max-w-none text-sm">
+							<ReactMarkdown>{detailResult.markdown}</ReactMarkdown>
+						</div>
+						{detailResult.actions && detailResult.actions.length > 0 && (
+							<div className="mt-4 flex flex-wrap gap-2">
+								{detailResult.actions.map((action, i) => (
+									<button
+										key={i}
+										type="button"
+										onClick={() => executeAction(action)}
+										className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+									>
+										{'title' in action && action.title
+											? action.title
+											: action.type}
+									</button>
+								))}
+							</div>
+						)}
 					</div>
 				) : items.length === 0 ? (
 					<div className="py-6 text-center text-sm text-muted-foreground">

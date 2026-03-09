@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { homeDir } from '@tauri-apps/api/path'
+import { sendNotification } from '@tauri-apps/plugin-notification'
 import { lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -43,7 +44,7 @@ function App() {
 		useState<Command | null>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
 
-	const { i18n } = useTranslation()
+	const { t, i18n } = useTranslation()
 
 	// Core data hooks
 	const { commands, executeCommand, folderActions } = useCommands()
@@ -157,8 +158,16 @@ function App() {
 								},
 							},
 						})
+						await sendNotification({
+							title: command.name,
+							body: t('plugins.success'),
+						})
 					} catch (e) {
 						console.error('Plugin action failed:', e)
+						await sendNotification({
+							title: command.name,
+							body: t('plugins.error'),
+						})
 					}
 					await hideWindow()
 					return
@@ -183,6 +192,7 @@ function App() {
 			dialogManager,
 			query,
 			i18n.language,
+			t,
 		],
 	)
 
