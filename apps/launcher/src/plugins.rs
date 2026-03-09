@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Deserialize)]
 struct PluginManifest {
@@ -55,6 +56,7 @@ pub struct RegisteredPlugin {
     pub runtime: String,
     pub commands: Vec<RegisteredCommand>,
     pub tier: PluginTier,
+    pub plugin_dir: PathBuf,
 }
 
 pub fn discover_plugins() -> Vec<RegisteredPlugin> {
@@ -127,6 +129,7 @@ fn load_scriptable_plugin(plugin_dir: &PathBuf, manifest_path: &PathBuf) -> Opti
         runtime: manifest.runtime,
         commands,
         tier: PluginTier::Scriptable,
+        plugin_dir: plugin_dir.clone(),
     })
 }
 
@@ -191,4 +194,113 @@ fn load_commands(plugin_id: &str, commands_dir: &PathBuf) -> Vec<RegisteredComma
     }
 
     commands
+}
+
+pub fn find_command<'a>(
+    plugins: &'a [RegisteredPlugin],
+    command_id: &str,
+) -> Option<(&'a RegisteredPlugin, &'a RegisteredCommand)> {
+    for plugin in plugins {
+        for command in &plugin.commands {
+            if command.id == command_id {
+                return Some((plugin, command));
+            }
+        }
+    }
+    None
+}
+
+fn resolve_runner_path(plugin_dir: &PathBuf) -> Result<PathBuf, String> {
+    let local = plugin_dir
+        .join("node_modules")
+        .join("@mrunner")
+        .join("plugin")
+        .join("dist")
+        .join("runner.js");
+    if local.exists() {
+        return Ok(local);
+    }
+    Err(format!(
+        "runner.js not found at {:?} — run `npm install` inside the plugin directory",
+        local
+    ))
+}
+
+pub async fn run_plugin_command(
+    plugin: &RegisteredPlugin,
+    command: &RegisteredCommand,
+    context: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let runner_path = resolve_runner_path(&plugin.plugin_dir)?;
+    let context_json = serde_json::to_string(&context).map_err(|e| e.to_string())?;
+
+    let mut child = tokio::process::Command::new(&plugin.runtime)
+        .arg(&runner_path)
+        .arg(&command.script_path)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to spawn {} process: {}", plugin.runtime, e))?;
+
+    // Write context JSON to stdin and close it
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(context_json.as_bytes())
+            .await
+            .map_err(|e| format!("Failed to write to stdin: {}", e))?;
+    }
+
+    // Extract stdout/stderr handles, then spawn concurrent tasks (both run while timeout is active)
+    let mut stdout_handle = child.stdout.take().expect("stdout was piped");
+    let mut stderr_handle = child.stderr.take().expect("stderr was piped");
+
+    let stdout_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        stdout_handle.read_to_end(&mut buf).await.ok();
+        buf
+    });
+    let stderr_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        stderr_handle.read_to_end(&mut buf).await.ok();
+        buf
+    });
+
+    let read_future = async {
+        let stdout_buf = stdout_task.await.unwrap_or_default();
+        let stderr_buf = stderr_task.await.unwrap_or_default();
+        (stdout_buf, stderr_buf)
+    };
+
+    let timeout_result = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        read_future,
+    )
+    .await;
+
+    match timeout_result {
+        Err(_) => {
+            let _ = child.kill().await;
+            Err(format!("Plugin command '{}' timed out after 10 seconds", command.id))
+        }
+        Ok((stdout_buf, stderr_buf)) => {
+            let status = child
+                .wait()
+                .await
+                .map_err(|e| format!("Failed to wait for process: {}", e))?;
+
+            if !status.success() {
+                let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
+                return Err(format!(
+                    "Plugin command '{}' exited with status {}: {}",
+                    command.id,
+                    status.code().unwrap_or(-1),
+                    stderr
+                ));
+            }
+            let stdout = String::from_utf8_lossy(&stdout_buf);
+            serde_json::from_str::<serde_json::Value>(stdout.trim())
+                .map_err(|e| format!("Failed to parse plugin output as JSON: {}", e))
+        }
+    }
 }
