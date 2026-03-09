@@ -6,6 +6,8 @@
 - tsup bypasses `noEmit: true` in tsconfig.json (uses esbuild internally) — safe to use even with type-only tsconfig
 - tokio `macros` feature cannot be used (tokio-macros 2.6.0 not in local registry); use `tokio::spawn` for concurrency instead of `tokio::join!`
 - tokio async process I/O: take stdout/stderr handles from child BEFORE entering timeout so child stays owned for kill(); spawn tasks for concurrent reads
+- CommandAction union is in `apps/renderer/src/core/types/command.ts`; new action types must be added there AND in the switch in `use-commands.ts` to avoid `never` error
+- `core/types/index.ts` and `commands/types.ts` are re-export barrels — new types/guards must be added to both
 
 # Ralph Progress Log
 Started: Mon Mar  9 12:36:44 PM -03 2026
@@ -110,4 +112,38 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `wait_with_output()` takes ownership of child; take stdout/stderr handles first then spawn tasks so child stays owned for kill()
   - `tokio::spawn` works in Tauri's multi-thread runtime with just the `rt` feature
   - `plugin_dir` is now a field on `RegisteredPlugin`, populated during discovery
+---
+
+## 2026-03-09 - US-008
+- Added `PluginRegistry` type alias (`Mutex<Vec<plugins::RegisteredPlugin>>`) in lib.rs
+- Updated `discover_plugins` Tauri command to accept `state: tauri::State<'_, PluginRegistry>`, cache results, and return `Result<Vec<...>, String>`
+- Added `run_plugin_command` Tauri command: locks state in a scoped block to clone plugin+command, then calls `plugins::run_plugin_command` after the guard is dropped
+- Registered `run_plugin_command` in invoke_handler
+- Added `.manage(Mutex::new(Vec::<plugins::RegisteredPlugin>::new()))` to Builder
+- Files changed: apps/launcher/src/lib.rs
+- **Learnings for future iterations:**
+  - `MutexGuard` is not `Send` — must drop it (via scoped block) before any `.await` in an async Tauri command
+  - Pattern: `let (a, b) = { let guard = state.lock()?; let (x, y) = find(...)?; (x.clone(), y.clone()) };` — explicit block ensures guard drops before async work
+  - `tauri::State<'_, Mutex<Vec<T>>>` needs the lifetime `'_` annotation
+  - Two `.manage()` calls with the same type would conflict — each managed state type must be unique
+---
+
+## 2026-03-09 - US-009
+- Added `ScriptableAction` interface and `CommandMode` type to `core/types/command.ts`
+- Added `isScriptableAction` type guard
+- Updated `core/types/index.ts` and `commands/types.ts` re-export barrels with new types/guards
+- Updated `use-commands.ts` switch to include `scriptable` case (returns `{ success: true }` as placeholder for US-010)
+- Rewrote `use-plugins.ts` to:
+  - Load Tier 1 JSON plugins as before (with `readDir`/`readTextFile`)
+  - Also call `invoke('discover_plugins')` for Tier 2 scriptable plugins
+  - Convert each Tier 2 command to a `Command` with `ScriptableAction`, grouped by plugin name
+  - Merge both tiers into a single command list
+  - Both tiers' errors are handled independently (one failure doesn't block the other)
+- Exported `ScriptableRegisteredPlugin`/`ScriptableRegisteredCommand` types from `use-plugins.ts` for downstream use
+- Files changed: apps/renderer/src/core/types/command.ts, apps/renderer/src/core/types/index.ts, apps/renderer/src/commands/types.ts, apps/renderer/src/hooks/use-plugins.ts, apps/renderer/src/hooks/use-commands.ts
+- **Learnings for future iterations:**
+  - The `CommandAction` union has an exhaustive `never` check in `use-commands.ts`; adding a new action type REQUIRES adding a case to the switch or TypeScript will error
+  - `core/types/index.ts` and `commands/types.ts` are re-export barrels — new exports must be threaded through both
+  - Tier 1 directory-not-found is silently swallowed (try/catch inner block); Tier 2 errors are logged but don't abort loading
+  - Scriptable commands use `icon: 'terminal'` as fallback since CommandIcon is a strict enum and plugin icons may not match
 ---

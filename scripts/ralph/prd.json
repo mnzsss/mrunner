@@ -134,7 +134,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Plugin state (discovered plugins) needs to be accessible from the Tauri command. Use tauri::State<T> with a Mutex<Vec<RegisteredPlugin>> or similar pattern. command_id format: 'plugin-id:command-name'."
     },
     {
@@ -150,7 +150,7 @@
         "pnpm check passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Existing use-plugins.ts handles Tier 1 JSON plugins. The hook should unify both tiers into a single commands list for the palette. Check the current hook implementation for the existing pattern."
     },
     {
