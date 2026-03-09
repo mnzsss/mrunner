@@ -49,6 +49,7 @@ struct CommandConfig {
 pub enum PluginTier {
     Json,
     Scriptable,
+    Native,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,7 +69,7 @@ pub struct RegisteredCommand {
     pub icon: String,
     pub mode: CommandMode,
     pub keywords: Vec<String>,
-    pub script_path: PathBuf,
+    pub script_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -213,7 +214,7 @@ fn load_commands(plugin_id: &str, commands_dir: &PathBuf) -> Vec<RegisteredComma
             icon: config.icon.unwrap_or_default(),
             mode,
             keywords: config.keywords.unwrap_or_default(),
-            script_path: cmd_dir.join("command.ts"),
+            script_path: Some(cmd_dir.join("command.ts")),
         });
     }
 
@@ -256,11 +257,15 @@ pub async fn run_plugin_command(
     context: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
     let runner_path = resolve_runner_path(&plugin.plugin_dir)?;
+    let script_path = command
+        .script_path
+        .as_ref()
+        .ok_or_else(|| format!("Plugin command '{}' has no script_path (native commands are not executed here)", command.id))?;
     let context_json = serde_json::to_string(&context).map_err(|e| e.to_string())?;
 
     let mut child = tokio::process::Command::new(&plugin.runtime)
         .arg(&runner_path)
-        .arg(&command.script_path)
+        .arg(script_path)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
