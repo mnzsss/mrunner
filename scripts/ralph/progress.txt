@@ -243,3 +243,19 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - For preferences that don't exist yet, read the raw JSON and spread-merge (don't rely solely on schema-parsed value) to avoid overwriting unrelated keys
   - Settings tabs: add to TABS const, update `Alt+N` range check, add label in tab button render, add content block in SheetBody, add i18n key
 ---
+
+## 2026-03-09 - US-015
+- Added `PluginManifestFull` and `PluginPreviewInfo` structs to `plugins.rs`
+- Implemented `prepare_plugin_install(git_url)`: git clones to temp dir (`.installing-{ts}/`) inside plugins folder (same filesystem), validates `plugin.json`, returns preview info + temp_path
+- Implemented `complete_plugin_install(temp_path)`: renames temp dir to `{plugin_id}/`, runs `npm install` if `package.json` exists, re-discovers plugins, returns updated plugin list
+- Implemented `cancel_plugin_install(temp_path)`: deletes temp dir
+- Added three Tauri commands in `lib.rs` and registered in `invoke_handler`
+- Updated `plugins-tab.tsx` with install state machine (`idle → cloning → confirming → installing → success/error`), Git URL input, confirmation AlertDialog showing plugin name/author/version/source/runtime, progress/error display
+- Added 14 new i18n keys to en.json and pt-BR.json (installFromGit, gitUrl, gitUrlPlaceholder, install, installing, cloning, confirmInstall, confirmInstallDesc, pluginName, pluginAuthor, pluginVersion, pluginSource, pluginRuntime, cancel, confirm, installSuccess, installError)
+- Files changed: apps/launcher/src/plugins.rs, apps/launcher/src/lib.rs, apps/renderer/src/components/settings/plugins-tab.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+- **Learnings for future iterations:**
+  - Clone to same filesystem as destination (`.installing-{ts}/` inside plugins dir) to guarantee `std::fs::rename` succeeds without cross-device errors
+  - `PluginManifestFull` is a superset of `PluginManifest` — keep both since manifest parsing in different contexts needs different fields
+  - `complete_plugin_install` returns `Vec<RegisteredPlugin>` (re-discovered) so the Tauri command can update both the state cache and the UI in one round-trip
+  - `AlertDialog` from `@mrunner/ui` provides `onOpenChange` for handling close via Escape/backdrop click — must call cancel logic there
+---

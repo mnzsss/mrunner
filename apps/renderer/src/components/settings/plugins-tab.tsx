@@ -7,6 +7,7 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
+	Badge,
 	Button,
 	Input,
 	Separator,
@@ -27,7 +28,7 @@ import {
 	writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open } from '@tauri-apps/plugin-shell'
-import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react'
+import { ChevronDown, ChevronRight, FolderOpen, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -38,6 +39,10 @@ const CONFIG_DIR = import.meta.env.DEV
 	? '.config/mrunner-dev'
 	: '.config/mrunner'
 const CONFIG_FILE = 'preferences.json'
+const REGISTRY_CACHE_FILE = 'plugin-registry-cache.json'
+const REGISTRY_URL =
+	'https://raw.githubusercontent.com/mnzsss/mrunner/main/plugins/registry.json'
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 interface PluginPreviewInfo {
 	id: string
@@ -48,6 +53,28 @@ interface PluginPreviewInfo {
 	icon?: string
 	runtime: string
 	tempPath: string
+}
+
+interface RegistryPlugin {
+	id: string
+	name: string
+	description: string
+	author: string
+	url: string
+	tags: string[]
+	verified?: boolean
+}
+
+interface RegistryCache {
+	fetchedAt: number
+	plugins: RegistryPlugin[]
+}
+
+interface UpdateResult {
+	pluginId: string
+	pluginName: string
+	status: 'updated' | 'up-to-date' | 'error' | 'skipped'
+	message?: string
 }
 
 type InstallStatus =
@@ -72,6 +99,17 @@ export function PluginsTab() {
 	const [pluginPreview, setPluginPreview] = useState<PluginPreviewInfo | null>(
 		null,
 	)
+
+	// Registry browsing state
+	const [registryPlugins, setRegistryPlugins] = useState<RegistryPlugin[]>([])
+	const [registryLoading, setRegistryLoading] = useState(false)
+	const [registryError, setRegistryError] = useState<string | null>(null)
+
+	// Update checking state
+	const [updateResults, setUpdateResults] = useState<UpdateResult[] | null>(
+		null,
+	)
+	const [checkingUpdates, setCheckingUpdates] = useState(false)
 
 	const getConfigPath = useCallback(async () => {
 		const home = await homeDir()
@@ -209,6 +247,72 @@ export function PluginsTab() {
 		setInstallStatus('idle')
 		setInstallError(null)
 	}
+
+	const getCachePath = useCallback(async () => {
+		const home = await homeDir()
+		return `${home}/${CONFIG_DIR}/${REGISTRY_CACHE_FILE}`
+	}, [])
+
+	const loadRegistry = useCallback(
+		async (forceRefresh = false) => {
+			setRegistryLoading(true)
+			setRegistryError(null)
+			try {
+				const cachePath = await getCachePath()
+				const cacheExists = await exists(cachePath)
+				if (!forceRefresh && cacheExists) {
+					const content = await readTextFile(cachePath)
+					const cache = JSON.parse(content) as RegistryCache
+					if (Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
+						setRegistryPlugins(cache.plugins)
+						setRegistryLoading(false)
+						return
+					}
+				}
+				const response = await fetch(REGISTRY_URL)
+				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				const data = (await response.json()) as { plugins: RegistryPlugin[] }
+				const freshPlugins = data.plugins ?? []
+				setRegistryPlugins(freshPlugins)
+				await ensureConfigDir()
+				const cache: RegistryCache = {
+					fetchedAt: Date.now(),
+					plugins: freshPlugins,
+				}
+				await writeTextFile(cachePath, JSON.stringify(cache, null, 2))
+			} catch (e) {
+				setRegistryError(e instanceof Error ? e.message : String(e))
+			} finally {
+				setRegistryLoading(false)
+			}
+		},
+		[getCachePath, ensureConfigDir],
+	)
+
+	const handleCheckUpdates = async () => {
+		setCheckingUpdates(true)
+		setUpdateResults(null)
+		try {
+			const results = await invoke<UpdateResult[]>('check_plugin_updates')
+			setUpdateResults(results)
+			// Re-discover plugins in case updates brought new commands
+			const discovered =
+				await invoke<ScriptableRegisteredPlugin[]>('discover_plugins')
+			setPlugins(discovered)
+		} catch (e) {
+			console.error('Failed to check updates:', e)
+		} finally {
+			setCheckingUpdates(false)
+		}
+	}
+
+	const handleInstallFromRegistry = (url: string) => {
+		setGitUrl(url)
+	}
+
+	useEffect(() => {
+		loadRegistry()
+	}, [loadRegistry])
 
 	const toggleExpanded = (pluginId: string) => {
 		setExpandedPlugins((prev) => {
@@ -444,6 +548,150 @@ export function PluginsTab() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			<Separator />
+
+			{/* Browse Plugins Registry */}
+			<div className="space-y-3">
+				<div className="flex items-center justify-between">
+					<h3 className="text-sm font-medium text-muted-foreground">
+						{t('settings.plugins.browsePlugins')}
+					</h3>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => loadRegistry(true)}
+						disabled={registryLoading}
+						className="flex items-center gap-1.5 text-xs"
+					>
+						<RefreshCw
+							className={`h-3.5 w-3.5 ${registryLoading ? 'animate-spin' : ''}`}
+						/>
+						{t('settings.plugins.refresh')}
+					</Button>
+				</div>
+
+				{registryLoading && (
+					<p className="text-sm text-muted-foreground">
+						{t('settings.plugins.loadingRegistry')}
+					</p>
+				)}
+
+				{!registryLoading && registryError && (
+					<p className="text-sm text-destructive">
+						{t('settings.plugins.registryError')}: {registryError}
+					</p>
+				)}
+
+				{!registryLoading && !registryError && registryPlugins.length === 0 && (
+					<p className="text-sm text-muted-foreground">
+						{t('settings.plugins.noRegistryPlugins')}
+					</p>
+				)}
+
+				{!registryLoading && registryPlugins.length > 0 && (
+					<div className="space-y-2">
+						{registryPlugins.map((regPlugin) => {
+							const isInstalled = plugins.some(
+								(p) => p.pluginId === regPlugin.id,
+							)
+							return (
+								<Item key={regPlugin.id} variant="outline">
+									<ItemContent className="min-w-0 flex-1 space-y-0.5">
+										<div className="flex items-center gap-2">
+											<ItemTitle className="font-medium">
+												{regPlugin.name}
+											</ItemTitle>
+											{regPlugin.verified && (
+												<Badge variant="secondary" className="text-xs">
+													{t('settings.plugins.verifiedBadge')}
+												</Badge>
+											)}
+										</div>
+										<ItemDescription className="text-xs text-muted-foreground">
+											{regPlugin.description}
+										</ItemDescription>
+										{regPlugin.author && (
+											<p className="text-xs text-muted-foreground/70">
+												{regPlugin.author}
+											</p>
+										)}
+									</ItemContent>
+									{isInstalled ? (
+										<Badge variant="outline" className="shrink-0 text-xs">
+											{t('settings.plugins.installed')}
+										</Badge>
+									) : (
+										<Button
+											variant="outline"
+											size="sm"
+											className="shrink-0 text-xs"
+											onClick={() => handleInstallFromRegistry(regPlugin.url)}
+										>
+											{t('settings.plugins.install')}
+										</Button>
+									)}
+								</Item>
+							)
+						})}
+					</div>
+				)}
+			</div>
+
+			<Separator />
+
+			{/* Check for Updates */}
+			<div className="space-y-3">
+				<div className="flex items-center justify-between">
+					<h3 className="text-sm font-medium text-muted-foreground">
+						{t('settings.plugins.updateResults')}
+					</h3>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleCheckUpdates}
+						disabled={checkingUpdates || plugins.length === 0}
+						className="flex items-center gap-1.5 text-xs"
+					>
+						<RefreshCw
+							className={`h-3.5 w-3.5 ${checkingUpdates ? 'animate-spin' : ''}`}
+						/>
+						{checkingUpdates
+							? t('settings.plugins.checkingUpdates')
+							: t('settings.plugins.checkUpdates')}
+					</Button>
+				</div>
+
+				{updateResults && updateResults.length > 0 && (
+					<div className="space-y-1 rounded-md border bg-muted/30 p-2">
+						{updateResults.map((result) => (
+							<div
+								key={result.pluginId}
+								className="flex items-center justify-between px-2 py-1 text-sm"
+							>
+								<span className="font-medium">{result.pluginName}</span>
+								<span
+									className={
+										result.status === 'updated'
+											? 'text-green-600 dark:text-green-400'
+											: result.status === 'error'
+												? 'text-destructive'
+												: 'text-muted-foreground'
+									}
+								>
+									{result.status === 'updated'
+										? t('settings.plugins.updateStatusUpdated')
+										: result.status === 'up-to-date'
+											? t('settings.plugins.updateStatusUpToDate')
+											: result.status === 'error'
+												? `${t('settings.plugins.updateStatusError')}: ${result.message ?? ''}`
+												: t('settings.plugins.updateStatusSkipped')}
+								</span>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
 
 			<Separator />
 

@@ -143,7 +143,21 @@
       "cancel": "Cancel",
       "confirm": "Install Plugin",
       "installSuccess": "Plugin installed successfully!",
-      "installError": "Installation failed"
+      "installError": "Installation failed",
+      "browsePlugins": "Browse Plugins",
+      "loadingRegistry": "Loading registry...",
+      "registryError": "Failed to load plugin registry",
+      "refresh": "Refresh",
+      "installed": "Installed",
+      "checkUpdates": "Check for Updates",
+      "checkingUpdates": "Checking...",
+      "updateResults": "Update Results",
+      "updateStatusUpdated": "Updated",
+      "updateStatusUpToDate": "Up to date",
+      "updateStatusError": "Error",
+      "updateStatusSkipped": "Not a git repository",
+      "noRegistryPlugins": "No plugins available in the registry yet.",
+      "verifiedBadge": "Verified"
     }
   },
   "commands": {

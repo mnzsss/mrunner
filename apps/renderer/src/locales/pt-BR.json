@@ -143,7 +143,21 @@
       "cancel": "Cancelar",
       "confirm": "Instalar Plugin",
       "installSuccess": "Plugin instalado com sucesso!",
-      "installError": "Falha na instalação"
+      "installError": "Falha na instalação",
+      "browsePlugins": "Explorar Plugins",
+      "loadingRegistry": "Carregando registro...",
+      "registryError": "Falha ao carregar o registro de plugins",
+      "refresh": "Atualizar",
+      "installed": "Instalado",
+      "checkUpdates": "Verificar Atualizações",
+      "checkingUpdates": "Verificando...",
+      "updateResults": "Resultados da Atualização",
+      "updateStatusUpdated": "Atualizado",
+      "updateStatusUpToDate": "Em dia",
+      "updateStatusError": "Erro",
+      "updateStatusSkipped": "Não é um repositório git",
+      "noRegistryPlugins": "Nenhum plugin disponível no registro ainda.",
+      "verifiedBadge": "Verificado"
     }
   },
   "commands": {

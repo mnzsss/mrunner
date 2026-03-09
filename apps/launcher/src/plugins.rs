@@ -434,3 +434,97 @@ pub fn complete_plugin_install(temp_path: &str) -> Result<(), String> {
 pub fn cancel_plugin_install(temp_path: &str) {
     let _ = std::fs::remove_dir_all(temp_path);
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateResult {
+    pub plugin_id: String,
+    pub plugin_name: String,
+    pub status: String,
+    pub message: Option<String>,
+}
+
+/// Runs `git pull` in each installed Tier 2 plugin directory. Re-runs npm install
+/// if the pull brought in changes. Returns one UpdateResult per plugin.
+pub fn check_plugin_updates(plugins: &[RegisteredPlugin]) -> Vec<UpdateResult> {
+    let mut results = Vec::new();
+
+    for plugin in plugins {
+        if !matches!(plugin.tier, PluginTier::Scriptable) {
+            continue;
+        }
+
+        let dir = &plugin.plugin_dir;
+
+        let git_dir = dir.join(".git");
+        if !git_dir.exists() {
+            results.push(UpdateResult {
+                plugin_id: plugin.plugin_id.clone(),
+                plugin_name: plugin.plugin_name.clone(),
+                status: "skipped".to_string(),
+                message: Some("Not a git repository".to_string()),
+            });
+            continue;
+        }
+
+        let output = match std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .arg("pull")
+            .output()
+        {
+            Ok(o) => o,
+            Err(e) => {
+                results.push(UpdateResult {
+                    plugin_id: plugin.plugin_id.clone(),
+                    plugin_name: plugin.plugin_name.clone(),
+                    status: "error".to_string(),
+                    message: Some(format!("Failed to run git: {}", e)),
+                });
+                continue;
+            }
+        };
+
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+        if !output.status.success() {
+            results.push(UpdateResult {
+                plugin_id: plugin.plugin_id.clone(),
+                plugin_name: plugin.plugin_name.clone(),
+                status: "error".to_string(),
+                message: Some(stderr),
+            });
+            continue;
+        }
+
+        let updated = !stdout.contains("Already up to date");
+
+        // Re-run npm install if there were changes and package.json exists
+        if updated && dir.join("package.json").exists() {
+            let npm_status = std::process::Command::new("npm")
+                .arg("install")
+                .current_dir(dir)
+                .status();
+
+            if let Err(e) = npm_status {
+                results.push(UpdateResult {
+                    plugin_id: plugin.plugin_id.clone(),
+                    plugin_name: plugin.plugin_name.clone(),
+                    status: "error".to_string(),
+                    message: Some(format!("Updated but npm install failed: {}", e)),
+                });
+                continue;
+            }
+        }
+
+        results.push(UpdateResult {
+            plugin_id: plugin.plugin_id.clone(),
+            plugin_name: plugin.plugin_name.clone(),
+            status: if updated { "updated" } else { "up-to-date" }.to_string(),
+            message: None,
+        });
+    }
+
+    results
+}

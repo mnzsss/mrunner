@@ -139,6 +139,15 @@ async fn cancel_plugin_install(temp_path: String) {
 }
 
 #[tauri::command]
+async fn check_plugin_updates(
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<Vec<plugins::UpdateResult>, String> {
+    let plugins = state.lock().map_err(|e| e.to_string())?.clone();
+    let results = plugins::check_plugin_updates(&plugins);
+    Ok(results)
+}
+
+#[tauri::command]
 fn hide_main_window(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         shortcuts::unfocus_window(&window);
@@ -268,6 +277,7 @@ pub fn run() {
             prepare_plugin_install,
             complete_plugin_install,
             cancel_plugin_install,
+            check_plugin_updates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

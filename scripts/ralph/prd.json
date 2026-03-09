@@ -257,7 +257,7 @@
         "pnpm check passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "Use std::process::Command to run git clone and npm install. Clone target: ~/.config/mrunner/plugins/{plugin-id}/. The plugin-id comes from the cloned plugin.json. Validate plugin.json schema before accepting. Security: show user what they're installing before proceeding."
     },
     {
