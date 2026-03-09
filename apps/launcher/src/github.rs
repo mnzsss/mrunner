@@ -185,7 +185,7 @@ pub async fn run_command(
         "github:cmd_hub" => cmd_hub(context).await,
         "github:cmd_repos" => cmd_repos(context).await,
         "github:cmd_prs" => cmd_prs(context).await,
-        "github:cmd_issues" => Ok(json!({ "items": [] })),
+        "github:cmd_issues" => cmd_issues(context).await,
         "github:cmd_actions" => Ok(json!({ "items": [] })),
         _ => Err(format!("Unknown github command: {}", command_id)),
     }
@@ -331,6 +331,54 @@ async fn cmd_prs(context: &serde_json::Value) -> Result<serde_json::Value, Strin
                 "icon": "github",
                 "accessories": [{ "text": date_text }],
                 "actions": [{ "type": "url", "url": pr.url }]
+            })
+        })
+        .collect::<Vec<_>>();
+
+    Ok(json!({ "items": items }))
+}
+
+async fn cmd_issues(context: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = context["query"].as_str().unwrap_or("").trim().to_string();
+
+    let mut args = vec![
+        "search",
+        "issues",
+        "--author=@me",
+        "--state=open",
+        "--json",
+        "number,title,repository,url,createdAt",
+        "-L",
+        "30",
+    ];
+
+    let query_owned;
+    if !query.is_empty() {
+        query_owned = query.clone();
+        args.push(&query_owned);
+    }
+
+    let stdout = gh_exec(&args).await?;
+
+    let issues: Vec<GhIssue> =
+        serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse issues: {}", e))?;
+
+    let items = issues
+        .into_iter()
+        .map(|issue| {
+            let repo = issue.repo_name().to_string();
+            let date_text = issue
+                .created_at
+                .as_deref()
+                .map(relative_time)
+                .unwrap_or_default();
+            json!({
+                "id": format!("issue:{}:{}", repo, issue.number),
+                "title": issue.title,
+                "subtitle": format!("{}#{}", repo, issue.number),
+                "icon": "github",
+                "accessories": [{ "text": date_text }],
+                "actions": [{ "type": "url", "url": issue.url }]
             })
         })
         .collect::<Vec<_>>();
