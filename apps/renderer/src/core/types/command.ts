@@ -106,6 +106,7 @@ export type CommandIcon =
 	| 'video'
 	| 'folder-plus'
 	| 'folder-cog'
+	| 'github'
 
 // User directory returned from backend
 export interface UserDirectory {
@@ -225,6 +226,7 @@ const CommandIconSchema = z.enum([
 	'video',
 	'folder-plus',
 	'folder-cog',
+	'github',
 ])
 
 // Schema for folder configuration

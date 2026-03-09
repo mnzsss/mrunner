@@ -58,7 +58,8 @@
         "image",
         "video",
         "folder-plus",
-        "folder-cog"
+        "folder-cog",
+        "github"
       ]
     },
     "runtime": {
