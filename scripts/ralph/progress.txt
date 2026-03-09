@@ -4,6 +4,8 @@
 - Cargo workspace dependencies (serde, serde_json, dirs) are referenced via `dep.workspace = true` — no version needed
 - `cargo check -p mrunner` is the quality gate for Rust changes (not `cargo build`)
 - tsup bypasses `noEmit: true` in tsconfig.json (uses esbuild internally) — safe to use even with type-only tsconfig
+- tokio `macros` feature cannot be used (tokio-macros 2.6.0 not in local registry); use `tokio::spawn` for concurrency instead of `tokio::join!`
+- tokio async process I/O: take stdout/stderr handles from child BEFORE entering timeout so child stays owned for kill(); spawn tasks for concurrent reads
 
 # Ralph Progress Log
 Started: Mon Mar  9 12:36:44 PM -03 2026
@@ -77,4 +79,35 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - tsup build config can be entirely inline as CLI args, no tsup.config.ts needed
   - `biome check . --write` auto-reorganizes imports (merged two import statements into one)
   - `tsconfig.json` had `noEmit: true` — tsup bypasses this (uses esbuild, not tsc) so build still works
+---
+
+## 2026-03-09 - US-006
+- Created `packages/plugin/schemas/plugin.schema.json` with full plugin manifest schema
+- Created `packages/plugin/schemas/command.schema.json` with command config schema
+- Both schemas: draft-07, required fields, additionalProperties: false, icon enum from ICON_MAP
+- Icon enum sourced from `apps/renderer/src/lib/constants.ts` ICON_MAP keys (26 icons)
+- mode enum: list, detail, action; runtime enum: node, deno, bun, python, bash
+- Files changed: packages/plugin/schemas/plugin.schema.json, packages/plugin/schemas/command.schema.json
+- **Learnings for future iterations:**
+  - Icon values come from `ICON_MAP` in `apps/renderer/src/lib/constants.ts` — sync schemas with that if new icons are added
+  - JSON schema files are not linted by biome (only JS/TS files checked), so pnpm check passes trivially for pure JSON additions
+  - `additionalProperties: false` helps plugin authors catch typos in field names via IDE IntelliSense
+---
+
+## 2026-03-09 - US-007
+- Added `run_plugin_command(plugin, command, context)` async function in `apps/launcher/src/plugins.rs`
+- Added `find_command(plugins, command_id)` helper to look up plugin/command by ID
+- Added `resolve_runner_path(plugin_dir)` to locate `{plugin_dir}/node_modules/@mrunner/plugin/dist/runner.js`
+- Added `plugin_dir: PathBuf` field to `RegisteredPlugin` struct (serializes as `pluginDir` in JSON)
+- Updated `load_scriptable_plugin` to populate `plugin_dir`
+- Process spawning: `{runtime} {runner_path} {script_path}` with piped stdin/stdout/stderr
+- Context JSON written to stdin; stdout/stderr read concurrently via `tokio::spawn`; 10-second timeout via `tokio::time::timeout`; process killed on timeout
+- Non-zero exit code treated as error with stderr content included
+- Added `tokio` dep with features: `process`, `time`, `io-util`, `rt`
+- Files changed: apps/launcher/src/plugins.rs, apps/launcher/Cargo.toml, Cargo.lock
+- **Learnings for future iterations:**
+  - `tokio::join!` macro unavailable (tokio-macros 2.6.0 missing from local registry) — use `tokio::spawn` + sequential `.await` instead
+  - `wait_with_output()` takes ownership of child; take stdout/stderr handles first then spawn tasks so child stays owned for kill()
+  - `tokio::spawn` works in Tauri's multi-thread runtime with just the `rt` feature
+  - `plugin_dir` is now a field on `RegisteredPlugin`, populated during discovery
 ---

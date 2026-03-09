@@ -98,7 +98,7 @@
         "pnpm check passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Referenced via $schema in plugin files: node_modules/@mrunner/plugin/schemas/plugin.schema.json. Check existing icon names from the codebase (Lucide icons used in command palette). mode enum: list, detail, action."
     },
     {
@@ -118,7 +118,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Use tokio::process::Command for async spawning. Runner path: find @mrunner/plugin/dist/runner.js relative to the plugin's node_modules. For timeout, use tokio::time::timeout. Non-zero exit code should be treated as an error. The runner path may need to be resolved from the plugin directory's node_modules."
     },
     {
