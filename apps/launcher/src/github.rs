@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use std::path::PathBuf;
@@ -183,7 +184,7 @@ pub async fn run_command(
     match command_id {
         "github:cmd_hub" => cmd_hub(context).await,
         "github:cmd_repos" => cmd_repos(context).await,
-        "github:cmd_prs" => Ok(json!({ "items": [] })),
+        "github:cmd_prs" => cmd_prs(context).await,
         "github:cmd_issues" => Ok(json!({ "items": [] })),
         "github:cmd_actions" => Ok(json!({ "items": [] })),
         _ => Err(format!("Unknown github command: {}", command_id)),
@@ -255,6 +256,84 @@ async fn cmd_repos(context: &serde_json::Value) -> Result<serde_json::Value, Str
             })
             .collect::<Vec<_>>()
     };
+
+    Ok(json!({ "items": items }))
+}
+
+fn relative_time(date_str: &str) -> String {
+    if let Ok(dt) = date_str.parse::<DateTime<Utc>>() {
+        let now = Utc::now();
+        let diff = now.signed_duration_since(dt);
+        let secs = diff.num_seconds();
+        if secs < 60 {
+            return "just now".to_string();
+        }
+        let mins = diff.num_minutes();
+        if mins < 60 {
+            return format!("{}m ago", mins);
+        }
+        let hours = diff.num_hours();
+        if hours < 24 {
+            return format!("{}h ago", hours);
+        }
+        let days = diff.num_days();
+        if days < 7 {
+            return format!("{}d ago", days);
+        }
+        let weeks = days / 7;
+        if weeks < 4 {
+            return format!("{}w ago", weeks);
+        }
+        let months = days / 30;
+        return format!("{}mo ago", months);
+    }
+    date_str.to_string()
+}
+
+async fn cmd_prs(context: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = context["query"].as_str().unwrap_or("").trim().to_string();
+
+    let mut args = vec![
+        "search",
+        "prs",
+        "--author=@me",
+        "--state=open",
+        "--json",
+        "number,title,repository,url,createdAt",
+        "-L",
+        "30",
+    ];
+
+    let query_owned;
+    if !query.is_empty() {
+        query_owned = query.clone();
+        args.push(&query_owned);
+    }
+
+    let stdout = gh_exec(&args).await?;
+
+    let prs: Vec<GhPr> =
+        serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse PRs: {}", e))?;
+
+    let items = prs
+        .into_iter()
+        .map(|pr| {
+            let repo = pr.repo_name().to_string();
+            let date_text = pr
+                .created_at
+                .as_deref()
+                .map(relative_time)
+                .unwrap_or_default();
+            json!({
+                "id": format!("pr:{}:{}", repo, pr.number),
+                "title": pr.title,
+                "subtitle": format!("{}#{}", repo, pr.number),
+                "icon": "github",
+                "accessories": [{ "text": date_text }],
+                "actions": [{ "type": "url", "url": pr.url }]
+            })
+        })
+        .collect::<Vec<_>>();
 
     Ok(json!({ "items": items }))
 }
