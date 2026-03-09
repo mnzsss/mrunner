@@ -88,6 +88,11 @@ fn toggle_autostart(app: tauri::AppHandle, enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn discover_plugins() -> Vec<plugins::RegisteredPlugin> {
+    plugins::discover_plugins()
+}
+
+#[tauri::command]
 fn hide_main_window(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         shortcuts::unfocus_window(&window);
@@ -211,6 +216,7 @@ pub fn run() {
             bookmarks::bookmark_list_tags,
             bookmarks::bookmark_rename_tag,
             bookmarks::bookmark_delete_tag,
+            discover_plugins,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
