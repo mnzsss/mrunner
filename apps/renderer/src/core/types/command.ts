@@ -243,6 +243,9 @@ export interface UserPreferences {
 	customFolders: FolderConfig[]
 	hiddenSystemFolders: string[]
 	shortcuts: ShortcutsSettings
+	plugins?: {
+		disabledPlugins: string[]
+	}
 }
 
 // Simplified schema that doesn't require circular imports
@@ -256,6 +259,11 @@ export const UserPreferencesSchema = z.object({
 		.object({
 			shortcuts: z.array(z.any()).default([]),
 			conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
+		})
+		.optional(),
+	plugins: z
+		.object({
+			disabledPlugins: z.array(z.string()).default([]),
 		})
 		.optional(),
 })

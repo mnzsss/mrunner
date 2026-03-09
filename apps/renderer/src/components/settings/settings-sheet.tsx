@@ -20,10 +20,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { LanguageSelector } from '@/components/language-selector'
+import { PluginsTab } from '@/components/settings/plugins-tab'
 import { ShortcutItem } from '@/components/shortcuts/shortcut-item'
 import { useShortcutsSettings } from '@/hooks/use-shortcuts-settings'
 
-const TABS = ['Global', 'Bookmarks'] as const
+const TABS = ['Global', 'Bookmarks', 'Plugins'] as const
 type Tab = (typeof TABS)[number]
 
 interface SettingsSheetProps {
@@ -72,8 +73,8 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
-			// Alt+1/2 to jump to tab
-			if (e.altKey && e.key >= '1' && e.key <= '2') {
+			// Alt+1/2/3 to jump to tab
+			if (e.altKey && e.key >= '1' && e.key <= '3') {
 				e.preventDefault()
 				const index = parseInt(e.key, 10) - 1
 				const tab = TABS[index]
@@ -156,7 +157,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							>
 								{tab === 'Global'
 									? t('settings.tabGlobal')
-									: t('settings.tabBookmarks')}
+									: tab === 'Bookmarks'
+										? t('settings.tabBookmarks')
+										: t('settings.tabPlugins')}
 								<Kbd className="opacity-60">{`Alt+${index + 1}`}</Kbd>
 							</button>
 						))}
@@ -271,6 +274,8 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							</div>
 						</div>
 					)}
+
+					{activeTab === 'Plugins' && <PluginsTab />}
 				</SheetBody>
 
 				<div className="flex items-center gap-4 border-t px-6 py-3 text-xs text-muted-foreground">

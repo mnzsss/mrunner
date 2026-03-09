@@ -110,13 +110,24 @@
 		"bookmarkShortcuts": "Bookmark Shortcuts",
 		"tabGlobal": "Global",
 		"tabBookmarks": "Bookmarks",
+		"tabPlugins": "Plugins",
 		"close": "close",
 		"navigate": "navigate",
 		"switchTab": "switch tab",
 		"goToTab": "go to tab",
 		"autoSaved": "Changes saved automatically",
 		"language": "Language",
-		"languageDescription": "Choose the application language"
+		"languageDescription": "Choose the application language",
+		"plugins": {
+			"installedPlugins": "Installed Plugins",
+			"noPlugins": "No plugins installed. Place plugin directories in ~/.config/mrunner/plugins/",
+			"openFolder": "Open Plugins Folder",
+			"runtime": "Runtime: {{runtime}}",
+			"mode": "Mode: {{mode}}",
+			"expand": "Show commands",
+			"collapse": "Hide commands",
+			"hint": "Plugins are loaded from ~/.config/mrunner/plugins/. Disabled plugins are hidden from the command palette."
+		}
 	},
 	"commands": {
 		"settings": "Settings",

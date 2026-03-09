@@ -8,6 +8,8 @@
 - tokio async process I/O: take stdout/stderr handles from child BEFORE entering timeout so child stays owned for kill(); spawn tasks for concurrent reads
 - CommandAction union is in `apps/renderer/src/core/types/command.ts`; new action types must be added there AND in the switch in `use-commands.ts` to avoid `never` error
 - `core/types/index.ts` and `commands/types.ts` are re-export barrels — new types/guards must be added to both
+- Plugin action dispatch: use `executePluginAction` from `apps/renderer/src/lib/execute-plugin-action.ts`; navigation callbacks (push) passed as options to keep utility stateless
+- Settings tabs wired in `settings-sheet.tsx`: TABS const + label render + Alt+N range + SheetBody block + i18n key; `UserPreferences` interface and `UserPreferencesSchema` must stay in sync
 
 # Ralph Progress Log
 Started: Mon Mar  9 12:36:44 PM -03 2026
@@ -207,4 +209,37 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `DetailResult.actions` items each optionally have a `title` field — use it for button labels with fallback to `action.type`
   - Detail mode should NOT show `CommandInput` (no query-based filtering makes sense for static markdown)
   - The existing `plugins.success` / `plugins.error` / `plugins.running` i18n keys were sufficient — no new keys needed
+---
+
+## 2026-03-09 - US-013
+- Created shared utility `apps/renderer/src/lib/execute-plugin-action.ts` with `executePluginAction(action, options?)` function
+- Handles all action types: url (open in browser), open (open file/folder), copy (clipboard), shell (run_shell_command IPC), notification (OS notification), push (navigate to another plugin command)
+- push action delegates to optional `onPush` callback to keep the utility free of React state
+- Removed local `executeAction` function from `plugin-command-view.tsx`; replaced all callsites with shared `executePluginAction`
+- Added `onPushCommand?: (commandId: string) => void` prop to `PluginCommandView`
+- Wired `handleItemSelect` and detail mode action buttons through `onPushCommand`
+- Added `handlePushCommand` in `App.tsx`: looks up target command by `ScriptableAction.commandId` in `allItems`, sets it as `activeScriptableCommand`
+- Files changed: apps/renderer/src/lib/execute-plugin-action.ts (new), apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/src/App.tsx
+- **Learnings for future iterations:**
+  - Shared action utility pattern: pass navigation callbacks as options to keep utility stateless and reusable
+  - `push` action's `action.command` field is the plugin commandId (format: `plugin-id:command-name`) — match against `ScriptableAction.commandId` in allItems
+  - biome auto-fixed import ordering in plugin-command-view.tsx (1 file fixed on `pnpm check --write`)
+  - executePluginAction is now the canonical place for all plugin action dispatch — add new action types there first
+---
+
+## 2026-03-09 - US-014
+- Created `apps/renderer/src/components/settings/plugins-tab.tsx`
+- Lists all Tier 2 scriptable plugins discovered via `invoke('discover_plugins')`
+- Enable/disable toggle per plugin; disabled plugin IDs persisted to `preferences.json` under `plugins.disabledPlugins` key
+- Expandable section per plugin showing its commands (title, description, mode)
+- "Open Plugins Folder" button opens `~/.config/mrunner/plugins/` via Tauri shell `open()`
+- Added optional `plugins` field to `UserPreferences` interface and `UserPreferencesSchema` in `core/types/command.ts`
+- Updated `settings-sheet.tsx`: added "Plugins" to TABS array, Alt+3 navigation, tab label, and `<PluginsTab />` rendering
+- Added `settings.tabPlugins` and `settings.plugins.*` i18n keys to en.json and pt-BR.json
+- Files changed: apps/renderer/src/components/settings/plugins-tab.tsx (new), apps/renderer/src/components/settings/settings-sheet.tsx, apps/renderer/src/core/types/command.ts, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - `UserPreferences` interface and `UserPreferencesSchema` in `core/types/command.ts` must stay in sync — updating one requires updating the other
+  - Zod's `z.object()` strips unknown keys on parse; adding new preference keys requires updating the schema or they'll be dropped on next write
+  - For preferences that don't exist yet, read the raw JSON and spread-merge (don't rely solely on schema-parsed value) to avoid overwriting unrelated keys
+  - Settings tabs: add to TABS const, update `Alt+N` range check, add label in tab button render, add content block in SheetBody, add i18n key
 ---

@@ -219,7 +219,7 @@
         "pnpm check passes"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Most of these handlers likely already exist for Tier 1 plugins (url, open, copy, shell). Check existing action execution code and reuse. The 'push' action is new - it should set the active command in the palette to the target command ID."
     },
     {
@@ -237,7 +237,7 @@
         "pnpm check passes"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Plugin enabled/disabled state stored in preferences.json under plugins key. Follow the existing settings tab pattern (check other tabs in the settings directory). Use @mrunner/ui components. The 'Open Plugins Folder' button uses Tauri shell plugin's open() with the directory path."
     },
     {
