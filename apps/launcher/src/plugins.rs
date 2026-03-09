@@ -120,6 +120,8 @@ pub fn discover_plugins() -> Vec<RegisteredPlugin> {
         }
     }
 
+    plugins.push(crate::github::register());
+
     plugins
 }
 
@@ -256,6 +258,10 @@ pub async fn run_plugin_command(
     command: &RegisteredCommand,
     context: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
+    if matches!(plugin.tier, PluginTier::Native) {
+        return crate::github::run_command(&command.id, &context).await;
+    }
+
     let runner_path = resolve_runner_path(&plugin.plugin_dir)?;
     let script_path = command
         .script_path
