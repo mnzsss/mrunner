@@ -16,6 +16,8 @@ use tauri_plugin_autostart::MacosLauncher;
 
 use shortcuts::{load_saved_shortcuts, RegisteredShortcuts};
 
+type PluginRegistry = Mutex<Vec<plugins::RegisteredPlugin>>;
+
 fn is_command_allowed(cmd: &str) -> bool {
     let executable = cmd.split_whitespace().next().unwrap_or("");
     let base_name = executable.rsplit('/').next().unwrap_or(executable);
@@ -88,8 +90,31 @@ fn toggle_autostart(app: tauri::AppHandle, enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn discover_plugins() -> Vec<plugins::RegisteredPlugin> {
-    plugins::discover_plugins()
+async fn discover_plugins(
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<Vec<plugins::RegisteredPlugin>, String> {
+    let discovered = plugins::discover_plugins();
+    *state.lock().map_err(|e| e.to_string())? = discovered.clone();
+    Ok(discovered)
+}
+
+#[tauri::command]
+async fn run_plugin_command(
+    command_id: String,
+    context: serde_json::Value,
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<serde_json::Value, String> {
+    let (plugin, command) = {
+        let registry = state.lock().map_err(|e| e.to_string())?;
+        let (p, c) = plugins::find_command(&registry, &command_id).ok_or_else(|| {
+            format!(
+                "Plugin command '{}' not found — run discover_plugins first",
+                command_id
+            )
+        })?;
+        (p.clone(), c.clone())
+    };
+    plugins::run_plugin_command(&plugin, &command, context).await
 }
 
 #[tauri::command]
@@ -105,6 +130,7 @@ pub fn run() {
         .manage(Mutex::new(RegisteredShortcuts {
             registered: vec![],
         }))
+        .manage(Mutex::new(Vec::<plugins::RegisteredPlugin>::new()))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -217,6 +243,7 @@ pub fn run() {
             bookmarks::bookmark_rename_tag,
             bookmarks::bookmark_delete_tag,
             discover_plugins,
+            run_plugin_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
