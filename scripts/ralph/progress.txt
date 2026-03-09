@@ -18,3 +18,45 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `pub mod plugins` needed (not just `mod plugins`) so sibling Tauri command functions in lib.rs can access the types
   - cargo check passes in ~3s for this crate
 ---
+
+## 2026-03-09 - US-002
+- Implemented `discover_plugins()` function in `apps/launcher/src/plugins.rs`
+- Added private helper structs `PluginManifest` and `CommandConfig` for JSON deserialization
+- `discover_plugins()` scans `~/.config/mrunner/plugins/` using `dirs::config_dir()`
+- Tier 2 detection: directories containing `plugin.json` are treated as scriptable plugins
+- For each Tier 2 plugin: parses `plugin.json` manifest, then scans `src/commands/*/config.json`
+- Command IDs formatted as `{plugin_id}:{command_dir_name}`; script path is `{cmd_dir}/command.ts`
+- Invalid/missing files are logged to stderr and skipped gracefully (no crashes)
+- Files changed: apps/launcher/src/plugins.rs
+- **Learnings for future iterations:**
+  - `dirs::config_dir()` is already in workspace deps — no changes to Cargo.toml needed
+  - `entries.flatten()` is idiomatic for skipping `DirEntry` errors silently
+  - `std::fs::read_dir` + `serde_json::from_str` is sufficient; no extra deps needed
+---
+
+## 2026-03-09 - US-003
+- Added `#[tauri::command] async fn discover_plugins()` in `apps/launcher/src/lib.rs`
+- Function calls `plugins::discover_plugins()` and returns `Vec<plugins::RegisteredPlugin>`
+- Registered the command in the `invoke_handler` array in `lib.rs`
+- Files changed: apps/launcher/src/lib.rs
+- **Learnings for future iterations:**
+  - Tauri commands wrapping existing module functions are minimal — just a thin async wrapper calling the sync function
+  - `async fn` wrapper is idiomatic for Tauri commands even when the underlying function is sync
+  - Register new commands in the `tauri::generate_handler![]` macro at the bottom of `lib.rs`
+---
+
+## 2026-03-09 - US-004
+- Created `packages/plugin/` directory as a new workspace package
+- `package.json`: name `@mrunner/plugin`, private: false, no runtime deps, TS dev dep only
+- `tsconfig.json`: matches packages/ui pattern (no base extend, noEmit: true, strict mode)
+- `src/index.ts`: exports CommandContext, Accessory, ListItem, Action (union type), ListResult, DetailResult, ActionResult, CommandResult, and abstract Command class
+- `Command` class has abstract `run()` and optional `onItemSelect?()` method
+- pnpm-workspace.yaml already covers `packages/*` — no changes needed
+- pnpm install succeeded and package recognized in workspace
+- Files changed: packages/plugin/package.json, packages/plugin/tsconfig.json, packages/plugin/src/index.ts, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - `packages/*` glob in pnpm-workspace.yaml already covers new packages — no edits needed
+  - `private: false` is required in package.json for a publishable SDK package
+  - Optional methods in abstract classes: `onItemSelect?(...)` syntax (no `async` keyword in declaration)
+  - biome auto-fixed one file (likely trailing whitespace/formatting in the new src/index.ts)
+---

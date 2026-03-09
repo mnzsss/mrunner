@@ -34,7 +34,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Plugins dir: ~/.config/mrunner/plugins/ (use dirs::config_dir or tauri path API). plugin.json fields: id, name, version, description, author, icon, runtime. config.json fields: title, description, icon, mode, keywords. Command ID format: '{plugin_id}:{command_dir_name}'. Script path: {plugin_dir}/src/commands/{command_name}/command.ts."
     },
     {
@@ -48,7 +48,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Register in apps/launcher/src/lib.rs invoke_handler array. Tauri commands registered there are available via invoke() in the renderer. Follow the pattern of existing commands in lib.rs."
     },
     {
@@ -65,7 +65,7 @@
         "pnpm install succeeds and package is recognized in workspace"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Design doc section 2 has exact type definitions. CommandContext has query (string), preferences (Record<string, unknown>), environment ({ locale, theme, platform, homeDir }). Keep it minimal - no runtime dependencies. Build with tsup or tsc."
     },
     {
