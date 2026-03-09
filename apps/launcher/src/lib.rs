@@ -118,6 +118,27 @@ async fn run_plugin_command(
 }
 
 #[tauri::command]
+async fn prepare_plugin_install(git_url: String) -> Result<plugins::PluginPreviewInfo, String> {
+    plugins::prepare_plugin_install(&git_url)
+}
+
+#[tauri::command]
+async fn complete_plugin_install(
+    temp_path: String,
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<Vec<plugins::RegisteredPlugin>, String> {
+    plugins::complete_plugin_install(&temp_path)?;
+    let discovered = plugins::discover_plugins();
+    *state.lock().map_err(|e| e.to_string())? = discovered.clone();
+    Ok(discovered)
+}
+
+#[tauri::command]
+async fn cancel_plugin_install(temp_path: String) {
+    plugins::cancel_plugin_install(&temp_path);
+}
+
+#[tauri::command]
 fn hide_main_window(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         shortcuts::unfocus_window(&window);
@@ -244,6 +265,9 @@ pub fn run() {
             bookmarks::bookmark_delete_tag,
             discover_plugins,
             run_plugin_command,
+            prepare_plugin_install,
+            complete_plugin_install,
+            cancel_plugin_install,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

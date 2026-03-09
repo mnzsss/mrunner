@@ -1,4 +1,17 @@
-import { Button, Separator, Switch } from '@mrunner/ui'
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	Button,
+	Input,
+	Separator,
+	Switch,
+} from '@mrunner/ui'
 import {
 	Item,
 	ItemContent,
@@ -26,12 +39,39 @@ const CONFIG_DIR = import.meta.env.DEV
 	: '.config/mrunner'
 const CONFIG_FILE = 'preferences.json'
 
+interface PluginPreviewInfo {
+	id: string
+	name: string
+	version?: string
+	description?: string
+	author?: string
+	icon?: string
+	runtime: string
+	tempPath: string
+}
+
+type InstallStatus =
+	| 'idle'
+	| 'cloning'
+	| 'confirming'
+	| 'installing'
+	| 'success'
+	| 'error'
+
 export function PluginsTab() {
 	const { t } = useTranslation()
 	const [plugins, setPlugins] = useState<ScriptableRegisteredPlugin[]>([])
 	const [loading, setLoading] = useState(true)
 	const [disabledPlugins, setDisabledPlugins] = useState<string[]>([])
 	const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set())
+
+	// Install-from-git state
+	const [gitUrl, setGitUrl] = useState('')
+	const [installStatus, setInstallStatus] = useState<InstallStatus>('idle')
+	const [installError, setInstallError] = useState<string | null>(null)
+	const [pluginPreview, setPluginPreview] = useState<PluginPreviewInfo | null>(
+		null,
+	)
 
 	const getConfigPath = useCallback(async () => {
 		const home = await homeDir()
@@ -115,6 +155,59 @@ export function PluginsTab() {
 	const handleOpenPluginsFolder = async () => {
 		const home = await homeDir()
 		await open(`${home}/.config/mrunner/plugins`)
+	}
+
+	const handleInstallClick = async () => {
+		if (!gitUrl.trim()) return
+		setInstallStatus('cloning')
+		setInstallError(null)
+		try {
+			const preview = await invoke<PluginPreviewInfo>(
+				'prepare_plugin_install',
+				{
+					gitUrl: gitUrl.trim(),
+				},
+			)
+			setPluginPreview(preview)
+			setInstallStatus('confirming')
+		} catch (e) {
+			setInstallError(e instanceof Error ? e.message : String(e))
+			setInstallStatus('error')
+		}
+	}
+
+	const handleConfirmInstall = async () => {
+		if (!pluginPreview) return
+		setInstallStatus('installing')
+		try {
+			const discovered = await invoke<ScriptableRegisteredPlugin[]>(
+				'complete_plugin_install',
+				{ tempPath: pluginPreview.tempPath },
+			)
+			setPlugins(discovered)
+			setInstallStatus('success')
+			setGitUrl('')
+			setPluginPreview(null)
+		} catch (e) {
+			setInstallError(e instanceof Error ? e.message : String(e))
+			setInstallStatus('error')
+		}
+	}
+
+	const handleCancelInstall = async () => {
+		if (pluginPreview) {
+			await invoke('cancel_plugin_install', {
+				tempPath: pluginPreview.tempPath,
+			}).catch(() => {})
+		}
+		setPluginPreview(null)
+		setInstallStatus('idle')
+		setInstallError(null)
+	}
+
+	const handleDismissError = () => {
+		setInstallStatus('idle')
+		setInstallError(null)
 	}
 
 	const toggleExpanded = (pluginId: string) => {
@@ -227,6 +320,130 @@ export function PluginsTab() {
 					</div>
 				)}
 			</div>
+
+			<Separator />
+
+			{/* Install from Git URL */}
+			<div className="space-y-3">
+				<h3 className="text-sm font-medium text-muted-foreground">
+					{t('settings.plugins.installFromGit')}
+				</h3>
+
+				<div className="flex gap-2">
+					<Input
+						placeholder={t('settings.plugins.gitUrlPlaceholder')}
+						value={gitUrl}
+						onChange={(e) => setGitUrl(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') handleInstallClick()
+						}}
+						disabled={
+							installStatus === 'cloning' || installStatus === 'installing'
+						}
+						className="flex-1 text-sm"
+					/>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleInstallClick}
+						disabled={
+							!gitUrl.trim() ||
+							installStatus === 'cloning' ||
+							installStatus === 'installing'
+						}
+					>
+						{installStatus === 'cloning'
+							? t('settings.plugins.cloning')
+							: installStatus === 'installing'
+								? t('settings.plugins.installing')
+								: t('settings.plugins.install')}
+					</Button>
+				</div>
+
+				{installStatus === 'success' && (
+					<p className="text-sm text-green-600 dark:text-green-400">
+						{t('settings.plugins.installSuccess')}
+					</p>
+				)}
+
+				{installStatus === 'error' && installError && (
+					<div className="space-y-1">
+						<p className="text-sm text-destructive">
+							{t('settings.plugins.installError')}: {installError}
+						</p>
+						<Button variant="ghost" size="sm" onClick={handleDismissError}>
+							{t('settings.plugins.cancel')}
+						</Button>
+					</div>
+				)}
+			</div>
+
+			{/* Confirmation dialog */}
+			<AlertDialog
+				open={installStatus === 'confirming'}
+				onOpenChange={(open) => {
+					if (!open) handleCancelInstall()
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{t('settings.plugins.confirmInstall')}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{t('settings.plugins.confirmInstallDesc')}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					{pluginPreview && (
+						<div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
+							<div className="flex justify-between">
+								<span className="text-muted-foreground">
+									{t('settings.plugins.pluginName')}
+								</span>
+								<span className="font-medium">{pluginPreview.name}</span>
+							</div>
+							{pluginPreview.author && (
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">
+										{t('settings.plugins.pluginAuthor')}
+									</span>
+									<span>{pluginPreview.author}</span>
+								</div>
+							)}
+							{pluginPreview.version && (
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">
+										{t('settings.plugins.pluginVersion')}
+									</span>
+									<span>{pluginPreview.version}</span>
+								</div>
+							)}
+							<div className="flex justify-between">
+								<span className="text-muted-foreground">
+									{t('settings.plugins.pluginRuntime')}
+								</span>
+								<span>{pluginPreview.runtime}</span>
+							</div>
+							<div className="flex justify-between gap-4">
+								<span className="shrink-0 text-muted-foreground">
+									{t('settings.plugins.pluginSource')}
+								</span>
+								<span className="truncate text-right">{gitUrl}</span>
+							</div>
+						</div>
+					)}
+
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={handleCancelInstall}>
+							{t('settings.plugins.cancel')}
+						</AlertDialogCancel>
+						<AlertDialogAction onClick={handleConfirmInstall}>
+							{t('settings.plugins.confirm')}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			<Separator />
 

@@ -12,6 +12,30 @@ struct PluginManifest {
 }
 
 #[derive(Debug, Deserialize)]
+struct PluginManifestFull {
+    id: String,
+    name: String,
+    version: Option<String>,
+    description: Option<String>,
+    author: Option<String>,
+    icon: Option<String>,
+    runtime: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginPreviewInfo {
+    pub id: String,
+    pub name: String,
+    pub version: Option<String>,
+    pub description: Option<String>,
+    pub author: Option<String>,
+    pub icon: Option<String>,
+    pub runtime: String,
+    pub temp_path: String,
+}
+
+#[derive(Debug, Deserialize)]
 struct CommandConfig {
     title: String,
     description: Option<String>,
@@ -303,4 +327,110 @@ pub async fn run_plugin_command(
                 .map_err(|e| format!("Failed to parse plugin output as JSON: {}", e))
         }
     }
+}
+
+/// Clones the repository to a temporary directory inside the plugins folder and
+/// returns a preview of the plugin manifest so the user can confirm before installation.
+pub fn prepare_plugin_install(git_url: &str) -> Result<PluginPreviewInfo, String> {
+    let plugins_base = dirs::config_dir()
+        .ok_or("Could not find config directory")?
+        .join("mrunner")
+        .join("plugins");
+
+    std::fs::create_dir_all(&plugins_base)
+        .map_err(|e| format!("Failed to create plugins directory: {}", e))?;
+
+    // Unique temp dir on the same filesystem to avoid cross-device rename later
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let temp_dir = plugins_base.join(format!(".installing-{}", ts));
+
+    let status = std::process::Command::new("git")
+        .arg("clone")
+        .arg(git_url)
+        .arg(&temp_dir)
+        .status()
+        .map_err(|e| format!("Failed to run git: {}", e))?;
+
+    if !status.success() {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err(format!("git clone failed for URL: {}", git_url));
+    }
+
+    let manifest_path = temp_dir.join("plugin.json");
+    if !manifest_path.exists() {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err("No plugin.json found in the repository root".to_string());
+    }
+
+    let content = std::fs::read_to_string(&manifest_path)
+        .map_err(|e| format!("Failed to read plugin.json: {}", e))?;
+
+    let manifest: PluginManifestFull = serde_json::from_str(&content).map_err(|e| {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        format!("Invalid plugin.json: {}", e)
+    })?;
+
+    Ok(PluginPreviewInfo {
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        description: manifest.description,
+        author: manifest.author,
+        icon: manifest.icon,
+        runtime: manifest.runtime,
+        temp_path: temp_dir.to_string_lossy().to_string(),
+    })
+}
+
+/// Moves the previously cloned temp directory to its final location and runs npm install.
+pub fn complete_plugin_install(temp_path: &str) -> Result<(), String> {
+    let temp_dir = PathBuf::from(temp_path);
+
+    let manifest_path = temp_dir.join("plugin.json");
+    let content = std::fs::read_to_string(&manifest_path)
+        .map_err(|e| format!("Failed to read plugin.json: {}", e))?;
+    let manifest: PluginManifest = serde_json::from_str(&content)
+        .map_err(|e| format!("Invalid plugin.json: {}", e))?;
+
+    let final_dir = dirs::config_dir()
+        .ok_or("Could not find config directory")?
+        .join("mrunner")
+        .join("plugins")
+        .join(&manifest.id);
+
+    if final_dir.exists() {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err(format!("Plugin '{}' is already installed", manifest.id));
+    }
+
+    std::fs::rename(&temp_dir, &final_dir).map_err(|e| {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        format!("Failed to move plugin directory: {}", e)
+    })?;
+
+    if final_dir.join("package.json").exists() {
+        let status = std::process::Command::new("npm")
+            .arg("install")
+            .current_dir(&final_dir)
+            .status()
+            .map_err(|e| {
+                let _ = std::fs::remove_dir_all(&final_dir);
+                format!("Failed to run npm install: {}", e)
+            })?;
+
+        if !status.success() {
+            let _ = std::fs::remove_dir_all(&final_dir);
+            return Err("npm install failed".to_string());
+        }
+    }
+
+    Ok(())
+}
+
+/// Cleans up a temporary install directory (used when the user cancels).
+pub fn cancel_plugin_install(temp_path: &str) {
+    let _ = std::fs::remove_dir_all(temp_path);
 }

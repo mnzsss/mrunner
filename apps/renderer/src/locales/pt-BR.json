@@ -1,157 +1,174 @@
 {
-	"app": {
-		"name": "MRunner",
-		"loading": "Carregando..."
-	},
-	"search": {
-		"placeholder": "Digite um comando ou busque...",
-		"empty": "Nenhum resultado encontrado."
-	},
-	"navigation": {
-		"navigate": "navegar",
-		"select": "selecionar",
-		"edit": "editar",
-		"delete": "deletar",
-		"close": "fechar"
-	},
-	"bookmarks": {
-		"group": "Bookmarks",
-		"add": "Adicionar Bookmark",
-		"addDescription": "Adicionar novo bookmark",
-		"edit": "Editar Bookmark",
-		"editDescription": "Edite as informações do bookmark",
-		"delete": "Deletar Bookmark?",
-		"deleteConfirm": "Tem certeza que deseja deletar este bookmark?",
-		"noTitle": "Sem título"
-	},
-	"folders": {
-		"manage": "Gerenciar Pastas",
-		"manageDescription": "Adicione ou remova pastas de acesso rápido",
-		"addFolder": "Adicionar",
-		"addNewFolder": "Adicionar Nova Pasta",
-		"addCustom": "Adicionar pasta personalizada",
-		"selectFolder": "Selecionar Pasta",
-		"folderName": "Nome da Pasta",
-		"folderNamePlaceholder": "Ex: Projetos",
-		"systemFolders": "Pastas do Sistema",
-		"customFolders": "Pastas Personalizadas",
-		"hiddenFolders": "Pastas Ocultas",
-		"noCustomFolders": "Nenhuma pasta personalizada adicionada",
-		"noHiddenFolders": "Nenhuma pasta oculta",
-		"removeConfirm": "Remover esta pasta?",
-		"hide": "Ocultar",
-		"show": "Mostrar"
-	},
-	"form": {
-		"url": "URL",
-		"urlRequired": "URL é obrigatória",
-		"urlInvalid": "URL inválida. Use o formato: https://example.com",
-		"urlPlaceholder": "https://example.com",
-		"title": "Título",
-		"titlePlaceholder": "Título do bookmark (opcional)",
-		"tags": "Tags",
-		"tagsPlaceholder": "tag1, tag2, tag3 (separadas por vírgula)",
-		"description": "Descrição",
-		"descriptionPlaceholder": "Descrição do bookmark (opcional)"
-	},
-	"setup": {
-		"title": "Bem-vindo ao MRunner",
-		"subtitle": "Vamos configurar seu launcher",
-		"step1Title": "Atalho Global",
-		"step1Description": "Defina o atalho de teclado para abrir o launcher de qualquer lugar. Recomendamos Super+Space.",
-		"hotkeyPlaceholder": "Pressione as teclas...",
-		"languageLabel": "Idioma",
-		"languageDescription": "Escolha o idioma da aplicação"
-	},
-	"shortcuts": {
-		"title": "Atalhos",
-		"global": "Atalhos Globais",
-		"internal": "Atalhos Internos",
-		"custom": "Atalhos Customizados",
-		"conflictWarning": "Este atalho está em conflito com outro",
-		"resetTooltip": "Restaurar padrão"
-	},
-	"actions": {
-		"skip": "Pular",
-		"finish": "Finalizar",
-		"save": "Salvar",
-		"saving": "Salvando...",
-		"cancel": "Cancelar",
-		"delete": "Deletar",
-		"open": "Abrir",
-		"openBookmark": "Abrir bookmark",
-		"copy": "Copiar URL",
-		"copyBookmark": "Copiar URL do bookmark",
-		"editBookmark": "Editar bookmark",
-		"deleteBookmark": "Deletar bookmark",
-		"tryAgain": "Tentar novamente"
-	},
-	"errors": {
-		"generic": "Algo deu errado",
-		"unknown": "Erro desconhecido"
-	},
-	"notifications": {
-		"added": "Adicionado: {{url}}",
-		"updated": "Bookmark atualizado",
-		"deleted": "Bookmark deletado",
-		"copied": "Copiado: {{url}}",
-		"copiedMarkdown": "Copiado como Markdown",
-		"tagRenamed": "Tag renomeada: {{oldTag}} → {{newTag}}",
-		"tagDeleted": "Tag deletada: {{tag}}"
-	},
-	"settings": {
-		"title": "Configurações",
-		"preferences": "Preferências",
-		"shortcuts": "Atalhos",
-		"about": "Sobre",
-		"aboutDescription": "MRunner — Um launcher de comandos personalizável",
-		"autostart": "Iniciar com o sistema",
-		"autostartDescription": "Inicia o MRunner automaticamente quando você faz login",
-		"bookmarkShortcuts": "Atalhos de Bookmarks",
-		"tabGlobal": "Global",
-		"tabBookmarks": "Bookmarks",
-		"tabPlugins": "Plugins",
-		"close": "fechar",
-		"navigate": "navegar",
-		"switchTab": "trocar aba",
-		"goToTab": "ir para aba",
-		"autoSaved": "Alterações salvas automaticamente",
-		"language": "Idioma",
-		"languageDescription": "Escolha o idioma da aplicação",
-		"plugins": {
-			"installedPlugins": "Plugins Instalados",
-			"noPlugins": "Nenhum plugin instalado. Coloque os diretórios de plugins em ~/.config/mrunner/plugins/",
-			"openFolder": "Abrir Pasta de Plugins",
-			"runtime": "Runtime: {{runtime}}",
-			"mode": "Modo: {{mode}}",
-			"expand": "Ver comandos",
-			"collapse": "Ocultar comandos",
-			"hint": "Os plugins são carregados de ~/.config/mrunner/plugins/. Plugins desativados são ocultados da paleta de comandos."
-		}
-	},
-	"commands": {
-		"settings": "Configurações",
-		"settingsDescription": "Abrir configurações do MRunner",
-		"manageFolders": "Gerenciar Pastas",
-		"manageFoldersDescription": "Adicione ou remova pastas de acesso rápido",
-		"openFolder": "Abrir pasta {{name}}",
-		"fileManager": "Gerenciador de Arquivos",
-		"openFileManager": "Abrir gerenciador de arquivos",
-		"openChrome": "Abrir navegador Chrome"
-	},
-	"groups": {
-		"MRunner": "MRunner",
-		"Applications": "Aplicativos",
-		"Quick Access": "Acesso Rápido",
-		"Bookmarks": "Bookmarks",
-		"Commands": "Comandos",
-		"Plugins": "Plugins",
-		"Chrome": "Chrome"
-	},
-	"plugins": {
-		"back": "Voltar",
-		"running": "Executando...",
-		"success": "Comando executado com sucesso",
-		"error": "Falha ao executar comando"
-	}
+  "app": {
+    "name": "MRunner",
+    "loading": "Carregando..."
+  },
+  "search": {
+    "placeholder": "Digite um comando ou busque...",
+    "empty": "Nenhum resultado encontrado."
+  },
+  "navigation": {
+    "navigate": "navegar",
+    "select": "selecionar",
+    "edit": "editar",
+    "delete": "deletar",
+    "close": "fechar"
+  },
+  "bookmarks": {
+    "group": "Bookmarks",
+    "add": "Adicionar Bookmark",
+    "addDescription": "Adicionar novo bookmark",
+    "edit": "Editar Bookmark",
+    "editDescription": "Edite as informações do bookmark",
+    "delete": "Deletar Bookmark?",
+    "deleteConfirm": "Tem certeza que deseja deletar este bookmark?",
+    "noTitle": "Sem título"
+  },
+  "folders": {
+    "manage": "Gerenciar Pastas",
+    "manageDescription": "Adicione ou remova pastas de acesso rápido",
+    "addFolder": "Adicionar",
+    "addNewFolder": "Adicionar Nova Pasta",
+    "addCustom": "Adicionar pasta personalizada",
+    "selectFolder": "Selecionar Pasta",
+    "folderName": "Nome da Pasta",
+    "folderNamePlaceholder": "Ex: Projetos",
+    "systemFolders": "Pastas do Sistema",
+    "customFolders": "Pastas Personalizadas",
+    "hiddenFolders": "Pastas Ocultas",
+    "noCustomFolders": "Nenhuma pasta personalizada adicionada",
+    "noHiddenFolders": "Nenhuma pasta oculta",
+    "removeConfirm": "Remover esta pasta?",
+    "hide": "Ocultar",
+    "show": "Mostrar"
+  },
+  "form": {
+    "url": "URL",
+    "urlRequired": "URL é obrigatória",
+    "urlInvalid": "URL inválida. Use o formato: https://example.com",
+    "urlPlaceholder": "https://example.com",
+    "title": "Título",
+    "titlePlaceholder": "Título do bookmark (opcional)",
+    "tags": "Tags",
+    "tagsPlaceholder": "tag1, tag2, tag3 (separadas por vírgula)",
+    "description": "Descrição",
+    "descriptionPlaceholder": "Descrição do bookmark (opcional)"
+  },
+  "setup": {
+    "title": "Bem-vindo ao MRunner",
+    "subtitle": "Vamos configurar seu launcher",
+    "step1Title": "Atalho Global",
+    "step1Description": "Defina o atalho de teclado para abrir o launcher de qualquer lugar. Recomendamos Super+Space.",
+    "hotkeyPlaceholder": "Pressione as teclas...",
+    "languageLabel": "Idioma",
+    "languageDescription": "Escolha o idioma da aplicação"
+  },
+  "shortcuts": {
+    "title": "Atalhos",
+    "global": "Atalhos Globais",
+    "internal": "Atalhos Internos",
+    "custom": "Atalhos Customizados",
+    "conflictWarning": "Este atalho está em conflito com outro",
+    "resetTooltip": "Restaurar padrão"
+  },
+  "actions": {
+    "skip": "Pular",
+    "finish": "Finalizar",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "delete": "Deletar",
+    "open": "Abrir",
+    "openBookmark": "Abrir bookmark",
+    "copy": "Copiar URL",
+    "copyBookmark": "Copiar URL do bookmark",
+    "editBookmark": "Editar bookmark",
+    "deleteBookmark": "Deletar bookmark",
+    "tryAgain": "Tentar novamente"
+  },
+  "errors": {
+    "generic": "Algo deu errado",
+    "unknown": "Erro desconhecido"
+  },
+  "notifications": {
+    "added": "Adicionado: {{url}}",
+    "updated": "Bookmark atualizado",
+    "deleted": "Bookmark deletado",
+    "copied": "Copiado: {{url}}",
+    "copiedMarkdown": "Copiado como Markdown",
+    "tagRenamed": "Tag renomeada: {{oldTag}} → {{newTag}}",
+    "tagDeleted": "Tag deletada: {{tag}}"
+  },
+  "settings": {
+    "title": "Configurações",
+    "preferences": "Preferências",
+    "shortcuts": "Atalhos",
+    "about": "Sobre",
+    "aboutDescription": "MRunner — Um launcher de comandos personalizável",
+    "autostart": "Iniciar com o sistema",
+    "autostartDescription": "Inicia o MRunner automaticamente quando você faz login",
+    "bookmarkShortcuts": "Atalhos de Bookmarks",
+    "tabGlobal": "Global",
+    "tabBookmarks": "Bookmarks",
+    "tabPlugins": "Plugins",
+    "close": "fechar",
+    "navigate": "navegar",
+    "switchTab": "trocar aba",
+    "goToTab": "ir para aba",
+    "autoSaved": "Alterações salvas automaticamente",
+    "language": "Idioma",
+    "languageDescription": "Escolha o idioma da aplicação",
+    "plugins": {
+      "installedPlugins": "Plugins Instalados",
+      "noPlugins": "Nenhum plugin instalado. Coloque os diretórios de plugins em ~/.config/mrunner/plugins/",
+      "openFolder": "Abrir Pasta de Plugins",
+      "runtime": "Runtime: {{runtime}}",
+      "mode": "Modo: {{mode}}",
+      "expand": "Ver comandos",
+      "collapse": "Ocultar comandos",
+      "hint": "Os plugins são carregados de ~/.config/mrunner/plugins/. Plugins desativados são ocultados da paleta de comandos.",
+      "installFromGit": "Instalar via URL do Git",
+      "gitUrl": "URL do Git",
+      "gitUrlPlaceholder": "https://github.com/usuario/meu-plugin",
+      "install": "Instalar",
+      "installing": "Instalando...",
+      "cloning": "Clonando repositório...",
+      "confirmInstall": "Confirmar Instalação",
+      "confirmInstallDesc": "Você está prestes a instalar um plugin de uma fonte externa. Revise os detalhes abaixo antes de continuar.",
+      "pluginName": "Nome",
+      "pluginAuthor": "Autor",
+      "pluginVersion": "Versão",
+      "pluginSource": "Fonte",
+      "pluginRuntime": "Runtime",
+      "cancel": "Cancelar",
+      "confirm": "Instalar Plugin",
+      "installSuccess": "Plugin instalado com sucesso!",
+      "installError": "Falha na instalação"
+    }
+  },
+  "commands": {
+    "settings": "Configurações",
+    "settingsDescription": "Abrir configurações do MRunner",
+    "manageFolders": "Gerenciar Pastas",
+    "manageFoldersDescription": "Adicione ou remova pastas de acesso rápido",
+    "openFolder": "Abrir pasta {{name}}",
+    "fileManager": "Gerenciador de Arquivos",
+    "openFileManager": "Abrir gerenciador de arquivos",
+    "openChrome": "Abrir navegador Chrome"
+  },
+  "groups": {
+    "MRunner": "MRunner",
+    "Applications": "Aplicativos",
+    "Quick Access": "Acesso Rápido",
+    "Bookmarks": "Bookmarks",
+    "Commands": "Comandos",
+    "Plugins": "Plugins",
+    "Chrome": "Chrome"
+  },
+  "plugins": {
+    "back": "Voltar",
+    "running": "Executando...",
+    "success": "Comando executado com sucesso",
+    "error": "Falha ao executar comando"
+  }
 }

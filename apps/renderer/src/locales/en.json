@@ -1,157 +1,174 @@
 {
-	"app": {
-		"name": "MRunner",
-		"loading": "Loading..."
-	},
-	"search": {
-		"placeholder": "Type a command or search...",
-		"empty": "No results found."
-	},
-	"navigation": {
-		"navigate": "navigate",
-		"select": "select",
-		"edit": "edit",
-		"delete": "delete",
-		"close": "close"
-	},
-	"bookmarks": {
-		"group": "Bookmarks",
-		"add": "Add Bookmark",
-		"addDescription": "Add new bookmark",
-		"edit": "Edit Bookmark",
-		"editDescription": "Edit bookmark information",
-		"delete": "Delete Bookmark?",
-		"deleteConfirm": "Are you sure you want to delete this bookmark?",
-		"noTitle": "No title"
-	},
-	"folders": {
-		"manage": "Manage Folders",
-		"manageDescription": "Add or remove quick access folders",
-		"addFolder": "Add",
-		"addNewFolder": "Add New Folder",
-		"addCustom": "Add custom folder",
-		"selectFolder": "Select Folder",
-		"folderName": "Folder Name",
-		"folderNamePlaceholder": "E.g.: Projects",
-		"systemFolders": "System Folders",
-		"customFolders": "Custom Folders",
-		"hiddenFolders": "Hidden Folders",
-		"noCustomFolders": "No custom folders added",
-		"noHiddenFolders": "No hidden folders",
-		"removeConfirm": "Remove this folder?",
-		"hide": "Hide",
-		"show": "Show"
-	},
-	"form": {
-		"url": "URL",
-		"urlRequired": "URL is required",
-		"urlInvalid": "Invalid URL. Use the format: https://example.com",
-		"urlPlaceholder": "https://example.com",
-		"title": "Title",
-		"titlePlaceholder": "Bookmark title (optional)",
-		"tags": "Tags",
-		"tagsPlaceholder": "tag1, tag2, tag3 (comma separated)",
-		"description": "Description",
-		"descriptionPlaceholder": "Bookmark description (optional)"
-	},
-	"setup": {
-		"title": "Welcome to MRunner",
-		"subtitle": "Let's set up your launcher",
-		"step1Title": "Global Shortcut",
-		"step1Description": "Set the keyboard shortcut to open the launcher from anywhere. We recommend Super+Space.",
-		"hotkeyPlaceholder": "Press the keys...",
-		"languageLabel": "Language",
-		"languageDescription": "Choose the application language"
-	},
-	"shortcuts": {
-		"title": "Shortcuts",
-		"global": "Global Shortcuts",
-		"internal": "Internal Shortcuts",
-		"custom": "Custom Shortcuts",
-		"conflictWarning": "This shortcut conflicts with another",
-		"resetTooltip": "Restore default"
-	},
-	"actions": {
-		"skip": "Skip",
-		"finish": "Finish",
-		"save": "Save",
-		"saving": "Saving...",
-		"cancel": "Cancel",
-		"delete": "Delete",
-		"open": "Open",
-		"openBookmark": "Open bookmark",
-		"copy": "Copy URL",
-		"copyBookmark": "Copy bookmark URL",
-		"editBookmark": "Edit bookmark",
-		"deleteBookmark": "Delete bookmark",
-		"tryAgain": "Try again"
-	},
-	"errors": {
-		"generic": "Something went wrong",
-		"unknown": "Unknown error"
-	},
-	"notifications": {
-		"added": "Added: {{url}}",
-		"updated": "Bookmark updated",
-		"deleted": "Bookmark deleted",
-		"copied": "Copied: {{url}}",
-		"copiedMarkdown": "Copied as Markdown",
-		"tagRenamed": "Tag renamed: {{oldTag}} → {{newTag}}",
-		"tagDeleted": "Tag deleted: {{tag}}"
-	},
-	"settings": {
-		"title": "Settings",
-		"preferences": "Preferences",
-		"shortcuts": "Shortcuts",
-		"about": "About",
-		"aboutDescription": "MRunner — A customizable command launcher",
-		"autostart": "Start with system",
-		"autostartDescription": "Start MRunner automatically when you log in",
-		"bookmarkShortcuts": "Bookmark Shortcuts",
-		"tabGlobal": "Global",
-		"tabBookmarks": "Bookmarks",
-		"tabPlugins": "Plugins",
-		"close": "close",
-		"navigate": "navigate",
-		"switchTab": "switch tab",
-		"goToTab": "go to tab",
-		"autoSaved": "Changes saved automatically",
-		"language": "Language",
-		"languageDescription": "Choose the application language",
-		"plugins": {
-			"installedPlugins": "Installed Plugins",
-			"noPlugins": "No plugins installed. Place plugin directories in ~/.config/mrunner/plugins/",
-			"openFolder": "Open Plugins Folder",
-			"runtime": "Runtime: {{runtime}}",
-			"mode": "Mode: {{mode}}",
-			"expand": "Show commands",
-			"collapse": "Hide commands",
-			"hint": "Plugins are loaded from ~/.config/mrunner/plugins/. Disabled plugins are hidden from the command palette."
-		}
-	},
-	"commands": {
-		"settings": "Settings",
-		"settingsDescription": "Open MRunner settings",
-		"manageFolders": "Manage Folders",
-		"manageFoldersDescription": "Add or remove quick access folders",
-		"openFolder": "Open {{name}} folder",
-		"fileManager": "File Manager",
-		"openFileManager": "Open file manager",
-		"openChrome": "Open Chrome browser"
-	},
-	"groups": {
-		"MRunner": "MRunner",
-		"Applications": "Applications",
-		"Quick Access": "Quick Access",
-		"Bookmarks": "Bookmarks",
-		"Commands": "Commands",
-		"Plugins": "Plugins",
-		"Chrome": "Chrome"
-	},
-	"plugins": {
-		"back": "Back",
-		"running": "Running...",
-		"success": "Command executed successfully",
-		"error": "Command failed"
-	}
+  "app": {
+    "name": "MRunner",
+    "loading": "Loading..."
+  },
+  "search": {
+    "placeholder": "Type a command or search...",
+    "empty": "No results found."
+  },
+  "navigation": {
+    "navigate": "navigate",
+    "select": "select",
+    "edit": "edit",
+    "delete": "delete",
+    "close": "close"
+  },
+  "bookmarks": {
+    "group": "Bookmarks",
+    "add": "Add Bookmark",
+    "addDescription": "Add new bookmark",
+    "edit": "Edit Bookmark",
+    "editDescription": "Edit bookmark information",
+    "delete": "Delete Bookmark?",
+    "deleteConfirm": "Are you sure you want to delete this bookmark?",
+    "noTitle": "No title"
+  },
+  "folders": {
+    "manage": "Manage Folders",
+    "manageDescription": "Add or remove quick access folders",
+    "addFolder": "Add",
+    "addNewFolder": "Add New Folder",
+    "addCustom": "Add custom folder",
+    "selectFolder": "Select Folder",
+    "folderName": "Folder Name",
+    "folderNamePlaceholder": "E.g.: Projects",
+    "systemFolders": "System Folders",
+    "customFolders": "Custom Folders",
+    "hiddenFolders": "Hidden Folders",
+    "noCustomFolders": "No custom folders added",
+    "noHiddenFolders": "No hidden folders",
+    "removeConfirm": "Remove this folder?",
+    "hide": "Hide",
+    "show": "Show"
+  },
+  "form": {
+    "url": "URL",
+    "urlRequired": "URL is required",
+    "urlInvalid": "Invalid URL. Use the format: https://example.com",
+    "urlPlaceholder": "https://example.com",
+    "title": "Title",
+    "titlePlaceholder": "Bookmark title (optional)",
+    "tags": "Tags",
+    "tagsPlaceholder": "tag1, tag2, tag3 (comma separated)",
+    "description": "Description",
+    "descriptionPlaceholder": "Bookmark description (optional)"
+  },
+  "setup": {
+    "title": "Welcome to MRunner",
+    "subtitle": "Let's set up your launcher",
+    "step1Title": "Global Shortcut",
+    "step1Description": "Set the keyboard shortcut to open the launcher from anywhere. We recommend Super+Space.",
+    "hotkeyPlaceholder": "Press the keys...",
+    "languageLabel": "Language",
+    "languageDescription": "Choose the application language"
+  },
+  "shortcuts": {
+    "title": "Shortcuts",
+    "global": "Global Shortcuts",
+    "internal": "Internal Shortcuts",
+    "custom": "Custom Shortcuts",
+    "conflictWarning": "This shortcut conflicts with another",
+    "resetTooltip": "Restore default"
+  },
+  "actions": {
+    "skip": "Skip",
+    "finish": "Finish",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "open": "Open",
+    "openBookmark": "Open bookmark",
+    "copy": "Copy URL",
+    "copyBookmark": "Copy bookmark URL",
+    "editBookmark": "Edit bookmark",
+    "deleteBookmark": "Delete bookmark",
+    "tryAgain": "Try again"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "unknown": "Unknown error"
+  },
+  "notifications": {
+    "added": "Added: {{url}}",
+    "updated": "Bookmark updated",
+    "deleted": "Bookmark deleted",
+    "copied": "Copied: {{url}}",
+    "copiedMarkdown": "Copied as Markdown",
+    "tagRenamed": "Tag renamed: {{oldTag}} → {{newTag}}",
+    "tagDeleted": "Tag deleted: {{tag}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "preferences": "Preferences",
+    "shortcuts": "Shortcuts",
+    "about": "About",
+    "aboutDescription": "MRunner — A customizable command launcher",
+    "autostart": "Start with system",
+    "autostartDescription": "Start MRunner automatically when you log in",
+    "bookmarkShortcuts": "Bookmark Shortcuts",
+    "tabGlobal": "Global",
+    "tabBookmarks": "Bookmarks",
+    "tabPlugins": "Plugins",
+    "close": "close",
+    "navigate": "navigate",
+    "switchTab": "switch tab",
+    "goToTab": "go to tab",
+    "autoSaved": "Changes saved automatically",
+    "language": "Language",
+    "languageDescription": "Choose the application language",
+    "plugins": {
+      "installedPlugins": "Installed Plugins",
+      "noPlugins": "No plugins installed. Place plugin directories in ~/.config/mrunner/plugins/",
+      "openFolder": "Open Plugins Folder",
+      "runtime": "Runtime: {{runtime}}",
+      "mode": "Mode: {{mode}}",
+      "expand": "Show commands",
+      "collapse": "Hide commands",
+      "hint": "Plugins are loaded from ~/.config/mrunner/plugins/. Disabled plugins are hidden from the command palette.",
+      "installFromGit": "Install from Git URL",
+      "gitUrl": "Git URL",
+      "gitUrlPlaceholder": "https://github.com/user/my-plugin",
+      "install": "Install",
+      "installing": "Installing...",
+      "cloning": "Cloning repository...",
+      "confirmInstall": "Confirm Installation",
+      "confirmInstallDesc": "You are about to install a plugin from an external source. Review the details below before proceeding.",
+      "pluginName": "Name",
+      "pluginAuthor": "Author",
+      "pluginVersion": "Version",
+      "pluginSource": "Source",
+      "pluginRuntime": "Runtime",
+      "cancel": "Cancel",
+      "confirm": "Install Plugin",
+      "installSuccess": "Plugin installed successfully!",
+      "installError": "Installation failed"
+    }
+  },
+  "commands": {
+    "settings": "Settings",
+    "settingsDescription": "Open MRunner settings",
+    "manageFolders": "Manage Folders",
+    "manageFoldersDescription": "Add or remove quick access folders",
+    "openFolder": "Open {{name}} folder",
+    "fileManager": "File Manager",
+    "openFileManager": "Open file manager",
+    "openChrome": "Open Chrome browser"
+  },
+  "groups": {
+    "MRunner": "MRunner",
+    "Applications": "Applications",
+    "Quick Access": "Quick Access",
+    "Bookmarks": "Bookmarks",
+    "Commands": "Commands",
+    "Plugins": "Plugins",
+    "Chrome": "Chrome"
+  },
+  "plugins": {
+    "back": "Back",
+    "running": "Running...",
+    "success": "Command executed successfully",
+    "error": "Command failed"
+  }
 }
