@@ -308,3 +308,27 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - `plugin_dir: PathBuf::new()` is the correct placeholder for native plugins (no filesystem directory)
   - `pub mod github` in lib.rs is needed (not just `mod github`) so the module is accessible from sibling modules and Tauri commands
 ---
+
+## 2026-03-09 - US-003
+- Wired native plugin support into `discover_plugins()` and `run_plugin_command()` in `plugins.rs`
+- `discover_plugins()` now appends `crate::github::register()` to the plugins vec
+- `run_plugin_command()` now has an early-return branch: if `plugin.tier == PluginTier::Native`, calls `crate::github::run_command(&command.id, &context).await` and returns before the scriptable code path
+- Files changed: apps/launcher/src/plugins.rs
+- **Learnings for future iterations:**
+  - Cross-module reference in same crate: use `crate::github::register()` from plugins.rs to call into the github module declared in lib.rs
+  - Native tier early-return pattern avoids touching existing scriptable spawn logic entirely
+  - `matches!(plugin.tier, PluginTier::Native)` is idiomatic for enum variant check without binding
+---
+
+## 2026-03-09 - US-004
+- Implemented `cmd_hub` in `apps/launcher/src/github.rs`
+- Returns 4 ListItems: Repositories, Pull Requests, Issues, Workflow Runs
+- Each item has `icon: "github"` and a `push` action with `command: "github:cmd_X"` targeting the respective command
+- When query is non-empty, filters items by case-insensitive title match
+- `run_command` dispatch updated to call `cmd_hub(context).await` instead of returning empty placeholder
+- Files changed: apps/launcher/src/github.rs
+- **Learnings for future iterations:**
+  - SDK `Action` push type uses field `command: string` (not `commandId`) — match this exactly in Rust json! macros
+  - Context query accessed via `context["query"].as_str().unwrap_or("")` — always use unwrap_or for safe defaults
+  - `run_command` signature changed from `_context` to `context` now that it's consumed
+---

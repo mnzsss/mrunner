@@ -16,7 +16,7 @@
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The PluginTier enum is at plugins.rs:48. RegisteredCommand is at plugins.rs:62. script_path is used in run_plugin_command() when spawning the child process \u2014 the None case will be handled in US-003 when native dispatch is wired up. For now just make it compile."
+      "notes": "The PluginTier enum is at plugins.rs:48. RegisteredCommand is at plugins.rs:62. script_path is used in run_plugin_command() when spawning the child process — the None case will be handled in US-003 when native dispatch is wired up. For now just make it compile."
     },
     {
       "id": "US-002",
@@ -41,14 +41,14 @@
       "description": "As a developer, I need the plugin system to include native plugins in discovery and route their execution through the Rust module instead of spawning a child process.",
       "acceptanceCriteria": [
         "In discover_plugins() in plugins.rs, append github::register() to the returned Vec<RegisteredPlugin>",
-        "In run_plugin_command() in plugins.rs (or lib.rs \u2014 wherever the Tauri command is), add a match arm: if the resolved plugin's tier is PluginTier::Native, call github::run_command(command_id, context).await instead of spawning a child process",
+        "In run_plugin_command() in plugins.rs (or lib.rs — wherever the Tauri command is), add a match arm: if the resolved plugin's tier is PluginTier::Native, call github::run_command(command_id, context).await instead of spawning a child process",
         "The existing Scriptable tier path remains unchanged",
         "Verify that invoking discover_plugins from frontend would now include the GitHub plugin",
         "Verify that invoking run_plugin_command with command_id 'github:cmd_hub' returns the placeholder empty list",
         "cargo check -p mrunner passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "run_plugin_command is a #[tauri::command] in lib.rs. It looks up the plugin from PluginState, then calls run_plugin_command_internal in plugins.rs. The tier match should happen in run_plugin_command_internal before the child process spawn. The script_path being None is fine because native tier never reaches the spawn code path."
     },
     {
@@ -63,7 +63,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The push action type is already supported in the frontend's execute-plugin-action.ts. The ListResult format matches what PluginCommandView expects: {items: [{id, title, subtitle, icon, accessories, actions}]}. Each action: {type: 'push', commandId: 'github:cmd_repos'}."
     },
     {
@@ -81,7 +81,7 @@
       ],
       "priority": 5,
       "passes": false,
-      "notes": "The owner field from gh repo list is a nested object {login: 'username'}. Construct fullName as '{owner.login}/{name}'. For accessories, use the format [{text: '\u2605 42'}, {text: 'Private', tag: 'warning'}] or similar based on existing Accessory type in the SDK. Parse gh JSON output using serde_json::from_str with the GhRepo/GhSearchRepo structs."
+      "notes": "The owner field from gh repo list is a nested object {login: 'username'}. Construct fullName as '{owner.login}/{name}'. For accessories, use the format [{text: '★ 42'}, {text: 'Private', tag: 'warning'}] or similar based on existing Accessory type in the SDK. Parse gh JSON output using serde_json::from_str with the GhRepo/GhSearchRepo structs."
     },
     {
       "id": "US-006",
@@ -135,7 +135,7 @@
       ],
       "priority": 8,
       "passes": false,
-      "notes": "Use futures::future::join_all or tokio::join! to run the per-repo gh commands concurrently. If futures crate is not in Cargo.toml, add it or use tokio::spawn + JoinHandle. The conclusion field is null for in-progress runs \u2014 check status field too. Sorting: parse createdAt as a datetime string and sort descending."
+      "notes": "Use futures::future::join_all or tokio::join! to run the per-repo gh commands concurrently. If futures crate is not in Cargo.toml, add it or use tokio::spawn + JoinHandle. The conclusion field is null for in-progress runs — check status field too. Sorting: parse createdAt as a datetime string and sort descending."
     },
     {
       "id": "US-009",
@@ -151,7 +151,7 @@
       ],
       "priority": 9,
       "passes": false,
-      "notes": "ICON_MAP in constants.ts maps string keys to Lucide icon components. The existing pattern is like: { terminal: Terminal, globe: Globe, ... }. Lucide has a Github icon. Check the exact import name \u2014 it might be 'Github' or 'GithubIcon'. The CommandIcon type may be inferred from ICON_MAP keys rather than a separate union \u2014 check the actual implementation."
+      "notes": "ICON_MAP in constants.ts maps string keys to Lucide icon components. The existing pattern is like: { terminal: Terminal, globe: Globe, ... }. Lucide has a Github icon. Check the exact import name — it might be 'Github' or 'GithubIcon'. The CommandIcon type may be inferred from ICON_MAP keys rather than a separate union — check the actual implementation."
     },
     {
       "id": "US-010",
@@ -161,7 +161,7 @@
         "Add 'native' to the PluginTier type in apps/renderer/src/hooks/use-plugins.ts (alongside 'json' and 'scriptable')",
         "Ensure the RegisteredCommand TypeScript type has script_path as optional (string | null) to match the Rust Option<PathBuf>",
         "Verify that native plugins from discover_plugins flow through to the command palette without errors",
-        "No filtering or special-casing of native tier needed \u2014 they should behave identically to scriptable plugins from the frontend's perspective",
+        "No filtering or special-casing of native tier needed — they should behave identically to scriptable plugins from the frontend's perspective",
         "pnpm check passes"
       ],
       "priority": 10,
@@ -186,7 +186,7 @@
       ],
       "priority": 11,
       "passes": false,
-      "notes": "The plugins-tab.tsx already has sections for browsing and managing scriptable plugins. Add the native section above or below with clear visual distinction (e.g., a 'Built-in Plugins' heading). The validate_native_plugin command runs gh CLI directly via tokio::process::Command (same pattern as gh_exec in github.rs \u2014 consider reusing it). For the frontend, use a useState for validation results and show loading state while validating. Follow existing UI patterns from the plugins tab (badges, buttons, etc.)."
+      "notes": "The plugins-tab.tsx already has sections for browsing and managing scriptable plugins. Add the native section above or below with clear visual distinction (e.g., a 'Built-in Plugins' heading). The validate_native_plugin command runs gh CLI directly via tokio::process::Command (same pattern as gh_exec in github.rs — consider reusing it). For the frontend, use a useState for validation results and show loading state while validating. Follow existing UI patterns from the plugins tab (badges, buttons, etc.)."
     }
   ]
 }
