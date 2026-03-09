@@ -17,7 +17,7 @@
         "cargo check -p mrunner passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Types defined in design doc section 7. Use #[derive(Debug, Clone, Serialize, Deserialize)] on all types. serde rename_all = camelCase for JSON interop with frontend."
     },
     {

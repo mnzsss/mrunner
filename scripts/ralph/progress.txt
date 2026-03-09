@@ -1,3 +1,20 @@
+## Codebase Patterns
+- Rust modules use `pub mod` in lib.rs when types need to be accessible from Tauri commands in the same file
+- All Rust types that cross the Tauri IPC boundary use `#[serde(rename_all = "camelCase")]` for frontend interop
+- Cargo workspace dependencies (serde, serde_json, dirs) are referenced via `dep.workspace = true` — no version needed
+- `cargo check -p mrunner` is the quality gate for Rust changes (not `cargo build`)
+
 # Ralph Progress Log
 Started: Mon Mar  9 12:36:44 PM -03 2026
+---
+
+## 2026-03-09 - US-001
+- Created `apps/launcher/src/plugins.rs` with PluginTier, CommandMode, RegisteredCommand, RegisteredPlugin types
+- Added `pub mod plugins;` to `apps/launcher/src/lib.rs`
+- All types derive Debug, Clone, Serialize, Deserialize with serde rename_all = camelCase
+- Files changed: apps/launcher/src/plugins.rs, apps/launcher/src/lib.rs
+- **Learnings for future iterations:**
+  - The branch `feat/plugin-system` did not exist on master — had to create it; prd.json/progress.txt existed only on the feature branch (stash conflict on creation)
+  - `pub mod plugins` needed (not just `mod plugins`) so sibling Tauri command functions in lib.rs can access the types
+  - cargo check passes in ~3s for this crate
 ---
