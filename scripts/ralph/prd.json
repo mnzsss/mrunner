@@ -1,0 +1,283 @@
+{
+  "project": "MRunner",
+  "branchName": "feat/plugin-system",
+  "description": "Scriptable Plugin System - Process-based plugin execution model where plugins are scripts (JS/TS) that run as separate OS processes, communicating with MRunner via JSON stdin/stdout",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Rust types for scriptable plugins",
+      "description": "As a developer, I need the core Rust types for the plugin system so that discovery, registration, and execution have a shared type foundation.",
+      "acceptanceCriteria": [
+        "Create apps/launcher/src/plugins.rs module",
+        "Define PluginTier enum: Json, Scriptable (with serde Serialize/Deserialize)",
+        "Define CommandMode enum: List, Detail, Action (with serde)",
+        "Define RegisteredCommand struct: id (String), title, description, icon, mode (CommandMode), keywords (Vec<String>), script_path (PathBuf)",
+        "Define RegisteredPlugin struct: plugin_id, plugin_name, plugin_icon, runtime, commands (Vec<RegisteredCommand>), tier (PluginTier)",
+        "Add mod plugins to lib.rs",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Types defined in design doc section 7. Use #[derive(Debug, Clone, Serialize, Deserialize)] on all types. serde rename_all = camelCase for JSON interop with frontend."
+    },
+    {
+      "id": "US-002",
+      "title": "Implement plugin directory scanner",
+      "description": "As a developer, I need a function that scans ~/.config/mrunner/plugins/ and discovers both Tier 1 JSON files and Tier 2 scriptable plugin directories.",
+      "acceptanceCriteria": [
+        "Add discover_plugins() function in plugins.rs that scans the plugins directory",
+        "Tier 1: detect *.json files directly in plugins/ (existing behavior, just collect paths)",
+        "Tier 2: detect */plugin.json directories, parse plugin.json manifest",
+        "For Tier 2: scan src/commands/*/config.json within each plugin dir, parse each config.json",
+        "Build Vec<RegisteredPlugin> from discovered Tier 2 plugins with command IDs as 'plugin-id:command-name'",
+        "Handle missing/invalid files gracefully with error logging (don't crash on bad plugins)",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Plugins dir: ~/.config/mrunner/plugins/ (use dirs::config_dir or tauri path API). plugin.json fields: id, name, version, description, author, icon, runtime. config.json fields: title, description, icon, mode, keywords. Command ID format: '{plugin_id}:{command_dir_name}'. Script path: {plugin_dir}/src/commands/{command_name}/command.ts."
+    },
+    {
+      "id": "US-003",
+      "title": "Add discover_plugins Tauri command",
+      "description": "As a frontend developer, I need a Tauri IPC command to get the list of discovered plugins so the renderer can display them.",
+      "acceptanceCriteria": [
+        "Create #[tauri::command] async fn discover_plugins() that calls the scanner from US-002",
+        "Return Vec<RegisteredPlugin> serialized as JSON to the frontend",
+        "Register the command in the invoke_handler in lib.rs",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Register in apps/launcher/src/lib.rs invoke_handler array. Tauri commands registered there are available via invoke() in the renderer. Follow the pattern of existing commands in lib.rs."
+    },
+    {
+      "id": "US-004",
+      "title": "Create @mrunner/plugin SDK package with types and Command class",
+      "description": "As a plugin author, I need an npm package with the abstract Command class and TypeScript types so I can build plugins with type safety.",
+      "acceptanceCriteria": [
+        "Create packages/plugin/ directory with package.json (name: @mrunner/plugin, private: false)",
+        "Add tsconfig.json extending the monorepo base config",
+        "Create src/index.ts exporting: Command abstract class, CommandContext interface, ListItem interface, Action type union, ListResult/DetailResult/ActionResult/CommandResult types, Accessory type",
+        "Command class has abstract run(context: CommandContext): Promise<CommandResult> and optional onItemSelect(itemId: string, context: CommandContext): Promise<CommandResult>",
+        "Action type union includes: url, open, copy, shell, notification, push variants as defined in the design doc",
+        "Add packages/plugin to pnpm-workspace.yaml if not already covered by glob",
+        "pnpm install succeeds and package is recognized in workspace"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Design doc section 2 has exact type definitions. CommandContext has query (string), preferences (Record<string, unknown>), environment ({ locale, theme, platform, homeDir }). Keep it minimal - no runtime dependencies. Build with tsup or tsc."
+    },
+    {
+      "id": "US-005",
+      "title": "Add SDK runner CLI entrypoint",
+      "description": "As a plugin system, I need a runner script that handles stdin/stdout plumbing so plugin authors never touch process I/O directly.",
+      "acceptanceCriteria": [
+        "Create packages/plugin/src/runner.ts as a CLI entrypoint",
+        "Runner reads JSON from stdin (CommandContext)",
+        "Runner dynamically imports the command module path from argv[1]",
+        "Runner instantiates the exported default class (must extend Command)",
+        "Runner calls run(context) and writes JSON result to stdout",
+        "Runner writes errors to stderr and exits with code 1 on failure",
+        "Add bin entry in package.json pointing to the compiled runner",
+        "pnpm check passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Invocation: node packages/plugin/dist/runner.js /path/to/command.ts. The runner is what Rust spawns. Use process.stdin for reading, process.stdout.write for output. Handle the case where the imported module doesn't export a Command subclass."
+    },
+    {
+      "id": "US-006",
+      "title": "Add JSON schemas for plugin.json and command config.json",
+      "description": "As a plugin author, I need JSON schemas so I get IntelliSense in VS Code when editing plugin.json and config.json files.",
+      "acceptanceCriteria": [
+        "Create packages/plugin/schemas/plugin.schema.json with properties: id, name, version, description, author, icon, runtime (enum: node, deno, bun, python, bash)",
+        "Create packages/plugin/schemas/command.schema.json with properties: title, description, icon, mode (enum: list, detail, action), keywords (array of strings)",
+        "Both schemas have $schema draft-07 reference and required fields",
+        "Icon field has enum values matching MRunner's predefined icon set",
+        "pnpm check passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Referenced via $schema in plugin files: node_modules/@mrunner/plugin/schemas/plugin.schema.json. Check existing icon names from the codebase (Lucide icons used in command palette). mode enum: list, detail, action."
+    },
+    {
+      "id": "US-007",
+      "title": "Implement plugin command process spawner in Rust",
+      "description": "As the system, I need to spawn plugin commands as child processes with stdin/stdout JSON communication and timeout enforcement.",
+      "acceptanceCriteria": [
+        "Add run_plugin_command() function in plugins.rs",
+        "Function takes command_id (String) and context (JSON value) as parameters",
+        "Resolve the plugin's runtime (node/deno/bun) and script path from RegisteredPlugin data",
+        "Spawn child process: {runtime} {runner_path} {script_path}",
+        "Write context as JSON to child's stdin, then close stdin",
+        "Read stdout as JSON result with 10-second timeout",
+        "Capture stderr for error reporting",
+        "Return Result with parsed JSON on success, or error with stderr content on failure",
+        "Kill process on timeout and return timeout error",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Use tokio::process::Command for async spawning. Runner path: find @mrunner/plugin/dist/runner.js relative to the plugin's node_modules. For timeout, use tokio::time::timeout. Non-zero exit code should be treated as an error. The runner path may need to be resolved from the plugin directory's node_modules."
+    },
+    {
+      "id": "US-008",
+      "title": "Add run_plugin_command Tauri command",
+      "description": "As a frontend developer, I need a Tauri IPC command to execute a scriptable plugin command and get the result.",
+      "acceptanceCriteria": [
+        "Create #[tauri::command] async fn run_plugin_command(command_id: String, context: serde_json::Value) -> Result<serde_json::Value, String>",
+        "Command looks up the RegisteredPlugin/RegisteredCommand by command_id",
+        "Calls the process spawner from US-007",
+        "Returns the JSON result on success or error message on failure",
+        "Register the command in the invoke_handler in lib.rs",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Plugin state (discovered plugins) needs to be accessible from the Tauri command. Use tauri::State<T> with a Mutex<Vec<RegisteredPlugin>> or similar pattern. command_id format: 'plugin-id:command-name'."
+    },
+    {
+      "id": "US-009",
+      "title": "Extend use-plugins hook for Tier 2 plugins",
+      "description": "As a frontend developer, I need the use-plugins hook to load both Tier 1 JSON plugins and Tier 2 scriptable plugins from the new discover_plugins command.",
+      "acceptanceCriteria": [
+        "Update apps/renderer/src/hooks/use-plugins.ts to call invoke('discover_plugins') on mount",
+        "Add TypeScript types matching the Rust RegisteredPlugin/RegisteredCommand structs",
+        "Merge Tier 2 plugins into the existing plugin/command list alongside Tier 1",
+        "Tier 2 commands get a 'scriptable' flag or tier field to distinguish them in the UI",
+        "Loading and error states handled for the discovery call",
+        "pnpm check passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Existing use-plugins.ts handles Tier 1 JSON plugins. The hook should unify both tiers into a single commands list for the palette. Check the current hook implementation for the existing pattern."
+    },
+    {
+      "id": "US-010",
+      "title": "Show scriptable plugin commands in CommandPalette",
+      "description": "As a user, I want to see scriptable plugin commands in the command palette, grouped by plugin name, so I can discover and launch them.",
+      "acceptanceCriteria": [
+        "Tier 2 plugin commands appear in the CommandPalette list",
+        "Commands are grouped/labeled by their parent plugin name",
+        "Each command shows its title, description, and icon",
+        "Selecting a list-mode command transitions to a sub-view for that command's results",
+        "Selecting an action-mode command triggers immediate execution via invoke('run_plugin_command')",
+        "Add i18n keys for any new user-facing text (en.json and pt-BR.json)",
+        "pnpm check passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Check how existing commands render in the palette to match the pattern. list mode should show a loading state while the command runs. action mode should show a notification on completion. Keywords from config.json should be searchable."
+    },
+    {
+      "id": "US-011",
+      "title": "Implement list mode execution with dynamic results",
+      "description": "As a user, I want list-mode plugin commands to show their results in the palette and re-execute when I change my search query.",
+      "acceptanceCriteria": [
+        "When a list-mode command is active, invoke('run_plugin_command') with current query",
+        "Display returned ListItem[] in the palette (title, subtitle, icon, accessories)",
+        "Re-execute the command with debounce (300ms) when the search input changes",
+        "Show loading indicator during execution",
+        "Show error state if command fails or times out",
+        "Selecting a list item triggers its first action (or shows action menu if multiple)",
+        "pnpm check passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Use a debounced effect for re-execution on query change. The CommandContext.query field carries the current search text. ListItem has actions[] array - the primary action fires on Enter, secondary actions could show in a submenu."
+    },
+    {
+      "id": "US-012",
+      "title": "Implement detail mode and action mode rendering",
+      "description": "As a user, I want detail-mode commands to show markdown content and action-mode commands to execute immediately with a notification.",
+      "acceptanceCriteria": [
+        "Detail mode: render the returned markdown string in a panel (reuse existing Streamdown/markdown renderer)",
+        "Detail mode: show action buttons if the result includes actions[]",
+        "Action mode: execute immediately when command is selected, no sub-view",
+        "Action mode: show OS notification on success (title from command config)",
+        "Action mode: show error notification on failure",
+        "Add i18n keys for loading/error/success states (en.json and pt-BR.json)",
+        "pnpm check passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Check for an existing markdown renderer in the codebase (Streamdown is mentioned in the design doc). Action mode is fire-and-forget from the user's perspective. Use Tauri notification plugin or existing notification pattern."
+    },
+    {
+      "id": "US-013",
+      "title": "Implement plugin action type handlers",
+      "description": "As a user, I want all plugin action types (url, open, copy, shell, notification, push) to work when I interact with plugin results.",
+      "acceptanceCriteria": [
+        "url action: opens URL in default browser via Tauri shell plugin",
+        "open action: opens file/folder in system default via Tauri shell plugin",
+        "copy action: copies content string to clipboard",
+        "shell action: executes command through existing is_command_allowed() whitelist check",
+        "notification action: shows OS notification with title and message",
+        "push action: navigates to another plugin command by command ID",
+        "All actions dispatched from a shared executeAction(action) utility function",
+        "pnpm check passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Most of these handlers likely already exist for Tier 1 plugins (url, open, copy, shell). Check existing action execution code and reuse. The 'push' action is new - it should set the active command in the palette to the target command ID."
+    },
+    {
+      "id": "US-014",
+      "title": "Create Settings Plugins tab with installed plugins list",
+      "description": "As a user, I want a Plugins tab in Settings where I can see my installed plugins and enable/disable them.",
+      "acceptanceCriteria": [
+        "Create apps/renderer/src/components/settings/plugins-tab.tsx",
+        "List all installed plugins with name, version, author, and icon",
+        "Each plugin has an enable/disable toggle that persists to preferences.json",
+        "Expandable section per plugin showing its commands (title, description, mode)",
+        "Add 'Open Plugins Folder' button that opens ~/.config/mrunner/plugins/ in file manager",
+        "Wire the tab into the existing settings sheet/dialog",
+        "Add i18n keys for all labels (en.json and pt-BR.json)",
+        "pnpm check passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Plugin enabled/disabled state stored in preferences.json under plugins key. Follow the existing settings tab pattern (check other tabs in the settings directory). Use @mrunner/ui components. The 'Open Plugins Folder' button uses Tauri shell plugin's open() with the directory path."
+    },
+    {
+      "id": "US-015",
+      "title": "Add git-based plugin installation from URL",
+      "description": "As a user, I want to install plugins from a Git URL so I can add community plugins to my MRunner setup.",
+      "acceptanceCriteria": [
+        "Add 'Install from Git URL' input field in the Plugins settings tab",
+        "Create Rust Tauri command install_plugin(git_url: String) that: git clones to plugins dir, validates plugin.json, runs npm install if package.json exists",
+        "Show installation progress/status in the UI",
+        "On success: re-discover plugins and refresh the list",
+        "On failure: show error message and clean up the cloned directory",
+        "Add confirmation dialog before installation showing plugin name, author, and source",
+        "Register install_plugin in invoke_handler",
+        "Add i18n keys for install UI (en.json and pt-BR.json)",
+        "cargo check -p mrunner passes",
+        "pnpm check passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "Use std::process::Command to run git clone and npm install. Clone target: ~/.config/mrunner/plugins/{plugin-id}/. The plugin-id comes from the cloned plugin.json. Validate plugin.json schema before accepting. Security: show user what they're installing before proceeding."
+    },
+    {
+      "id": "US-016",
+      "title": "Add plugin registry browsing and update checking",
+      "description": "As a user, I want to browse available plugins from the official registry and check for updates to my installed plugins.",
+      "acceptanceCriteria": [
+        "Add 'Browse Plugins' section in Settings Plugins tab that fetches plugins/registry.json from the MRunner repo raw URL",
+        "Display registry plugins with name, description, author, tags, and verified badge",
+        "Show 'Install' button for plugins not yet installed, 'Installed' badge for ones already present",
+        "Add 'Check for Updates' button that runs git pull on each installed Tier 2 plugin directory",
+        "Show update results (updated/up-to-date/error per plugin)",
+        "If updates found: re-run npm install and re-discover plugins",
+        "Cache registry locally, refresh every 24h or on manual refresh",
+        "Add i18n keys for browse/update UI (en.json and pt-BR.json)",
+        "pnpm check passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "Create plugins/registry.json in the MRunner repo root with the format from design doc section 4. Registry URL: raw GitHub URL of the main repo's plugins/registry.json. For updates, use Rust Tauri command that runs git -C <plugin-dir> pull. Cache registry in ~/.config/mrunner/plugin-registry-cache.json with timestamp."
+    }
+  ]
+}

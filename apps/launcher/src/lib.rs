@@ -1,6 +1,7 @@
 mod bookmarks;
 mod chrome;
 mod platform;
+pub mod plugins;
 mod shortcuts;
 
 use std::process::Command;
