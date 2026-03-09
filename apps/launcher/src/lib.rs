@@ -1,5 +1,6 @@
 mod bookmarks;
 mod chrome;
+pub mod github;
 mod platform;
 pub mod plugins;
 mod shortcuts;
