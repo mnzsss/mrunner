@@ -178,14 +178,65 @@ pub fn register() -> RegisteredPlugin {
 
 pub async fn run_command(
     command_id: &str,
-    _context: &serde_json::Value,
+    context: &serde_json::Value,
 ) -> Result<serde_json::Value, String> {
     match command_id {
-        "github:cmd_hub" => Ok(json!({ "items": [] })),
+        "github:cmd_hub" => cmd_hub(context).await,
         "github:cmd_repos" => Ok(json!({ "items": [] })),
         "github:cmd_prs" => Ok(json!({ "items": [] })),
         "github:cmd_issues" => Ok(json!({ "items": [] })),
         "github:cmd_actions" => Ok(json!({ "items": [] })),
         _ => Err(format!("Unknown github command: {}", command_id)),
     }
+}
+
+async fn cmd_hub(context: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = context["query"].as_str().unwrap_or("").to_lowercase();
+
+    let all_items = vec![
+        json!({
+            "id": "hub:repos",
+            "title": "Repositories",
+            "subtitle": "Browse and search GitHub repositories",
+            "icon": "github",
+            "actions": [{ "type": "push", "command": "github:cmd_repos" }]
+        }),
+        json!({
+            "id": "hub:prs",
+            "title": "Pull Requests",
+            "subtitle": "View your open pull requests",
+            "icon": "github",
+            "actions": [{ "type": "push", "command": "github:cmd_prs" }]
+        }),
+        json!({
+            "id": "hub:issues",
+            "title": "Issues",
+            "subtitle": "View your open issues",
+            "icon": "github",
+            "actions": [{ "type": "push", "command": "github:cmd_issues" }]
+        }),
+        json!({
+            "id": "hub:actions",
+            "title": "Workflow Runs",
+            "subtitle": "Monitor CI/CD workflow runs",
+            "icon": "github",
+            "actions": [{ "type": "push", "command": "github:cmd_actions" }]
+        }),
+    ];
+
+    let items: Vec<_> = if query.is_empty() {
+        all_items
+    } else {
+        all_items
+            .into_iter()
+            .filter(|item| {
+                item["title"]
+                    .as_str()
+                    .map(|t| t.to_lowercase().contains(&query))
+                    .unwrap_or(false)
+            })
+            .collect()
+    };
+
+    Ok(json!({ "items": items }))
 }
