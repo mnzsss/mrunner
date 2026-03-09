@@ -345,3 +345,59 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - For accessories, use `json!({ "text": "...", "tag": "warning" })` for badges; `tag` field provides styling
   - Query trimming with `.trim()` before checking `is_empty()` avoids whitespace-only queries triggering the list path
 ---
+
+## 2026-03-09 - US-006
+- Implemented `cmd_prs` in `apps/launcher/src/github.rs`
+- Added `relative_time(date_str: &str) -> String` helper using `chrono::DateTime<Utc>` for relative formatting (just now, Xm ago, Xh ago, Xd ago, Xw ago, Xmo ago)
+- `cmd_prs` calls `gh search prs --author=@me --state=open --json number,title,repository,url,createdAt -L 30`; appends query string if non-empty
+- Returns ListItems with id (`pr:{repo}:{number}`), title (PR title), subtitle (`repo#number`), icon `github`, accessories with relative date, and `{type: 'url', url}` action
+- Wired `cmd_prs` into `run_command` dispatch (replaced placeholder)
+- Files changed: apps/launcher/src/github.rs
+- **Learnings for future iterations:**
+  - `chrono = "0.4"` is already in `apps/launcher/Cargo.toml` — use `chrono::DateTime<Utc>` for date parsing/diff
+  - `args` vec with conditional query: assign `query.clone()` to an owned binding first, then push `&query_owned` — borrow checker requires the owned value outlive the vec
+  - `gh search prs` appends the query as a positional argument after the flags
+---
+
+## 2026-03-09 - US-007
+- Implemented `cmd_issues` in `apps/launcher/src/github.rs`
+- Wired `cmd_issues` into `run_command` dispatch (was placeholder `Ok(json!({ "items": [] }))`)
+- Uses `gh search issues --author=@me --state=open` with optional query term
+- Returns ListItems with id, title, subtitle (repo#number), icon, relative date accessory, url action
+- Structurally identical to `cmd_prs` — uses `GhIssue` struct (same shape as `GhPr`) and `relative_time` helper
+- Files changed: apps/launcher/src/github.rs
+- **Learnings for future iterations:**
+  - `cmd_issues` and `cmd_prs` share the same JSON shape (GhIssue == GhPr structurally) — future refactor could extract a shared helper
+  - The `relative_time` function is already defined in github.rs and shared by both commands
+---
+
+## 2026-03-09 - US-008
+- Implemented `cmd_actions` in `apps/launcher/src/github.rs`
+- Added `gh_exec_owned(args: Vec<String>)` helper for use inside `tokio::spawn` closures (owned args needed for 'static bound)
+- Fetches user's 5 most recent repos with `gh repo list --json nameWithOwner -L 5`
+- For each repo, spawns a tokio task to fetch 3 recent runs concurrently
+- Collects results, sorts by createdAt descending (ISO 8601 string sort works correctly)
+- Maps conclusion/status to status accessories: success→"Passed"/green, failure→"Failed"/red, in_progress→"Running"/yellow, other→gray status text
+- Includes date_text accessory alongside status badge
+- Filters by query (title or repo name contains) if non-empty
+- Files changed: apps/launcher/src/github.rs
+- **Learnings for future iterations:**
+  - `tokio::spawn` requires `'static` futures — cannot capture `&str` references; use owned `Vec<String>` args instead
+  - `gh_exec` (takes `&[&str]`) is convenient for top-level async code; `gh_exec_owned` (takes `Vec<String>`) is needed for spawn closures
+  - `serde_json::from_str(...).unwrap_or_default()` is a clean way to handle per-repo gh failures gracefully
+  - ISO 8601 datetime strings sort correctly lexicographically — no need to parse for descending sort
+---
+
+## 2026-03-09 - US-009
+- Added `Github` import from `lucide-react` to `apps/renderer/src/lib/constants.ts`
+- Added `github: Github` entry to ICON_MAP in constants.ts
+- Added `'github'` to `CommandIcon` type union in `apps/renderer/src/core/types/command.ts`
+- Added `'github'` to `CommandIconSchema` z.enum in `apps/renderer/src/core/types/command.ts`
+- Added `"github"` to icon enum in `packages/plugin/schemas/command.schema.json`
+- Added `"github"` to icon enum in `packages/plugin/schemas/plugin.schema.json`
+- Files changed: apps/renderer/src/lib/constants.ts, apps/renderer/src/core/types/command.ts, packages/plugin/schemas/command.schema.json, packages/plugin/schemas/plugin.schema.json
+- **Learnings for future iterations:**
+  - Lucide `Github` icon is available via `import { Github } from 'lucide-react'` — no extra package needed
+  - Adding a new icon requires updating 4 places: ICON_MAP + import (constants.ts), CommandIcon type + CommandIconSchema (command.ts), command.schema.json, plugin.schema.json
+  - `pnpm check` (biome) + `tsc --noEmit` are the quality gates for frontend-only changes
+---
