@@ -147,3 +147,21 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - Tier 1 directory-not-found is silently swallowed (try/catch inner block); Tier 2 errors are logged but don't abort loading
   - Scriptable commands use `icon: 'terminal'` as fallback since CommandIcon is a strict enum and plugin icons may not match
 ---
+
+## 2026-03-09 - US-010
+- Created `apps/renderer/src/components/command-palette/plugin-command-view.tsx` — sub-view shown when a list/detail-mode plugin command is active
+- Updated `apps/renderer/src/App.tsx`:
+  - Added `activeScriptableCommand` state (Command | null)
+  - `onQueryReset` now also clears `activeScriptableCommand`
+  - `handleSelect` intercepts scriptable actions: action mode → invoke('run_plugin_command') + hideWindow(); list/detail mode → setActiveScriptableCommand (sub-view)
+  - Conditionally renders `PluginCommandView` or `CommandPalette` based on active command
+- Added `plugins.back/running/success/error` i18n keys to en.json and pt-BR.json
+- Exported `PluginCommandView` from command-palette index.ts
+- Files changed: apps/renderer/src/App.tsx, apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/src/components/command-palette/index.ts, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+- **Learnings for future iterations:**
+  - Escape key must use `{ capture: true }` in the plugin sub-view so it intercepts before the @mrunner/ui Command component handles it
+  - `i18n.language` is accessible via `const { i18n } = useTranslation()` — needed for passing locale in CommandContext
+  - `homeDir()` from `@tauri-apps/api/path` is async — must await it inside handleSelect
+  - The `isScriptableAction` type guard is exported from `@/commands/types` (re-exported barrel)
+  - `PluginCommandView` uses an empty `<div>` loading placeholder in `CommandList` rather than `CommandEmpty` (which only shows when there are no matching items, not when waiting for results)
+---

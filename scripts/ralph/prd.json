@@ -167,7 +167,7 @@
         "pnpm check passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Check how existing commands render in the palette to match the pattern. list mode should show a loading state while the command runs. action mode should show a notification on completion. Keywords from config.json should be searchable."
     },
     {
