@@ -87,7 +87,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
 				{message.commands?.map((cmd) => (
 					<div
 						key={cmd.id}
-						className="flex flex-col gap-1 rounded-md border bg-muted/50 px-3 py-2 text-xs"
+						className="flex flex-col gap-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-xs"
 					>
 						<div className="flex items-center gap-2 font-mono">
 							{cmd.status === 'in_progress' ? (
@@ -123,7 +123,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
 
 				{/* Token usage */}
 				{message.usage && (
-					<div className="flex gap-3 pt-1 text-[10px] text-muted-foreground">
+					<div className="flex gap-3 pt-1 text-[10px] text-muted-foreground/60">
 						<span>
 							{t('chat.inputTokens', {
 								count: message.usage.inputTokens,
@@ -265,11 +265,11 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 			aria-label={t('chat.title')}
 		>
 			{/* Header */}
-			<div className="flex items-center gap-2 border-b px-3 py-2">
+			<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
 				<button
 					type="button"
 					onClick={handleBack}
-					className="flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+					className="flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1.5 text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
 					aria-label={t('chat.back')}
 				>
 					<ArrowLeft className="size-4" />
@@ -302,7 +302,7 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 			</Conversation>
 
 			{/* Input */}
-			<div className="border-t px-3 py-2">
+			<div className="border-border/50 border-t px-3 py-2.5">
 				<PromptInput onSubmit={handleSubmit}>
 					<PromptInputBody>
 						<PromptInputTextarea
@@ -322,7 +322,7 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 									render={
 										<button
 											type="button"
-											className="flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground text-xs transition-colors hover:bg-muted hover:text-foreground"
+											className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground/70 text-xs transition-all duration-150 hover:bg-muted hover:text-foreground"
 										/>
 									}
 								>

@@ -84,6 +84,14 @@ export function ToolsSettingsTab() {
 							}}
 						>
 							<div className="flex items-center gap-3">
+								<div
+									className={cn(
+										'flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 transition-all duration-150',
+										isActive && 'border-primary/20 bg-primary/10 text-primary',
+									)}
+								>
+									<provider.icon className="size-4" />
+								</div>
 								<ItemContent className="space-y-1">
 									<div className="flex items-center gap-2">
 										<ItemTitle>{provider.name}</ItemTitle>

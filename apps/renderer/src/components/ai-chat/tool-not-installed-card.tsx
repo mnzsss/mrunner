@@ -25,11 +25,11 @@ export function ToolNotInstalledCard({
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="flex items-center gap-2 border-b px-3 py-2">
+			<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
 				<button
 					type="button"
 					onClick={onBack}
-					className="cursor-pointer rounded-md p-1 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+					className="cursor-pointer rounded-lg p-1.5 text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
 					aria-label={t('chat.back')}
 				>
 					<ArrowLeft className="size-4" />

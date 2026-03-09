@@ -14,14 +14,16 @@ export function AddBookmarkButton({ onSelect }: AddBookmarkButtonProps) {
 			value={`${t('bookmarks.add')} adicionar bookmark add`}
 			onSelect={onSelect}
 		>
-			<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-data-[selected=true]:bg-popover">
+			<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 text-muted-foreground transition-all duration-150 group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
 				<BookmarkIcon className="size-4" />
 			</div>
-			<div className="min-w-0 flex-1">
-				<div className="truncate font-medium text-sm">{t('bookmarks.add')}</div>
-				<div className="truncate text-muted-foreground text-xs">
+			<div className="flex min-w-0 flex-1 items-baseline gap-2">
+				<span className="truncate font-medium text-[13px]">
+					{t('bookmarks.add')}
+				</span>
+				<span className="truncate text-muted-foreground/50 text-xs">
 					{t('bookmarks.addDescription')}
-				</div>
+				</span>
 			</div>
 			<Plus className="size-4 text-muted-foreground" />
 		</CommandItem>

@@ -72,8 +72,11 @@ function CommandInput({
 	wrapperClassName?: string
 }) {
 	return (
-		<div data-slot="command-input-wrapper" className="p-1 pb-0">
-			<InputGroup className={cn('h-9 bg-input/30', wrapperClassName)}>
+		<div
+			data-slot="command-input-wrapper"
+			className="border-border/30 border-b p-1.5"
+		>
+			<InputGroup className={cn('h-11 bg-transparent', wrapperClassName)}>
 				{prefix ? (
 					<InputGroupAddon>{prefix}</InputGroupAddon>
 				) : (
@@ -81,14 +84,14 @@ function CommandInput({
 						<HugeiconsIcon
 							icon={SearchIcon}
 							strokeWidth={2}
-							className="size-4 shrink-0 opacity-50"
+							className="size-5 shrink-0 opacity-40"
 						/>
 					</InputGroupAddon>
 				)}
 				<CommandPrimitive.Input
 					data-slot="command-input"
 					className={cn(
-						'w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
+						'w-full text-[13px] outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
 						className,
 					)}
 					{...props}
@@ -106,7 +109,7 @@ function CommandList({
 		<CommandPrimitive.List
 			data-slot="command-list"
 			className={cn(
-				'no-scrollbar scroll-py-1 overflow-y-auto overflow-x-hidden outline-none',
+				'no-scrollbar scroll-py-1 overflow-y-auto overflow-x-hidden scroll-smooth outline-none',
 				className,
 			)}
 			{...props}
@@ -135,7 +138,7 @@ function CommandGroup({
 		<CommandPrimitive.Group
 			data-slot="command-group"
 			className={cn(
-				'overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground **:[[cmdk-group-heading]]:text-xs',
+				'overflow-hidden p-1 text-foreground first:pt-0 **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:text-muted-foreground/70 **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-wider',
 				className,
 			)}
 			{...props}
@@ -165,7 +168,7 @@ function CommandItem({
 		<CommandPrimitive.Item
 			data-slot="command-item"
 			className={cn(
-				"group/command-item relative flex cursor-default select-none items-center gap-2 in-data-[slot=dialog-content]:rounded-2xl rounded-lg px-3 py-2 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-selected:bg-muted data-selected:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-selected:*:[svg]:text-foreground",
+				"group/command-item relative flex cursor-default select-none items-center gap-2.5 in-data-[slot=dialog-content]:rounded-2xl rounded-lg px-3 py-2 text-sm outline-hidden transition-all duration-150 ease-out data-[disabled=true]:pointer-events-none data-selected:bg-muted/80 data-selected:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-selected:*:[svg]:text-foreground",
 				className,
 			)}
 			{...props}

@@ -1,4 +1,9 @@
-import { BotMessageSquare, type LucideIcon } from 'lucide-react'
+import type { ComponentType, SVGProps } from 'react'
+
+import { ClaudeLogo } from '@/components/icons/claude-logo'
+import { MRunnerAskIcon } from '@/components/icons/mrunner-ask'
+
+export type ToolIcon = ComponentType<SVGProps<SVGSVGElement>>
 
 export interface ToolColor {
 	badge: string
@@ -13,7 +18,7 @@ export interface ToolProvider {
 	name: string
 	command: string
 	description: string
-	icon: LucideIcon
+	icon: ToolIcon
 	color: ToolColor
 	checkCommand: { linux: string; windows: string }
 	installInstructions: { linux: string; windows: string }
@@ -86,15 +91,15 @@ export const TOOL_PROVIDERS: ToolProvider[] = [
 		name: 'Ask AI',
 		command: 'ask',
 		description: 'Chat with AI assistant (OpenAI Codex)',
-		icon: BotMessageSquare,
+		icon: MRunnerAskIcon,
 		color: {
-			badge: 'bg-primary text-primary-foreground',
+			badge: 'bg-primary/15 text-primary border border-primary/25',
 			border:
-				'border-primary/50 focus-within:border-primary focus-within:ring-primary/20',
+				'border-primary/40 focus-within:border-primary focus-within:ring-primary/20',
 			icon: 'text-primary',
 			text: 'text-primary',
 			selectedBg:
-				'data-selected:bg-primary/10 data-selected:border-primary border',
+				'data-selected:bg-primary/8 data-selected:border-primary/30 border border-transparent',
 		},
 		checkCommand: { linux: 'which codex', windows: 'where codex' },
 		installInstructions: {
@@ -108,15 +113,15 @@ export const TOOL_PROVIDERS: ToolProvider[] = [
 		name: 'Claude Code',
 		command: 'claude',
 		description: 'Chat with AI assistant (Anthropic Claude Code)',
-		icon: BotMessageSquare,
+		icon: ClaudeLogo,
 		color: {
-			badge: 'bg-amber-500 text-white',
+			badge: 'bg-[#D97757]/15 text-[#D97757] border border-[#D97757]/25',
 			border:
-				'border-amber-500/50 focus-within:border-amber-500 focus-within:ring-amber-500/20',
-			icon: 'text-amber-500',
-			text: 'text-amber-500',
+				'border-[#D97757]/40 focus-within:border-[#D97757] focus-within:ring-[#D97757]/20',
+			icon: 'text-[#D97757]',
+			text: 'text-[#D97757]',
 			selectedBg:
-				'data-selected:bg-amber-500/10 data-selected:border-amber-500 border',
+				'data-selected:bg-[#D97757]/8 data-selected:border-[#D97757]/30 border border-transparent',
 		},
 		checkCommand: { linux: 'which claude', windows: 'where claude' },
 		installInstructions: {

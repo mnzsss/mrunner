@@ -83,11 +83,15 @@ export function Setup() {
 	}, [globalShortcut, navigate, locale])
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-background p-8">
+		<div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] bg-background from-primary/5 via-background to-background p-8">
 			<div className="w-full max-w-xl space-y-6">
 				<div className="space-y-2 text-center">
-					<h1 className="font-bold text-2xl">{t('setup.title')}</h1>
-					<p className="text-muted-foreground">{t('setup.subtitle')}</p>
+					<h1 className="font-semibold text-3xl tracking-tight">
+						{t('setup.title')}
+					</h1>
+					<p className="text-[15px] text-muted-foreground leading-relaxed">
+						{t('setup.subtitle')}
+					</p>
 					<div className="flex items-center justify-center gap-2 pt-2">
 						<span className="text-muted-foreground text-sm">
 							{t('setup.languageLabel')}

@@ -122,7 +122,7 @@ export function CommandPalette({
 	// Chat mode — full view swap
 	if (isChatMode) {
 		return (
-			<div className="flex h-full flex-col overflow-hidden rounded-lg border bg-popover shadow-md">
+			<div className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-popover shadow-black/15 shadow-xl">
 				<Suspense
 					fallback={
 						<div className="flex h-full items-center justify-center">
@@ -146,7 +146,7 @@ export function CommandPalette({
 
 	return (
 		<Command
-			className="flex h-full flex-col rounded-lg border shadow-md"
+			className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 shadow-black/15 shadow-xl"
 			loop
 			disablePointerSelection
 			filter={activeCommand || isSlashMode ? () => 1 : commandFilter}
@@ -181,7 +181,7 @@ export function CommandPalette({
 								<span className={`font-medium ${tool.color.text}`}>
 									/{tool.command}
 								</span>
-								<span className="text-muted-foreground">
+								<span className="text-muted-foreground/50">
 									{tool.description}
 								</span>
 								<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>

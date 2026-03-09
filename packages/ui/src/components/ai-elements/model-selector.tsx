@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react'
+import type { ComponentProps, ComponentType, ReactNode, SVGProps } from 'react'
 import { BotIcon, CpuIcon } from 'lucide-react'
 
 import { cn } from '../../lib/utils'
@@ -74,10 +74,14 @@ function ModelSelectorName({ className, ...props }: ComponentProps<'span'>) {
 
 function ModelSelectorLogo({
 	provider,
+	icon: CustomIcon,
 	className,
 	...props
-}: Omit<ComponentProps<'span'>, 'children'> & { provider: string }) {
-	const Icon = getProviderIcon(provider)
+}: Omit<ComponentProps<'span'>, 'children'> & {
+	provider: string
+	icon?: ComponentType<SVGProps<SVGSVGElement>>
+}) {
+	const Icon = CustomIcon ?? getProviderIcon(provider)
 	return (
 		<span
 			className={cn(
