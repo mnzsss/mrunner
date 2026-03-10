@@ -16,7 +16,7 @@ export interface ScriptableRegisteredCommand {
 	icon: string
 	mode: ScriptableCommandMode
 	keywords: string[]
-	scriptPath: string
+	scriptPath: string | null
 }
 
 export interface ScriptableRegisteredPlugin {
@@ -25,7 +25,7 @@ export interface ScriptableRegisteredPlugin {
 	pluginIcon: string
 	runtime: string
 	commands: ScriptableRegisteredCommand[]
-	tier: 'json' | 'scriptable'
+	tier: 'json' | 'scriptable' | 'native'
 	pluginDir: string
 }
 
