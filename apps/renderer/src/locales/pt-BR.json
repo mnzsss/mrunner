@@ -157,7 +157,17 @@
       "updateStatusError": "Erro",
       "updateStatusSkipped": "Não é um repositório git",
       "noRegistryPlugins": "Nenhum plugin disponível no registro ainda.",
-      "verifiedBadge": "Verificado"
+      "verifiedBadge": "Verificado",
+      "nativePlugins": "Plugins Nativos",
+      "nativePluginGithubDescription": "Navegue por repositórios, PRs, issues e execuções de workflow via gh CLI",
+      "validate": "Validar",
+      "validating": "Validando...",
+      "validationPassed": "Pronto",
+      "validationWarning": "Não autenticado",
+      "validationFailed": "Não instalado",
+      "setupInstructions": "Instruções de Configuração",
+      "setupInstallGh": "Instale o GitHub CLI em https://cli.github.com",
+      "setupAuthGh": "Autentique-se executando: gh auth login"
     }
   },
   "commands": {

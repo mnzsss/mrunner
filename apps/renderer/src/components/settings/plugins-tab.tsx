@@ -28,7 +28,13 @@ import {
 	writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open } from '@tauri-apps/plugin-shell'
-import { ChevronDown, ChevronRight, FolderOpen, RefreshCw } from 'lucide-react'
+import {
+	ChevronDown,
+	ChevronRight,
+	FolderOpen,
+	Github,
+	RefreshCw,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -85,6 +91,13 @@ type InstallStatus =
 	| 'success'
 	| 'error'
 
+interface NativeValidationResult {
+	installed: boolean
+	authenticated: boolean
+	version: string | null
+	error: string | null
+}
+
 export function PluginsTab() {
 	const { t } = useTranslation()
 	const [plugins, setPlugins] = useState<ScriptableRegisteredPlugin[]>([])
@@ -110,6 +123,11 @@ export function PluginsTab() {
 		null,
 	)
 	const [checkingUpdates, setCheckingUpdates] = useState(false)
+
+	// Native plugin validation state
+	const [nativeValidation, setNativeValidation] =
+		useState<NativeValidationResult | null>(null)
+	const [validating, setValidating] = useState(false)
 
 	const getConfigPath = useCallback(async () => {
 		const home = await homeDir()
@@ -310,6 +328,26 @@ export function PluginsTab() {
 		setGitUrl(url)
 	}
 
+	const handleValidateNativePlugin = async (pluginId: string) => {
+		setValidating(true)
+		try {
+			const result = await invoke<NativeValidationResult>(
+				'validate_native_plugin',
+				{ pluginId },
+			)
+			setNativeValidation(result)
+		} catch (e) {
+			setNativeValidation({
+				installed: false,
+				authenticated: false,
+				version: null,
+				error: e instanceof Error ? e.message : String(e),
+			})
+		} finally {
+			setValidating(false)
+		}
+	}
+
 	useEffect(() => {
 		loadRegistry()
 	}, [loadRegistry])
@@ -328,6 +366,85 @@ export function PluginsTab() {
 
 	return (
 		<div className="space-y-6">
+			{/* Native (Built-in) Plugins */}
+			<div className="space-y-3">
+				<h3 className="text-sm font-medium text-muted-foreground">
+					{t('settings.plugins.nativePlugins')}
+				</h3>
+
+				<Item variant="outline">
+					<div className="flex shrink-0 items-center justify-center p-1 text-muted-foreground">
+						<Github className="h-4 w-4" />
+					</div>
+					<ItemContent className="min-w-0 flex-1 space-y-0.5">
+						<ItemTitle className="font-medium">GitHub</ItemTitle>
+						<ItemDescription className="text-xs text-muted-foreground">
+							{t('settings.plugins.nativePluginGithubDescription')}
+						</ItemDescription>
+						{nativeValidation && (
+							<div className="mt-1 flex flex-col gap-1">
+								{nativeValidation.installed &&
+								nativeValidation.authenticated ? (
+									<Badge
+										variant="secondary"
+										className="w-fit text-xs text-green-700 dark:text-green-400"
+									>
+										✓ {t('settings.plugins.validationPassed')}
+										{nativeValidation.version
+											? ` — ${nativeValidation.version}`
+											: ''}
+									</Badge>
+								) : nativeValidation.installed ? (
+									<Badge
+										variant="secondary"
+										className="w-fit text-xs text-yellow-700 dark:text-yellow-400"
+									>
+										⚠ {t('settings.plugins.validationWarning')}
+									</Badge>
+								) : (
+									<Badge
+										variant="secondary"
+										className="w-fit text-xs text-destructive"
+									>
+										✗ {t('settings.plugins.validationFailed')}
+									</Badge>
+								)}
+								{nativeValidation.error &&
+									!(
+										nativeValidation.installed && nativeValidation.authenticated
+									) && (
+										<div className="rounded-md border bg-muted/30 p-2 text-xs text-muted-foreground">
+											<p className="mb-1 font-medium">
+												{t('settings.plugins.setupInstructions')}
+											</p>
+											{!nativeValidation.installed && (
+												<p>• {t('settings.plugins.setupInstallGh')}</p>
+											)}
+											{nativeValidation.installed &&
+												!nativeValidation.authenticated && (
+													<p>• {t('settings.plugins.setupAuthGh')}</p>
+												)}
+										</div>
+									)}
+							</div>
+						)}
+					</ItemContent>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => handleValidateNativePlugin('github')}
+						disabled={validating}
+						className="shrink-0 text-xs"
+					>
+						{validating
+							? t('settings.plugins.validating')
+							: t('settings.plugins.validate')}
+					</Button>
+				</Item>
+			</div>
+
+			<Separator />
+
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-medium text-muted-foreground">

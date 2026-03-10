@@ -148,6 +148,65 @@ async fn check_plugin_updates(
     Ok(results)
 }
 
+#[derive(serde::Serialize)]
+struct NativePluginValidation {
+    installed: bool,
+    authenticated: bool,
+    version: Option<String>,
+    error: Option<String>,
+}
+
+#[tauri::command]
+async fn validate_native_plugin(plugin_id: String) -> Result<NativePluginValidation, String> {
+    if plugin_id != "github" {
+        return Err(format!("Unknown native plugin: {}", plugin_id));
+    }
+
+    let version_output = tokio::process::Command::new("gh")
+        .args(["--version"])
+        .output()
+        .await;
+
+    let (installed, version) = match version_output {
+        Ok(out) if out.status.success() => {
+            let raw = String::from_utf8_lossy(&out.stdout).to_string();
+            let ver = raw.lines().next().unwrap_or("").to_string();
+            (true, Some(ver))
+        }
+        _ => (false, None),
+    };
+
+    if !installed {
+        return Ok(NativePluginValidation {
+            installed: false,
+            authenticated: false,
+            version: None,
+            error: Some("gh CLI is not installed".to_string()),
+        });
+    }
+
+    let auth_output = tokio::process::Command::new("gh")
+        .args(["auth", "status"])
+        .output()
+        .await;
+
+    let authenticated = match auth_output {
+        Ok(out) => out.status.success(),
+        Err(_) => false,
+    };
+
+    Ok(NativePluginValidation {
+        installed: true,
+        authenticated,
+        version,
+        error: if !authenticated {
+            Some("Not authenticated. Run 'gh auth login'.".to_string())
+        } else {
+            None
+        },
+    })
+}
+
 #[tauri::command]
 fn hide_main_window(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -279,6 +338,7 @@ pub fn run() {
             complete_plugin_install,
             cancel_plugin_install,
             check_plugin_updates,
+            validate_native_plugin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
