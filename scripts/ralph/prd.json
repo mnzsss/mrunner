@@ -165,7 +165,7 @@
         "pnpm check passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "The PluginTier type in use-plugins.ts mirrors the Rust enum. Since Rust serializes with camelCase rename_all, the value will be 'native' (lowercase). The scriptPath field will be null for native commands. Check if any frontend code assumes scriptPath is always present and guard accordingly."
     },
     {
@@ -185,7 +185,7 @@
         "pnpm check passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "The plugins-tab.tsx already has sections for browsing and managing scriptable plugins. Add the native section above or below with clear visual distinction (e.g., a 'Built-in Plugins' heading). The validate_native_plugin command runs gh CLI directly via tokio::process::Command (same pattern as gh_exec in github.rs \u2014 consider reusing it). For the frontend, use a useState for validation results and show loading state while validating. Follow existing UI patterns from the plugins tab (badges, buttons, etc.)."
     }
   ]

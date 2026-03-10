@@ -401,3 +401,30 @@ Started: Mon Mar  9 12:36:44 PM -03 2026
   - Adding a new icon requires updating 4 places: ICON_MAP + import (constants.ts), CommandIcon type + CommandIconSchema (command.ts), command.schema.json, plugin.schema.json
   - `pnpm check` (biome) + `tsc --noEmit` are the quality gates for frontend-only changes
 ---
+
+## 2026-03-10 - US-010
+- Added 'native' to the tier union type in ScriptableRegisteredPlugin (was 'json' | 'scriptable', now includes 'native')
+- Changed scriptPath in ScriptableRegisteredCommand from `string` to `string | null` to match Rust Option<PathBuf>
+- scriptPath was only declared in the type, not accessed in any logic — no guards needed
+- Files changed: apps/renderer/src/hooks/use-plugins.ts
+- **Learnings for future iterations:**
+  - scriptPath is declared in the type but never accessed in use-plugins.ts logic, so making it optional required no downstream changes
+  - Native plugins flow through the same scriptableCommandToCommand path without special-casing
+---
+
+## 2026-03-10 - US-011
+- Added `validate_native_plugin` Tauri command in lib.rs: runs `gh --version` and `gh auth status`, returns `{installed, authenticated, version, error}` as NativePluginValidation struct
+- Registered `validate_native_plugin` in the invoke_handler in lib.rs
+- Added `NativeValidationResult` interface and `nativeValidation`/`validating` state to plugins-tab.tsx
+- Added `handleValidateNativePlugin` handler that invokes the Tauri command
+- Added "Built-in Plugins" section (using `settings.plugins.nativePlugins` i18n key) above the installed plugins section, showing GitHub entry with Github icon, description, and Validate button
+- Validation badges: green for installed+authenticated, yellow for installed-not-authenticated, red for not installed
+- Setup instructions shown inline when validation fails (links to install gh, run `gh auth login`)
+- Added 9 new i18n keys to both en.json and pt-BR.json
+- Files changed: apps/launcher/src/lib.rs, apps/renderer/src/components/settings/plugins-tab.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+- **Learnings for future iterations:**
+  - `gh auth status` exits with code 0 when authenticated, non-zero otherwise — safe to check `.status.success()`
+  - `gh --version` stdout first line contains the version string (e.g., "gh version 2.x.x ...")
+  - Biome auto-reformats multi-import lines to multi-line when adding new imports — expected behavior
+  - NativePluginValidation struct needs `#[derive(serde::Serialize)]` (not Deserialize) since it crosses from Rust to frontend
+---
