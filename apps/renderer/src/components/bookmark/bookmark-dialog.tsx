@@ -17,6 +17,9 @@ import { useTranslation } from 'react-i18next'
 
 import type { Bookmark } from '@/commands/types'
 import { useBookmarks } from '@/hooks/use-bookmarks'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('bookmarks')
 
 interface BookmarkDialogProps {
 	key?: string
@@ -125,7 +128,7 @@ export function BookmarkDialog({
 				onSave?.()
 				setOpen(false)
 			} catch (e) {
-				console.error('Error saving bookmark:', e)
+				logger.error('Error saving bookmark', { error: String(e) })
 			} finally {
 				setLoading(false)
 			}
@@ -181,7 +184,7 @@ export function BookmarkDialog({
 							})}
 						/>
 						{urlError && (
-							<p id="bookmark-url-error" className="text-xs text-destructive">
+							<p id="bookmark-url-error" className="text-destructive text-xs">
 								{urlError}
 							</p>
 						)}

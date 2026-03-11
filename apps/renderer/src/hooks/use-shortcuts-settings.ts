@@ -1,11 +1,4 @@
 import { invoke } from '@tauri-apps/api/core'
-import { homeDir } from '@tauri-apps/api/path'
-import {
-	exists,
-	mkdir,
-	readTextFile,
-	writeTextFile,
-} from '@tauri-apps/plugin-fs'
 import { useCallback, useEffect, useState } from 'react'
 
 import type { Hotkey, ShortcutConfig } from '@/core/types/shortcuts'
@@ -15,11 +8,11 @@ import {
 	detectConflicts,
 	hotkeyToString,
 } from '@/core/types/shortcuts'
+import { readConfigFile, writeConfigFile } from '@/lib/config-file'
+import { createLogger } from '@/lib/logger'
 
-// Use separate config directory in development to avoid conflicts with installed version
-const CONFIG_DIR = import.meta.env.DEV
-	? '.config/mrunner-dev'
-	: '.config/mrunner'
+const logger = createLogger('shortcuts')
+
 const CONFIG_FILE = 'preferences.json'
 
 export interface UseShortcutsSettingsReturn {
@@ -44,102 +37,75 @@ export function useShortcutsSettings(): UseShortcutsSettingsReturn {
 	const [error, setError] = useState<string | null>(null)
 	const [conflicts, setConflicts] = useState<Map<string, string[]>>(new Map())
 
-	const getConfigPath = useCallback(async () => {
-		const home = await homeDir()
-		return `${home}/${CONFIG_DIR}/${CONFIG_FILE}`
-	}, [])
-
-	const ensureConfigDir = useCallback(async () => {
-		const home = await homeDir()
-		const configDir = `${home}/${CONFIG_DIR}`
-		const dirExists = await exists(configDir)
-		if (!dirExists) {
-			await mkdir(configDir, { recursive: true })
-		}
-	}, [])
-
 	const loadShortcuts = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 
 		try {
-			const configPath = await getConfigPath()
 			let loadedShortcuts = DEFAULT_SHORTCUTS
 
-			const configExists = await exists(configPath)
-			if (configExists) {
-				try {
-					const content = await readTextFile(configPath)
-					const json: unknown = JSON.parse(content)
+			try {
+				const json = await readConfigFile<unknown>(CONFIG_FILE, null)
+				if (json !== null) {
 					const result = UserPreferencesSchema.safeParse(json)
-
 					if (result.success && result.data.shortcuts) {
 						loadedShortcuts = result.data.shortcuts.shortcuts
 					}
-				} catch (e) {
-					console.error('Failed to parse shortcuts config:', e)
 				}
+			} catch (e) {
+				logger.error('Failed to parse shortcuts config', { error: String(e) })
 			}
 
 			setShortcuts(loadedShortcuts)
 			setConflicts(detectConflicts(loadedShortcuts))
-
-			// Sync global shortcuts with backend on initial load
-			await syncGlobalShortcuts(loadedShortcuts)
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
 			setError(message)
 		} finally {
 			setLoading(false)
 		}
-	}, [getConfigPath])
+	}, [])
 
-	const saveShortcuts = useCallback(
-		async (newShortcuts: ShortcutConfig[]) => {
-			try {
-				await ensureConfigDir()
-				const configPath = await getConfigPath()
-				let currentPrefs: UserPreferences = {
-					setupCompleted: false,
-					customFolders: [],
-					hiddenSystemFolders: [],
-					shortcuts: {
-						shortcuts: DEFAULT_SHORTCUTS,
-						conflictResolution: 'warn',
-					},
-				}
-
-				const configExists = await exists(configPath)
-				if (configExists) {
-					const content = await readTextFile(configPath)
-					const json: unknown = JSON.parse(content)
-					const result = UserPreferencesSchema.safeParse(json)
-					if (result.success) {
-						currentPrefs = result.data as UserPreferences
-					}
-				}
-
-				const updatedPrefs = {
-					...currentPrefs,
-					shortcuts: {
-						shortcuts: newShortcuts,
-						conflictResolution: 'warn' as const,
-					},
-				}
-
-				await writeTextFile(configPath, JSON.stringify(updatedPrefs, null, 2))
-
-				// Sync global shortcuts with Tauri backend
-				await syncGlobalShortcuts(newShortcuts)
-
-				setShortcuts(newShortcuts)
-				setConflicts(detectConflicts(newShortcuts))
-			} catch (e) {
-				throw new Error(e instanceof Error ? e.message : String(e))
+	const saveShortcuts = useCallback(async (newShortcuts: ShortcutConfig[]) => {
+		try {
+			const defaultPrefs: UserPreferences = {
+				setupCompleted: false,
+				customFolders: [],
+				hiddenSystemFolders: [],
+				shortcuts: {
+					shortcuts: DEFAULT_SHORTCUTS,
+					conflictResolution: 'warn',
+				},
 			}
-		},
-		[ensureConfigDir, getConfigPath],
-	)
+
+			const json = await readConfigFile<unknown>(CONFIG_FILE, null)
+			let currentPrefs = defaultPrefs
+			if (json !== null) {
+				const result = UserPreferencesSchema.safeParse(json)
+				if (result.success) {
+					currentPrefs = result.data as UserPreferences
+				}
+			}
+
+			const updatedPrefs = {
+				...currentPrefs,
+				shortcuts: {
+					shortcuts: newShortcuts,
+					conflictResolution: 'warn' as const,
+				},
+			}
+
+			await writeConfigFile(CONFIG_FILE, updatedPrefs)
+
+			// Sync global shortcuts with Tauri backend
+			await syncGlobalShortcuts(newShortcuts)
+
+			setShortcuts(newShortcuts)
+			setConflicts(detectConflicts(newShortcuts))
+		} catch (e) {
+			throw new Error(e instanceof Error ? e.message : String(e))
+		}
+	}, [])
 
 	const updateShortcut = useCallback(
 		async (id: string, hotkey: Hotkey) => {
@@ -222,7 +188,7 @@ async function syncGlobalShortcuts(shortcuts: ShortcutConfig[]): Promise<void> {
 			})),
 		})
 	} catch (e) {
-		console.error('Failed to sync global shortcuts:', e)
+		logger.error('Failed to sync global shortcuts', { error: String(e) })
 		// Non-fatal error - shortcuts will still be saved to config
 	}
 }

@@ -1,430 +1,145 @@
-## Codebase Patterns
-- Rust modules use `pub mod` in lib.rs when types need to be accessible from Tauri commands in the same file
-- All Rust types that cross the Tauri IPC boundary use `#[serde(rename_all = "camelCase")]` for frontend interop
-- Cargo workspace dependencies (serde, serde_json, dirs) are referenced via `dep.workspace = true` — no version needed
-- `cargo check -p mrunner` is the quality gate for Rust changes (not `cargo build`)
-- tsup bypasses `noEmit: true` in tsconfig.json (uses esbuild internally) — safe to use even with type-only tsconfig
-- tokio `macros` feature cannot be used (tokio-macros 2.6.0 not in local registry); use `tokio::spawn` for concurrency instead of `tokio::join!`
-- tokio async process I/O: take stdout/stderr handles from child BEFORE entering timeout so child stays owned for kill(); spawn tasks for concurrent reads
-- CommandAction union is in `apps/renderer/src/core/types/command.ts`; new action types must be added there AND in the switch in `use-commands.ts` to avoid `never` error
-- `core/types/index.ts` and `commands/types.ts` are re-export barrels — new types/guards must be added to both
-- Plugin action dispatch: use `executePluginAction` from `apps/renderer/src/lib/execute-plugin-action.ts`; navigation callbacks (push) passed as options to keep utility stateless
-- Settings tabs wired in `settings-sheet.tsx`: TABS const + label render + Alt+N range + SheetBody block + i18n key; `UserPreferences` interface and `UserPreferencesSchema` must stay in sync
-
 # Ralph Progress Log
-Started: Mon Mar  9 12:36:44 PM -03 2026
+Started: Sat Mar  8 02:00:00 PM -03 2026
 ---
 
-## 2026-03-09 - US-001
-- Created `apps/launcher/src/plugins.rs` with PluginTier, CommandMode, RegisteredCommand, RegisteredPlugin types
-- Added `pub mod plugins;` to `apps/launcher/src/lib.rs`
-- All types derive Debug, Clone, Serialize, Deserialize with serde rename_all = camelCase
-- Files changed: apps/launcher/src/plugins.rs, apps/launcher/src/lib.rs
-- **Learnings for future iterations:**
-  - The branch `feat/plugin-system` did not exist on master — had to create it; prd.json/progress.txt existed only on the feature branch (stash conflict on creation)
-  - `pub mod plugins` needed (not just `mod plugins`) so sibling Tauri command functions in lib.rs can access the types
-  - cargo check passes in ~3s for this crate
+## Codebase Patterns
+- pnpm check = biome lint/format only (exit 0 = pass). tsc must be run separately in apps/renderer.
+- cargo check -p mrunner validates all Rust changes.
+- All frontend user-facing text must use t() with keys in both en.json and pt-BR.json.
+- UserPreferences stored in ~/.config/mrunner[-dev]/preferences.json, validated with UserPreferencesSchema (zod).
+- Tauri commands registered in apps/launcher/src/lib.rs invoke_handler array.
+- @mrunner/ui exports from packages/ui/src/index.ts; ai-elements via @mrunner/ui/ai-elements/*.
+- Config file I/O is now centralized in apps/renderer/src/lib/config-file.ts: getConfigFilePath, ensureConfigDir, readConfigFile<T>, writeConfigFile<T>. Import from @/lib/config-file.
+- Keyboard shortcuts types in apps/renderer/src/core/types/shortcuts.ts: Hotkey { modifiers: Modifier[], key: string }, ShortcutConfig { id, type, context, hotkey, action, enabled, isCustom }.
+- Global shortcuts sync to Rust via invoke('sync_global_shortcuts') — only type=global shortcuts.
+- Internal shortcuts now use getHotkeyManager().register() from @tanstack/react-hotkeys — only type=internal, context=launcher. HotkeysProvider wraps app in main.tsx.
+- HotkeyPicker at apps/renderer/src/components/shortcuts/hotkey-picker.tsx uses useHotkeyRecorder; recording starts on click, cancels on blur/Escape. Display via formatForDisplay(hotkeyToTanStack(value)).
+- @tanstack/react-hotkeys installed (v0.4.0). Adapter at apps/renderer/src/lib/hotkey-adapter.ts: hotkeyToTanStack(Hotkey)->string, tanStackToHotkey(string)->Hotkey. Mod=Super on Linux, Mod=Meta on Mac.
+- Shortcut consumers: App.tsx, settings-sheet.tsx, setup.tsx, shortcut-item.tsx.
+- command.ts (347 lines) has types (lines 5-117), guards (lines 153-183), Zod schemas (lines 185-270), plugin functions (lines 306-346). 19 files import from it via @/commands/types or @/core/types.
+- useBookmarks has 6 responsibilities: CRUD, interactions (open/copy), tag management, state, Tauri invocations, parseQuery utility.
+- Pure utilities extracted from hooks go in apps/renderer/src/lib/. Module-level functions are stable refs — no useCallback needed when re-exporting imports.
 ---
 
-## 2026-03-09 - US-002
-- Implemented `discover_plugins()` function in `apps/launcher/src/plugins.rs`
-- Added private helper structs `PluginManifest` and `CommandConfig` for JSON deserialization
-- `discover_plugins()` scans `~/.config/mrunner/plugins/` using `dirs::config_dir()`
-- Tier 2 detection: directories containing `plugin.json` are treated as scriptable plugins
-- For each Tier 2 plugin: parses `plugin.json` manifest, then scans `src/commands/*/config.json`
-- Command IDs formatted as `{plugin_id}:{command_dir_name}`; script path is `{cmd_dir}/command.ts`
-- Invalid/missing files are logged to stderr and skipped gracefully (no crashes)
-- Files changed: apps/launcher/src/plugins.rs
+## 2026-03-08 - US-001
+- Created apps/renderer/src/lib/config-file.ts with getConfigFilePath, ensureConfigDir, readConfigFile<T>, writeConfigFile<T>
+- Refactored use-shortcuts-settings.ts to remove getConfigPath/ensureConfigDir and use readConfigFile/writeConfigFile
+- Refactored use-folder-settings.ts to remove getConfigPath/ensureConfigDir and use readConfigFile/writeConfigFile
+- Files changed: apps/renderer/src/lib/config-file.ts (new), apps/renderer/src/hooks/use-shortcuts-settings.ts, apps/renderer/src/hooks/use-folder-settings.ts
 - **Learnings for future iterations:**
-  - `dirs::config_dir()` is already in workspace deps — no changes to Cargo.toml needed
-  - `entries.flatten()` is idiomatic for skipping `DirEntry` errors silently
-  - `std::fs::read_dir` + `serde_json::from_str` is sufficient; no extra deps needed
+  - readConfigFile<T> returns T (already JSON.parsed) or the fallback — callers don't need to JSON.parse again
+  - CONFIG_DIR uses DEV mode suffix in config-file.ts, so useFolderSettings (which had hardcoded mrunner without -dev) now correctly respects dev mode
+  - Pre-existing tsc errors exist in ai-chat-view.tsx, tools-tab.tsx, use-ai-models.ts — not introduced by this story
 ---
 
-## 2026-03-09 - US-003
-- Added `#[tauri::command] async fn discover_plugins()` in `apps/launcher/src/lib.rs`
-- Function calls `plugins::discover_plugins()` and returns `Vec<plugins::RegisteredPlugin>`
-- Registered the command in the `invoke_handler` array in `lib.rs`
-- Files changed: apps/launcher/src/lib.rs
+## 2026-03-08 - US-002
+- Installed @tanstack/react-hotkeys in apps/renderer
+- Created apps/renderer/src/lib/hotkey-adapter.ts with hotkeyToTanStack and tanStackToHotkey
+- Files changed: apps/renderer/package.json, pnpm-lock.yaml, apps/renderer/src/lib/hotkey-adapter.ts (new)
 - **Learnings for future iterations:**
-  - Tauri commands wrapping existing module functions are minimal — just a thin async wrapper calling the sync function
-  - `async fn` wrapper is idiomatic for Tauri commands even when the underlying function is sync
-  - Register new commands in the `tauri::generate_handler![]` macro at the bottom of `lib.rs`
+  - @tanstack/react-hotkeys v0.4.0 exists; API: useHotkey, useHotkeyRecorder, formatForDisplay, getHotkeyManager from @tanstack/react-hotkeys
+  - TanStack 'Mod' = Meta on macOS, Control elsewhere. MRunner uses Super (Linux global) and Meta (Mac); both collapse to Mod in hotkeyToTanStack
+  - tanStackToHotkey resolves Mod -> Super (Linux) or Meta (macOS) via navigator.userAgent check
+  - Platform detection: /Mac/i.test(navigator.userAgent) is reliable for renderer context (Tauri WebView)
+  - hotkeyToTanStack deduplicates via Set — safe if both Meta and Super appear in modifiers array
 ---
 
-## 2026-03-09 - US-004
-- Created `packages/plugin/` directory as a new workspace package
-- `package.json`: name `@mrunner/plugin`, private: false, no runtime deps, TS dev dep only
-- `tsconfig.json`: matches packages/ui pattern (no base extend, noEmit: true, strict mode)
-- `src/index.ts`: exports CommandContext, Accessory, ListItem, Action (union type), ListResult, DetailResult, ActionResult, CommandResult, and abstract Command class
-- `Command` class has abstract `run()` and optional `onItemSelect?()` method
-- pnpm-workspace.yaml already covers `packages/*` — no changes needed
-- pnpm install succeeded and package recognized in workspace
-- Files changed: packages/plugin/package.json, packages/plugin/tsconfig.json, packages/plugin/src/index.ts, pnpm-lock.yaml
+## 2026-03-08 - US-003
+- Added HotkeysProvider from @tanstack/react-hotkeys wrapping BrowserRouter in apps/renderer/src/main.tsx
+- Rewrote useKeyboardShortcuts to use getHotkeyManager().register() instead of window.addEventListener('keydown')
+- Each active internal launcher shortcut registers via hotkeyToTanStack conversion; all handles unregistered on cleanup
+- Files changed: apps/renderer/src/hooks/use-keyboard-shortcuts.ts, apps/renderer/src/main.tsx
 - **Learnings for future iterations:**
-  - `packages/*` glob in pnpm-workspace.yaml already covers new packages — no edits needed
-  - `private: false` is required in package.json for a publishable SDK package
-  - Optional methods in abstract classes: `onItemSelect?(...)` syntax (no `async` keyword in declaration)
-  - biome auto-fixed one file (likely trailing whitespace/formatting in the new src/index.ts)
+  - TanStack's Hotkey type is a complex template literal union — plain strings must be cast as `unknown as RegisterableHotkey` to satisfy the type
+  - HotkeysProvider is required in the React tree for hooks (useHotkey etc.) but getHotkeyManager() singleton works without it; add HotkeysProvider anyway for consistency
+  - pnpm check (biome) reorders type imports before value imports automatically
 ---
 
-## 2026-03-09 - US-005
-- Created `packages/plugin/src/runner.ts` as a CLI entrypoint
-- Runner reads CommandContext JSON from stdin, dynamically imports command module from argv[2]
-- Uses `tsx/esm/api` register() to support importing TypeScript command files at runtime
-- Validates exported default is a function, instantiates it, calls run(context), writes JSON to stdout
-- Errors written to stderr with exit code 1
-- Added tsup as devDep for building; tsx as runtime dep
-- Added `bin.mrunner-plugin-runner` entry pointing to `./dist/runner.js`
-- Added `scripts.build` to compile runner with tsup (ESM, node20 target)
-- Files changed: packages/plugin/src/runner.ts, packages/plugin/package.json, pnpm-lock.yaml
+## 2026-03-08 - US-004
+- Rewrote apps/renderer/src/components/shortcuts/hotkey-picker.tsx to use useHotkeyRecorder from @tanstack/react-hotkeys
+- onRecord converts TanStack Hotkey string to MRunner Hotkey via tanStackToHotkey; cast as string since TanStack Hotkey IS a string union
+- Display uses formatForDisplay(hotkeyToTanStack(value)) for platform-aware rendering; live preview uses formatForDisplay(recorder.recordedHotkey)
+- Recording starts on click, cancels on blur via cancelRecording(); Escape handled automatically by TanStack
+- Added i18n keys shortcuts.pressKeys and shortcuts.clickToRecord to en.json and pt-BR.json
+- Removed Kbd overlay chips — display is now the formatted string in the Input value
+- Files changed: apps/renderer/src/components/shortcuts/hotkey-picker.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
 - **Learnings for future iterations:**
-  - `tsx/esm/api` `register()` returns an `unregister` function — call it after the dynamic import
-  - tsup build config can be entirely inline as CLI args, no tsup.config.ts needed
-  - `biome check . --write` auto-reorganizes imports (merged two import statements into one)
-  - `tsconfig.json` had `noEmit: true` — tsup bypasses this (uses esbuild, not tsc) so build still works
+  - useHotkeyRecorder options: onRecord (required), onCancel/onClear (optional) — omit optional callbacks if no-op
+  - recordedHotkey is Hotkey | null — safe to pass to formatForDisplay when non-null
+  - formatForDisplay accepts Hotkey | (string & {}) | ParsedHotkey — plain string from hotkeyToTanStack works
+  - setup.tsx passes placeholder={t('setup.hotkeyPlaceholder')} — kept placeholder prop in HotkeyPickerProps for compatibility
+  - US-005 i18n keys (pressKeys/clickToRecord) added here since CLAUDE.md mandates i18n for all user-facing text
 ---
 
-## 2026-03-09 - US-006
-- Created `packages/plugin/schemas/plugin.schema.json` with full plugin manifest schema
-- Created `packages/plugin/schemas/command.schema.json` with command config schema
-- Both schemas: draft-07, required fields, additionalProperties: false, icon enum from ICON_MAP
-- Icon enum sourced from `apps/renderer/src/lib/constants.ts` ICON_MAP keys (26 icons)
-- mode enum: list, detail, action; runtime enum: node, deno, bun, python, bash
-- Files changed: packages/plugin/schemas/plugin.schema.json, packages/plugin/schemas/command.schema.json
+## 2026-03-08 - US-006
+- Created apps/renderer/src/lib/parse-query.ts with the parseQuery pure function moved from use-bookmarks.ts
+- Updated use-bookmarks.ts to import parseQuery from @/lib/parse-query; removed useCallback wrapper (module-level function is stable)
+- No consumer changes needed — useBookmarks still returns parseQuery, so App.tsx and use-bookmark-search.ts are unaffected
+- Files changed: apps/renderer/src/lib/parse-query.ts (new), apps/renderer/src/hooks/use-bookmarks.ts
 - **Learnings for future iterations:**
-  - Icon values come from `ICON_MAP` in `apps/renderer/src/lib/constants.ts` — sync schemas with that if new icons are added
-  - JSON schema files are not linted by biome (only JS/TS files checked), so pnpm check passes trivially for pure JSON additions
-  - `additionalProperties: false` helps plugin authors catch typos in field names via IDE IntelliSense
+  - Module-level functions are stable references — no need for useCallback when a hook just re-exports an imported pure function
+  - Consumers that destructure parseQuery from useBookmarks continue to work without changes; only internal structure of the hook changed
 ---
 
-## 2026-03-09 - US-007
-- Added `run_plugin_command(plugin, command, context)` async function in `apps/launcher/src/plugins.rs`
-- Added `find_command(plugins, command_id)` helper to look up plugin/command by ID
-- Added `resolve_runner_path(plugin_dir)` to locate `{plugin_dir}/node_modules/@mrunner/plugin/dist/runner.js`
-- Added `plugin_dir: PathBuf` field to `RegisteredPlugin` struct (serializes as `pluginDir` in JSON)
-- Updated `load_scriptable_plugin` to populate `plugin_dir`
-- Process spawning: `{runtime} {runner_path} {script_path}` with piped stdin/stdout/stderr
-- Context JSON written to stdin; stdout/stderr read concurrently via `tokio::spawn`; 10-second timeout via `tokio::time::timeout`; process killed on timeout
-- Non-zero exit code treated as error with stderr content included
-- Added `tokio` dep with features: `process`, `time`, `io-util`, `rt`
-- Files changed: apps/launcher/src/plugins.rs, apps/launcher/Cargo.toml, Cargo.lock
+## 2026-03-08 - US-005
+- Updated apps/renderer/src/components/shortcuts/shortcut-item.tsx to use formatForDisplay(hotkeyToTanStack(shortcut.hotkey)) for platform-aware hotkey display
+- i18n keys (shortcuts.pressKeys, shortcuts.clickToRecord) were already added in US-004
+- setup.tsx was already compatible with rewritten HotkeyPicker (placeholder prop preserved)
+- Files changed: apps/renderer/src/components/shortcuts/shortcut-item.tsx
 - **Learnings for future iterations:**
-  - `tokio::join!` macro unavailable (tokio-macros 2.6.0 missing from local registry) — use `tokio::spawn` + sequential `.await` instead
-  - `wait_with_output()` takes ownership of child; take stdout/stderr handles first then spawn tasks so child stays owned for kill()
-  - `tokio::spawn` works in Tauri's multi-thread runtime with just the `rt` feature
-  - `plugin_dir` is now a field on `RegisteredPlugin`, populated during discovery
+  - When US-004 added i18n keys early (to satisfy CLAUDE.md), US-005 i18n criteria were pre-satisfied — check progress.txt before adding duplicate keys
+  - setup.tsx compatibility check is trivial: HotkeyPicker props (value, onChange, placeholder) are the same interface
+  - formatForDisplay from @tanstack/react-hotkeys renders platform-specific symbols (e.g. ⌘ on Mac, Ctrl on Linux) automatically
 ---
 
-## 2026-03-09 - US-008
-- Added `PluginRegistry` type alias (`Mutex<Vec<plugins::RegisteredPlugin>>`) in lib.rs
-- Updated `discover_plugins` Tauri command to accept `state: tauri::State<'_, PluginRegistry>`, cache results, and return `Result<Vec<...>, String>`
-- Added `run_plugin_command` Tauri command: locks state in a scoped block to clone plugin+command, then calls `plugins::run_plugin_command` after the guard is dropped
-- Registered `run_plugin_command` in invoke_handler
-- Added `.manage(Mutex::new(Vec::<plugins::RegisteredPlugin>::new()))` to Builder
-- Files changed: apps/launcher/src/lib.rs
+## 2026-03-08 - US-007
+- Created apps/renderer/src/hooks/use-bookmark-tags.ts with listTags, renameTag, deleteTag + own state (tags, loadingTags)
+- Removed tag operations and tags state from use-bookmarks.ts; updated UseBookmarksReturn interface
+- Moved Tag type export to use-bookmark-tags.ts; updated hooks/index.ts to export Tag from new file and export useBookmarkTags
+- No consumer changes needed — no external code destructured tag functions from useBookmarks
+- Files changed: apps/renderer/src/hooks/use-bookmark-tags.ts (new), apps/renderer/src/hooks/use-bookmarks.ts, apps/renderer/src/hooks/index.ts
 - **Learnings for future iterations:**
-  - `MutexGuard` is not `Send` — must drop it (via scoped block) before any `.await` in an async Tauri command
-  - Pattern: `let (a, b) = { let guard = state.lock()?; let (x, y) = find(...)?; (x.clone(), y.clone()) };` — explicit block ensures guard drops before async work
-  - `tauri::State<'_, Mutex<Vec<T>>>` needs the lifetime `'_` annotation
-  - Two `.manage()` calls with the same type would conflict — each managed state type must be unique
+  - Before extracting hook operations, grep for external consumers first — if none exist, no consumer updates needed
+  - hooks/index.ts re-exports types; when moving a type to a new file, update the index to export from the new location
+  - loadingTags is separate from loading in useBookmarks — avoids shared loading state confusion between CRUD and tag ops
 ---
 
-## 2026-03-09 - US-009
-- Added `ScriptableAction` interface and `CommandMode` type to `core/types/command.ts`
-- Added `isScriptableAction` type guard
-- Updated `core/types/index.ts` and `commands/types.ts` re-export barrels with new types/guards
-- Updated `use-commands.ts` switch to include `scriptable` case (returns `{ success: true }` as placeholder for US-010)
-- Rewrote `use-plugins.ts` to:
-  - Load Tier 1 JSON plugins as before (with `readDir`/`readTextFile`)
-  - Also call `invoke('discover_plugins')` for Tier 2 scriptable plugins
-  - Convert each Tier 2 command to a `Command` with `ScriptableAction`, grouped by plugin name
-  - Merge both tiers into a single command list
-  - Both tiers' errors are handled independently (one failure doesn't block the other)
-- Exported `ScriptableRegisteredPlugin`/`ScriptableRegisteredCommand` types from `use-plugins.ts` for downstream use
-- Files changed: apps/renderer/src/core/types/command.ts, apps/renderer/src/core/types/index.ts, apps/renderer/src/commands/types.ts, apps/renderer/src/hooks/use-plugins.ts, apps/renderer/src/hooks/use-commands.ts
+## 2026-03-08 - US-008
+- Created apps/renderer/src/hooks/use-bookmark-actions.ts with openBookmark(id), copyUrl(bookmark), copyMarkdown(bookmark); accepts bookmarks[] param for openBookmark fallback
+- Removed openBookmark, copyUrl, copyMarkdown + related imports (writeText, open) from use-bookmarks.ts
+- Updated App.tsx: destructures bookmarks from useBookmarks(), passes to useBookmarkActions(bookmarks) for openBookmark
+- Updated bookmark-actions.tsx: destructures bookmarks from useBookmarks(), uses useBookmarkActions(bookmarks) for openBookmark + copyUrl
+- Exported useBookmarkActions from hooks/index.ts
+- Files changed: apps/renderer/src/hooks/use-bookmark-actions.ts (new), apps/renderer/src/hooks/use-bookmarks.ts, apps/renderer/src/hooks/index.ts, apps/renderer/src/App.tsx, apps/renderer/src/components/bookmark/bookmark-actions.tsx
 - **Learnings for future iterations:**
-  - The `CommandAction` union has an exhaustive `never` check in `use-commands.ts`; adding a new action type REQUIRES adding a case to the switch or TypeScript will error
-  - `core/types/index.ts` and `commands/types.ts` are re-export barrels — new exports must be threaded through both
-  - Tier 1 directory-not-found is silently swallowed (try/catch inner block); Tier 2 errors are logged but don't abort loading
-  - Scriptable commands use `icon: 'terminal'` as fallback since CommandIcon is a strict enum and plugin icons may not match
+  - openBookmark(id) has a fallback that needs bookmarks[] state — pass it as a hook parameter instead of changing the API signature
+  - bookmark-actions.tsx did NOT destructure bookmarks previously — must add it when refactoring to pass to the new actions hook
+  - useBookmarkActions is "stateless" in the sense of no useState, but accepts bookmarks[] as parameter for the fallback behavior
 ---
 
-## 2026-03-09 - US-010
-- Created `apps/renderer/src/components/command-palette/plugin-command-view.tsx` — sub-view shown when a list/detail-mode plugin command is active
-- Updated `apps/renderer/src/App.tsx`:
-  - Added `activeScriptableCommand` state (Command | null)
-  - `onQueryReset` now also clears `activeScriptableCommand`
-  - `handleSelect` intercepts scriptable actions: action mode → invoke('run_plugin_command') + hideWindow(); list/detail mode → setActiveScriptableCommand (sub-view)
-  - Conditionally renders `PluginCommandView` or `CommandPalette` based on active command
-- Added `plugins.back/running/success/error` i18n keys to en.json and pt-BR.json
-- Exported `PluginCommandView` from command-palette index.ts
-- Files changed: apps/renderer/src/App.tsx, apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/src/components/command-palette/index.ts, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+## 2026-03-08 - US-009
+- Created apps/renderer/src/core/types/command-guards.ts with 7 type guard functions (isShellAction, isOpenAction, isUrlAction, isFunctionAction, isSubmenuAction, isInputAction, isDialogAction)
+- Created apps/renderer/src/core/types/plugin-loader.ts with PluginConfigSchema, ValidatedPluginConfig, validatePluginConfig, parsePluginConfig, safeParsePluginConfig, pluginToCommand; imports CommandIconSchema from command.ts
+- Cleaned up command.ts: removed guard functions and all plugin-specific Zod/functions; exported CommandIconSchema (needed by plugin-loader.ts and FolderConfigSchema)
+- Updated core/types/index.ts to re-export from all 3 files; all 19 importing files resolve via the barrel without changes
+- Files changed: apps/renderer/src/core/types/command.ts, apps/renderer/src/core/types/command-guards.ts (new), apps/renderer/src/core/types/plugin-loader.ts (new), apps/renderer/src/core/types/index.ts
 - **Learnings for future iterations:**
-  - Escape key must use `{ capture: true }` in the plugin sub-view so it intercepts before the @mrunner/ui Command component handles it
-  - `i18n.language` is accessible via `const { i18n } = useTranslation()` — needed for passing locale in CommandContext
-  - `homeDir()` from `@tauri-apps/api/path` is async — must await it inside handleSelect
-  - The `isScriptableAction` type guard is exported from `@/commands/types` (re-exported barrel)
-  - `PluginCommandView` uses an empty `<div>` loading placeholder in `CommandList` rather than `CommandEmpty` (which only shows when there are no matching items, not when waiting for results)
+  - CommandIconSchema must be exported from command.ts because both FolderConfigSchema (stays in command.ts) and PluginConfigSchema (in plugin-loader.ts) use it
+  - The barrel index.ts means no consumer files need to change when splitting internal modules
+  - ValidatedPluginConfig is z.infer<typeof PluginConfigSchema> — it moves to plugin-loader.ts with the schema
+  - 4 pre-existing tsc errors (ai-chat-view, tools-tab, use-ai-models) are unrelated to this split
 ---
 
-## 2026-03-09 - US-011
-- Updated `PluginCommandView` to execute list-mode plugin commands with debouncing and display results
-- Added `@mrunner/plugin` as workspace dep in renderer's package.json (types pointed to src/index.ts)
-- `runCommand` uses `invoke('run_plugin_command')` with current query as CommandContext
-- Debounced effect (300ms) re-executes command on query change; runs immediately on mount
-- Loading indicator shown inline in header; error state shown in list area
-- `ListItem[]` rendered using `CommandItem` from @mrunner/ui with icon, title, subtitle, accessories
-- Item selection triggers `executeAction(item.actions[0])` — handles url/open/copy/shell/notification/push
-- `shouldFilter={false}` on Command component since filtering is handled server-side by the plugin
-- Files changed: apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/package.json, pnpm-lock.yaml
+## 2026-03-08 - US-010
+- pnpm check passes (biome, 128 files, no fixes needed)
+- cargo check -p mrunner passes
+- CGC re-analysis: deleted stale graph, re-indexed 198 files
+- useBookmarks: CC=30 → CC=20 (extracted tags + actions hooks)
+- useKeyboardShortcuts: CC=25 → no longer in top 10 (TanStack migration)
+- command.ts: 0 functions remain (all 11 extracted to command-guards.ts and plugin-loader.ts)
+- No new lint or type errors introduced (4 pre-existing tsc errors unchanged)
+- Files changed: scripts/ralph/prd.json, scripts/ralph/progress.txt
 - **Learnings for future iterations:**
-  - `@mrunner/plugin` package exports directly from `src/index.ts` — no build needed for type imports in renderer
-  - `item.actions[0]` can be `undefined` even when `actions.length > 0` in TypeScript strict mode — use explicit null check
-  - `shouldFilter={false}` is needed on the cmdk Command component when items are managed externally (no client-side filtering)
-  - Use `search.empty` key for "no results" message (not `search.noResults`)
----
-
-## 2026-03-09 - US-012
-- Added `react-markdown` dependency to apps/renderer for markdown rendering
-- Updated `plugin-command-view.tsx`:
-  - Added `DetailResult` import from `@mrunner/plugin` and `isDetailResult` type guard
-  - Added `sendNotification` from `@tauri-apps/plugin-notification` for notification actions
-  - Added `ReactMarkdown` import for rendering detail mode content
-  - Added `detailResult` state alongside existing `items`/`loading`/`error` states
-  - `runCommand` now dispatches to `setDetailResult` or `setItems` based on result type
-  - Detail mode renders markdown via `<ReactMarkdown>` with action buttons below
-  - List mode: 300ms debounce; detail mode: runs immediately (0ms delay)
-  - `notification` action case now calls `sendNotification` (previously just `console.info`)
-  - Search input hidden for detail mode (no query-driven filtering)
-- Updated `App.tsx`:
-  - Added `sendNotification` import from `@tauri-apps/plugin-notification`
-  - Added `t` to `useTranslation()` destructuring
-  - Action mode now shows OS success notification (`plugins.success`) on success
-  - Action mode now shows OS error notification (`plugins.error`) on failure
-  - Added `t` to `handleSelect` useCallback dependency array
-- Files changed: apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/src/App.tsx, apps/renderer/package.json, pnpm-lock.yaml
-- **Learnings for future iterations:**
-  - `react-markdown` v10 is ESM-only; works fine with Vite (no extra config needed)
-  - `DetailResult.actions` items each optionally have a `title` field — use it for button labels with fallback to `action.type`
-  - Detail mode should NOT show `CommandInput` (no query-based filtering makes sense for static markdown)
-  - The existing `plugins.success` / `plugins.error` / `plugins.running` i18n keys were sufficient — no new keys needed
----
-
-## 2026-03-09 - US-013
-- Created shared utility `apps/renderer/src/lib/execute-plugin-action.ts` with `executePluginAction(action, options?)` function
-- Handles all action types: url (open in browser), open (open file/folder), copy (clipboard), shell (run_shell_command IPC), notification (OS notification), push (navigate to another plugin command)
-- push action delegates to optional `onPush` callback to keep the utility free of React state
-- Removed local `executeAction` function from `plugin-command-view.tsx`; replaced all callsites with shared `executePluginAction`
-- Added `onPushCommand?: (commandId: string) => void` prop to `PluginCommandView`
-- Wired `handleItemSelect` and detail mode action buttons through `onPushCommand`
-- Added `handlePushCommand` in `App.tsx`: looks up target command by `ScriptableAction.commandId` in `allItems`, sets it as `activeScriptableCommand`
-- Files changed: apps/renderer/src/lib/execute-plugin-action.ts (new), apps/renderer/src/components/command-palette/plugin-command-view.tsx, apps/renderer/src/App.tsx
-- **Learnings for future iterations:**
-  - Shared action utility pattern: pass navigation callbacks as options to keep utility stateless and reusable
-  - `push` action's `action.command` field is the plugin commandId (format: `plugin-id:command-name`) — match against `ScriptableAction.commandId` in allItems
-  - biome auto-fixed import ordering in plugin-command-view.tsx (1 file fixed on `pnpm check --write`)
-  - executePluginAction is now the canonical place for all plugin action dispatch — add new action types there first
----
-
-## 2026-03-09 - US-014
-- Created `apps/renderer/src/components/settings/plugins-tab.tsx`
-- Lists all Tier 2 scriptable plugins discovered via `invoke('discover_plugins')`
-- Enable/disable toggle per plugin; disabled plugin IDs persisted to `preferences.json` under `plugins.disabledPlugins` key
-- Expandable section per plugin showing its commands (title, description, mode)
-- "Open Plugins Folder" button opens `~/.config/mrunner/plugins/` via Tauri shell `open()`
-- Added optional `plugins` field to `UserPreferences` interface and `UserPreferencesSchema` in `core/types/command.ts`
-- Updated `settings-sheet.tsx`: added "Plugins" to TABS array, Alt+3 navigation, tab label, and `<PluginsTab />` rendering
-- Added `settings.tabPlugins` and `settings.plugins.*` i18n keys to en.json and pt-BR.json
-- Files changed: apps/renderer/src/components/settings/plugins-tab.tsx (new), apps/renderer/src/components/settings/settings-sheet.tsx, apps/renderer/src/core/types/command.ts, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json, scripts/ralph/prd.json
-- **Learnings for future iterations:**
-  - `UserPreferences` interface and `UserPreferencesSchema` in `core/types/command.ts` must stay in sync — updating one requires updating the other
-  - Zod's `z.object()` strips unknown keys on parse; adding new preference keys requires updating the schema or they'll be dropped on next write
-  - For preferences that don't exist yet, read the raw JSON and spread-merge (don't rely solely on schema-parsed value) to avoid overwriting unrelated keys
-  - Settings tabs: add to TABS const, update `Alt+N` range check, add label in tab button render, add content block in SheetBody, add i18n key
----
-
-## 2026-03-09 - US-015
-- Added `PluginManifestFull` and `PluginPreviewInfo` structs to `plugins.rs`
-- Implemented `prepare_plugin_install(git_url)`: git clones to temp dir (`.installing-{ts}/`) inside plugins folder (same filesystem), validates `plugin.json`, returns preview info + temp_path
-- Implemented `complete_plugin_install(temp_path)`: renames temp dir to `{plugin_id}/`, runs `npm install` if `package.json` exists, re-discovers plugins, returns updated plugin list
-- Implemented `cancel_plugin_install(temp_path)`: deletes temp dir
-- Added three Tauri commands in `lib.rs` and registered in `invoke_handler`
-- Updated `plugins-tab.tsx` with install state machine (`idle → cloning → confirming → installing → success/error`), Git URL input, confirmation AlertDialog showing plugin name/author/version/source/runtime, progress/error display
-- Added 14 new i18n keys to en.json and pt-BR.json (installFromGit, gitUrl, gitUrlPlaceholder, install, installing, cloning, confirmInstall, confirmInstallDesc, pluginName, pluginAuthor, pluginVersion, pluginSource, pluginRuntime, cancel, confirm, installSuccess, installError)
-- Files changed: apps/launcher/src/plugins.rs, apps/launcher/src/lib.rs, apps/renderer/src/components/settings/plugins-tab.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
-- **Learnings for future iterations:**
-  - Clone to same filesystem as destination (`.installing-{ts}/` inside plugins dir) to guarantee `std::fs::rename` succeeds without cross-device errors
-  - `PluginManifestFull` is a superset of `PluginManifest` — keep both since manifest parsing in different contexts needs different fields
-  - `complete_plugin_install` returns `Vec<RegisteredPlugin>` (re-discovered) so the Tauri command can update both the state cache and the UI in one round-trip
-  - `AlertDialog` from `@mrunner/ui` provides `onOpenChange` for handling close via Escape/backdrop click — must call cancel logic there
----
-
-## 2026-03-09 - US-016
-- Created `plugins/registry.json` in repo root with `{ version, updatedAt, plugins: [] }` format
-- Added `UpdateResult` struct (pluginId, pluginName, status, message) to `plugins.rs`
-- Implemented `check_plugin_updates(plugins)`: iterates Scriptable-tier plugins, checks for `.git` dir, runs `git -C <dir> pull`, re-runs npm install if updated and package.json present, returns status (updated/up-to-date/error/skipped) per plugin
-- Added `check_plugin_updates` Tauri command in `lib.rs` (reads registry from state, returns Vec<UpdateResult>), registered in invoke_handler
-- Updated `plugins-tab.tsx`:
-  - Added `RegistryPlugin`, `RegistryCache`, `UpdateResult` TypeScript interfaces
-  - Registry fetch with 24h local cache in `~/.config/mrunner/plugin-registry-cache.json`
-  - "Browse Plugins" section: shows registry entries with name, description, author, verified badge, Install/Installed status button
-  - Clicking "Install" from registry pre-fills the git URL input field
-  - "Check for Updates" section: shows per-plugin update status after running `check_plugin_updates`
-  - Manual refresh button for registry
-- Added 14 new i18n keys for registry/update UI in en.json and pt-BR.json
-- Files changed: plugins/registry.json (new), apps/launcher/src/plugins.rs, apps/launcher/src/lib.rs, apps/renderer/src/components/settings/plugins-tab.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
-- **Learnings for future iterations:**
-  - Registry fetch uses `window.fetch()` directly (Tauri allows external fetch in renderer) — no need for a Rust HTTP client for read-only data
-  - Cache stored in same `~/.config/mrunner/` dir as preferences — reuse `ensureConfigDir()` before writing
-  - `git -C <dir> pull` stdout containing "Already up to date" is the reliable signal for no-change — not the exit code
-  - `Badge` component available in `@mrunner/ui` — import it alongside Button/Switch/etc.
-  - "Install from registry" pre-fills the git URL input rather than triggering install directly — gives user visibility into what URL is being used
----
-
-## 2026-03-09 - US-001 (Native GitHub Plugin PRD)
-- Added `Native` variant to `PluginTier` enum in `apps/launcher/src/plugins.rs`
-- Changed `script_path` field on `RegisteredCommand` from `PathBuf` to `Option<PathBuf>`
-- Updated `load_commands()` to wrap script_path in `Some(...)`
-- Updated `run_plugin_command()` to unwrap `script_path` with `.ok_or_else(...)` returning a descriptive error for native commands (native dispatch will be wired in US-003)
-- `cargo check -p mrunner` passes with no warnings
-- Files changed: apps/launcher/src/plugins.rs
-- **Learnings for future iterations:**
-  - `check_plugin_updates` uses `matches!(plugin.tier, PluginTier::Scriptable)` pattern — works fine after adding new variants since it's explicit matching
-  - `script_path` is now `Option<PathBuf>`; any new code constructing `RegisteredCommand` must use `Some(path)` for scriptable or `None` for native commands
----
-
-## 2026-03-09 - US-002
-- Created `apps/launcher/src/github.rs` module with gh CLI infrastructure and plugin scaffolds
-- Added `pub mod github` to `apps/launcher/src/lib.rs`
-- Implemented `async fn gh_exec(args: &[&str]) -> Result<String, String>` using `tokio::process::Command`
-- Defined serde Deserialize structs: GhOwner, GhRepo, GhSearchRepo, GhPrRepository, GhPr, GhIssue, GhRun, GhRepoListItem
-- Added accessor methods (`full_name()`, `repo_name()`) on structs with private nested types to avoid visibility warnings
-- Implemented `pub fn register() -> RegisteredPlugin` returning all 5 commands (cmd_hub, cmd_repos, cmd_prs, cmd_issues, cmd_actions) with `tier: PluginTier::Native`, `script_path: None`, `plugin_dir: PathBuf::new()`
-- Implemented `pub async fn run_command(command_id, context)` returning placeholder `{"items": []}` for each command
-- Files changed: apps/launcher/src/github.rs (new), apps/launcher/src/lib.rs
-- **Learnings for future iterations:**
-  - Private nested struct types used as pub fields cause `private_interfaces` warnings — either make the type pub(crate) or add accessor methods and keep fields private
-  - `plugin_dir: PathBuf::new()` is the correct placeholder for native plugins (no filesystem directory)
-  - `pub mod github` in lib.rs is needed (not just `mod github`) so the module is accessible from sibling modules and Tauri commands
----
-
-## 2026-03-09 - US-003
-- Wired native plugin support into `discover_plugins()` and `run_plugin_command()` in `plugins.rs`
-- `discover_plugins()` now appends `crate::github::register()` to the plugins vec
-- `run_plugin_command()` now has an early-return branch: if `plugin.tier == PluginTier::Native`, calls `crate::github::run_command(&command.id, &context).await` and returns before the scriptable code path
-- Files changed: apps/launcher/src/plugins.rs
-- **Learnings for future iterations:**
-  - Cross-module reference in same crate: use `crate::github::register()` from plugins.rs to call into the github module declared in lib.rs
-  - Native tier early-return pattern avoids touching existing scriptable spawn logic entirely
-  - `matches!(plugin.tier, PluginTier::Native)` is idiomatic for enum variant check without binding
----
-
-## 2026-03-09 - US-004
-- Implemented `cmd_hub` in `apps/launcher/src/github.rs`
-- Returns 4 ListItems: Repositories, Pull Requests, Issues, Workflow Runs
-- Each item has `icon: "github"` and a `push` action with `command: "github:cmd_X"` targeting the respective command
-- When query is non-empty, filters items by case-insensitive title match
-- `run_command` dispatch updated to call `cmd_hub(context).await` instead of returning empty placeholder
-- Files changed: apps/launcher/src/github.rs
-- **Learnings for future iterations:**
-  - SDK `Action` push type uses field `command: string` (not `commandId`) — match this exactly in Rust json! macros
-  - Context query accessed via `context["query"].as_str().unwrap_or("")` — always use unwrap_or for safe defaults
-  - `run_command` signature changed from `_context` to `context` now that it's consumed
----
-
-## 2026-03-09 - US-005
-- Implemented `cmd_repos` in `apps/launcher/src/github.rs`
-- Empty query: calls `gh repo list --json name,owner,description,url,isPrivate,stargazerCount,updatedAt -L 30`, deserializes with `GhRepo`, returns items with star count accessory and Private badge if applicable
-- Non-empty query: calls `gh search repos <query> --json fullName,description,url,stargazerCount -L 20`, deserializes with `GhSearchRepo`, returns items with star count accessory
-- Each item has `{type: 'url', url: ...}` as primary action
-- Wired `cmd_repos` into `run_command` dispatch (replaced placeholder)
-- Files changed: apps/launcher/src/github.rs
-- **Learnings for future iterations:**
-  - `GhRepo.full_name()` method already builds `owner/name` — use it consistently for the list item `id` field
-  - For accessories, use `json!({ "text": "...", "tag": "warning" })` for badges; `tag` field provides styling
-  - Query trimming with `.trim()` before checking `is_empty()` avoids whitespace-only queries triggering the list path
----
-
-## 2026-03-09 - US-006
-- Implemented `cmd_prs` in `apps/launcher/src/github.rs`
-- Added `relative_time(date_str: &str) -> String` helper using `chrono::DateTime<Utc>` for relative formatting (just now, Xm ago, Xh ago, Xd ago, Xw ago, Xmo ago)
-- `cmd_prs` calls `gh search prs --author=@me --state=open --json number,title,repository,url,createdAt -L 30`; appends query string if non-empty
-- Returns ListItems with id (`pr:{repo}:{number}`), title (PR title), subtitle (`repo#number`), icon `github`, accessories with relative date, and `{type: 'url', url}` action
-- Wired `cmd_prs` into `run_command` dispatch (replaced placeholder)
-- Files changed: apps/launcher/src/github.rs
-- **Learnings for future iterations:**
-  - `chrono = "0.4"` is already in `apps/launcher/Cargo.toml` — use `chrono::DateTime<Utc>` for date parsing/diff
-  - `args` vec with conditional query: assign `query.clone()` to an owned binding first, then push `&query_owned` — borrow checker requires the owned value outlive the vec
-  - `gh search prs` appends the query as a positional argument after the flags
----
-
-## 2026-03-09 - US-007
-- Implemented `cmd_issues` in `apps/launcher/src/github.rs`
-- Wired `cmd_issues` into `run_command` dispatch (was placeholder `Ok(json!({ "items": [] }))`)
-- Uses `gh search issues --author=@me --state=open` with optional query term
-- Returns ListItems with id, title, subtitle (repo#number), icon, relative date accessory, url action
-- Structurally identical to `cmd_prs` — uses `GhIssue` struct (same shape as `GhPr`) and `relative_time` helper
-- Files changed: apps/launcher/src/github.rs
-- **Learnings for future iterations:**
-  - `cmd_issues` and `cmd_prs` share the same JSON shape (GhIssue == GhPr structurally) — future refactor could extract a shared helper
-  - The `relative_time` function is already defined in github.rs and shared by both commands
----
-
-## 2026-03-09 - US-008
-- Implemented `cmd_actions` in `apps/launcher/src/github.rs`
-- Added `gh_exec_owned(args: Vec<String>)` helper for use inside `tokio::spawn` closures (owned args needed for 'static bound)
-- Fetches user's 5 most recent repos with `gh repo list --json nameWithOwner -L 5`
-- For each repo, spawns a tokio task to fetch 3 recent runs concurrently
-- Collects results, sorts by createdAt descending (ISO 8601 string sort works correctly)
-- Maps conclusion/status to status accessories: success→"Passed"/green, failure→"Failed"/red, in_progress→"Running"/yellow, other→gray status text
-- Includes date_text accessory alongside status badge
-- Filters by query (title or repo name contains) if non-empty
-- Files changed: apps/launcher/src/github.rs
-- **Learnings for future iterations:**
-  - `tokio::spawn` requires `'static` futures — cannot capture `&str` references; use owned `Vec<String>` args instead
-  - `gh_exec` (takes `&[&str]`) is convenient for top-level async code; `gh_exec_owned` (takes `Vec<String>`) is needed for spawn closures
-  - `serde_json::from_str(...).unwrap_or_default()` is a clean way to handle per-repo gh failures gracefully
-  - ISO 8601 datetime strings sort correctly lexicographically — no need to parse for descending sort
----
-
-## 2026-03-09 - US-009
-- Added `Github` import from `lucide-react` to `apps/renderer/src/lib/constants.ts`
-- Added `github: Github` entry to ICON_MAP in constants.ts
-- Added `'github'` to `CommandIcon` type union in `apps/renderer/src/core/types/command.ts`
-- Added `'github'` to `CommandIconSchema` z.enum in `apps/renderer/src/core/types/command.ts`
-- Added `"github"` to icon enum in `packages/plugin/schemas/command.schema.json`
-- Added `"github"` to icon enum in `packages/plugin/schemas/plugin.schema.json`
-- Files changed: apps/renderer/src/lib/constants.ts, apps/renderer/src/core/types/command.ts, packages/plugin/schemas/command.schema.json, packages/plugin/schemas/plugin.schema.json
-- **Learnings for future iterations:**
-  - Lucide `Github` icon is available via `import { Github } from 'lucide-react'` — no extra package needed
-  - Adding a new icon requires updating 4 places: ICON_MAP + import (constants.ts), CommandIcon type + CommandIconSchema (command.ts), command.schema.json, plugin.schema.json
-  - `pnpm check` (biome) + `tsc --noEmit` are the quality gates for frontend-only changes
----
-
-## 2026-03-10 - US-010
-- Added 'native' to the tier union type in ScriptableRegisteredPlugin (was 'json' | 'scriptable', now includes 'native')
-- Changed scriptPath in ScriptableRegisteredCommand from `string` to `string | null` to match Rust Option<PathBuf>
-- scriptPath was only declared in the type, not accessed in any logic — no guards needed
-- Files changed: apps/renderer/src/hooks/use-plugins.ts
-- **Learnings for future iterations:**
-  - scriptPath is declared in the type but never accessed in use-plugins.ts logic, so making it optional required no downstream changes
-  - Native plugins flow through the same scriptableCommandToCommand path without special-casing
----
-
-## 2026-03-10 - US-011
-- Added `validate_native_plugin` Tauri command in lib.rs: runs `gh --version` and `gh auth status`, returns `{installed, authenticated, version, error}` as NativePluginValidation struct
-- Registered `validate_native_plugin` in the invoke_handler in lib.rs
-- Added `NativeValidationResult` interface and `nativeValidation`/`validating` state to plugins-tab.tsx
-- Added `handleValidateNativePlugin` handler that invokes the Tauri command
-- Added "Built-in Plugins" section (using `settings.plugins.nativePlugins` i18n key) above the installed plugins section, showing GitHub entry with Github icon, description, and Validate button
-- Validation badges: green for installed+authenticated, yellow for installed-not-authenticated, red for not installed
-- Setup instructions shown inline when validation fails (links to install gh, run `gh auth login`)
-- Added 9 new i18n keys to both en.json and pt-BR.json
-- Files changed: apps/launcher/src/lib.rs, apps/renderer/src/components/settings/plugins-tab.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
-- **Learnings for future iterations:**
-  - `gh auth status` exits with code 0 when authenticated, non-zero otherwise — safe to check `.status.success()`
-  - `gh --version` stdout first line contains the version string (e.g., "gh version 2.x.x ...")
-  - Biome auto-reformats multi-import lines to multi-line when adding new imports — expected behavior
-  - NativePluginValidation struct needs `#[derive(serde::Serialize)]` (not Deserialize) since it crosses from Rust to frontend
+  - CGC requires delete+re-add to pick up changes (add_code_to_graph returns "already indexed" on existing repos)
+  - After re-index, complexity results reflect the refactored codebase accurately
 ---

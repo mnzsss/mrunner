@@ -1,13 +1,13 @@
 #!/bin/bash
 # Ralph Wiggum - Long-running AI agent loop
 # Always runs in background. Use `rls` to check status.
-# Usage: ./ralph.sh [--tool claude|copilot] [--model MODEL] [max_iterations]
+# Usage: ./ralph.sh [--tool amp|claude|copilot] [--model MODEL] [max_iterations]
 
 set -e
 
 # Parse arguments
-TOOL="copilot"
-MODEL="claude-sonnet-4.6"
+TOOL="claude"
+MODEL="claude-sonnet-4-6"
 MAX_ITERATIONS=10
 LOOP_MODE=false
 
@@ -145,7 +145,9 @@ for i in $(seq 1 $MAX_ITERATIONS); do
   echo "  Ralph Iteration $i of $MAX_ITERATIONS ($TOOL)"
   echo "==============================================================="
 
-  if [[ "$TOOL" == "claude" ]]; then
+  if [[ "$TOOL" == "amp" ]]; then
+    OUTPUT=$(cat "$SCRIPT_DIR/prompt.md" | amp --dangerously-allow-all 2>&1) || true
+  elif [[ "$TOOL" == "claude" ]]; then
     OUTPUT=$(claude --dangerously-skip-permissions --model "$MODEL" --print < "$SCRIPT_DIR/CLAUDE.md" 2>&1) || true
   else
     OUTPUT=$(gh copilot -- -p "$(cat "$SCRIPT_DIR/CLAUDE.md")" --model "$MODEL" --allow-all-tools --allow-all-paths --allow-all-urls -s 2>&1) || true

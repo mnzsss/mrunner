@@ -22,7 +22,7 @@ function sanitizePaths(value: string): string {
 export function initSentry(): void {
 	if (!SENTRY_DSN) {
 		if (import.meta.env.DEV) {
-			console.log('[sentry] Skipping initialization in development (no DSN)')
+			console.info('[sentry] Skipping initialization in development (no DSN)')
 		}
 		return
 	}
@@ -72,7 +72,7 @@ export function initSentry(): void {
 		Sentry.captureException(event.reason)
 	})
 
-	console.log('[sentry] Initialized successfully')
+	console.info('[sentry] Initialized successfully')
 }
 
 /**

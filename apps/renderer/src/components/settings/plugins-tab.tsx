@@ -368,7 +368,7 @@ export function PluginsTab() {
 		<div className="space-y-6">
 			{/* Native (Built-in) Plugins */}
 			<div className="space-y-3">
-				<h3 className="text-sm font-medium text-muted-foreground">
+				<h3 className="font-medium text-muted-foreground text-sm">
 					{t('settings.plugins.nativePlugins')}
 				</h3>
 
@@ -378,7 +378,7 @@ export function PluginsTab() {
 					</div>
 					<ItemContent className="min-w-0 flex-1 space-y-0.5">
 						<ItemTitle className="font-medium">GitHub</ItemTitle>
-						<ItemDescription className="text-xs text-muted-foreground">
+						<ItemDescription className="text-muted-foreground text-xs">
 							{t('settings.plugins.nativePluginGithubDescription')}
 						</ItemDescription>
 						{nativeValidation && (
@@ -387,7 +387,7 @@ export function PluginsTab() {
 								nativeValidation.authenticated ? (
 									<Badge
 										variant="secondary"
-										className="w-fit text-xs text-green-700 dark:text-green-400"
+										className="w-fit text-green-700 text-xs dark:text-green-400"
 									>
 										✓ {t('settings.plugins.validationPassed')}
 										{nativeValidation.version
@@ -404,7 +404,7 @@ export function PluginsTab() {
 								) : (
 									<Badge
 										variant="secondary"
-										className="w-fit text-xs text-destructive"
+										className="w-fit text-destructive text-xs"
 									>
 										✗ {t('settings.plugins.validationFailed')}
 									</Badge>
@@ -413,7 +413,7 @@ export function PluginsTab() {
 									!(
 										nativeValidation.installed && nativeValidation.authenticated
 									) && (
-										<div className="rounded-md border bg-muted/30 p-2 text-xs text-muted-foreground">
+										<div className="rounded-md border bg-muted/30 p-2 text-muted-foreground text-xs">
 											<p className="mb-1 font-medium">
 												{t('settings.plugins.setupInstructions')}
 											</p>
@@ -447,7 +447,7 @@ export function PluginsTab() {
 
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
-					<h3 className="text-sm font-medium text-muted-foreground">
+					<h3 className="font-medium text-muted-foreground text-sm">
 						{t('settings.plugins.installedPlugins')}
 					</h3>
 					<Button
@@ -462,11 +462,11 @@ export function PluginsTab() {
 				</div>
 
 				{loading && (
-					<p className="text-sm text-muted-foreground">{t('app.loading')}</p>
+					<p className="text-muted-foreground text-sm">{t('app.loading')}</p>
 				)}
 
 				{!loading && plugins.length === 0 && (
-					<p className="text-sm text-muted-foreground">
+					<p className="text-muted-foreground text-sm">
 						{t('settings.plugins.noPlugins')}
 					</p>
 				)}
@@ -502,7 +502,7 @@ export function PluginsTab() {
 											<ItemTitle className="font-medium">
 												{plugin.pluginName}
 											</ItemTitle>
-											<ItemDescription className="text-xs text-muted-foreground">
+											<ItemDescription className="text-muted-foreground text-xs">
 												{t('settings.plugins.runtime', {
 													runtime: plugin.runtime,
 												})}
@@ -522,13 +522,13 @@ export function PluginsTab() {
 										<div className="ml-6 space-y-1 rounded-md border bg-muted/30 p-2">
 											{plugin.commands.map((cmd) => (
 												<div key={cmd.id} className="px-2 py-1">
-													<p className="text-sm font-medium">{cmd.title}</p>
+													<p className="font-medium text-sm">{cmd.title}</p>
 													{cmd.description && (
-														<p className="text-xs text-muted-foreground">
+														<p className="text-muted-foreground text-xs">
 															{cmd.description}
 														</p>
 													)}
-													<p className="mt-0.5 text-xs text-muted-foreground/60">
+													<p className="mt-0.5 text-muted-foreground/60 text-xs">
 														{t('settings.plugins.mode', { mode: cmd.mode })}
 													</p>
 												</div>
@@ -546,7 +546,7 @@ export function PluginsTab() {
 
 			{/* Install from Git URL */}
 			<div className="space-y-3">
-				<h3 className="text-sm font-medium text-muted-foreground">
+				<h3 className="font-medium text-muted-foreground text-sm">
 					{t('settings.plugins.installFromGit')}
 				</h3>
 
@@ -582,14 +582,14 @@ export function PluginsTab() {
 				</div>
 
 				{installStatus === 'success' && (
-					<p className="text-sm text-green-600 dark:text-green-400">
+					<p className="text-green-600 text-sm dark:text-green-400">
 						{t('settings.plugins.installSuccess')}
 					</p>
 				)}
 
 				{installStatus === 'error' && installError && (
 					<div className="space-y-1">
-						<p className="text-sm text-destructive">
+						<p className="text-destructive text-sm">
 							{t('settings.plugins.installError')}: {installError}
 						</p>
 						<Button variant="ghost" size="sm" onClick={handleDismissError}>
@@ -671,7 +671,7 @@ export function PluginsTab() {
 			{/* Browse Plugins Registry */}
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
-					<h3 className="text-sm font-medium text-muted-foreground">
+					<h3 className="font-medium text-muted-foreground text-sm">
 						{t('settings.plugins.browsePlugins')}
 					</h3>
 					<Button
@@ -689,19 +689,19 @@ export function PluginsTab() {
 				</div>
 
 				{registryLoading && (
-					<p className="text-sm text-muted-foreground">
+					<p className="text-muted-foreground text-sm">
 						{t('settings.plugins.loadingRegistry')}
 					</p>
 				)}
 
 				{!registryLoading && registryError && (
-					<p className="text-sm text-destructive">
+					<p className="text-destructive text-sm">
 						{t('settings.plugins.registryError')}: {registryError}
 					</p>
 				)}
 
 				{!registryLoading && !registryError && registryPlugins.length === 0 && (
-					<p className="text-sm text-muted-foreground">
+					<p className="text-muted-foreground text-sm">
 						{t('settings.plugins.noRegistryPlugins')}
 					</p>
 				)}
@@ -725,11 +725,11 @@ export function PluginsTab() {
 												</Badge>
 											)}
 										</div>
-										<ItemDescription className="text-xs text-muted-foreground">
+										<ItemDescription className="text-muted-foreground text-xs">
 											{regPlugin.description}
 										</ItemDescription>
 										{regPlugin.author && (
-											<p className="text-xs text-muted-foreground/70">
+											<p className="text-muted-foreground/70 text-xs">
 												{regPlugin.author}
 											</p>
 										)}
@@ -760,7 +760,7 @@ export function PluginsTab() {
 			{/* Check for Updates */}
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
-					<h3 className="text-sm font-medium text-muted-foreground">
+					<h3 className="font-medium text-muted-foreground text-sm">
 						{t('settings.plugins.updateResults')}
 					</h3>
 					<Button
@@ -812,7 +812,7 @@ export function PluginsTab() {
 
 			<Separator />
 
-			<div className="text-xs text-muted-foreground">
+			<div className="text-muted-foreground text-xs">
 				{t('settings.plugins.hint')}
 			</div>
 		</div>

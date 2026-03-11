@@ -1,192 +1,161 @@
 {
   "project": "MRunner",
-  "branchName": "feat/plugin-system",
-  "description": "Native GitHub Plugin - A built-in MRunner plugin that uses the gh CLI to browse repositories, PRs, issues, and workflow runs from the command palette. Introduces PluginTier::Native for plugins implemented directly in Rust, bypassing the Node.js process runner while reusing the existing frontend PluginCommandView.",
+  "branchName": "feat/ask-tool",
+  "description": "Codebase Health - Extract shared utilities, migrate keyboard shortcuts to TanStack Hotkeys, decompose complex hooks, and split mixed-concern modules",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add PluginTier::Native variant to plugins.rs",
-      "description": "As a developer, I need a Native variant in the PluginTier enum so the system can distinguish built-in Rust plugins from Tier 1 JSON and Tier 2 scriptable plugins.",
+      "title": "Extract shared config file I/O utility",
+      "description": "As a developer, I need a shared utility for reading/writing JSON config files so useShortcutsSettings and useFolderSettings stop duplicating the same getConfigPath/ensureConfigDir/read/write pattern.",
       "acceptanceCriteria": [
-        "Add Native variant to the PluginTier enum in apps/launcher/src/plugins.rs",
-        "Make script_path field on RegisteredCommand an Option<PathBuf> instead of PathBuf (native commands have no script file)",
-        "Update all existing code that constructs or accesses script_path to handle Option (load_scriptable_plugin, run_plugin_command, etc.)",
-        "Ensure serde serialization still works (camelCase rename, Option serializes as null)",
-        "cargo check -p mrunner passes with no warnings related to these changes"
+        "Create apps/renderer/src/lib/config-file.ts with getConfigFilePath(filename), ensureConfigDir(), readConfigFile<T>(filename, fallback), writeConfigFile<T>(filename, data)",
+        "Refactor useShortcutsSettings to use readConfigFile/writeConfigFile instead of inline I/O",
+        "Refactor useFolderSettings to use readConfigFile/writeConfigFile instead of inline I/O",
+        "Remove duplicated getConfigPath and ensureConfigDir from both hooks",
+        "pnpm check passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The PluginTier enum is at plugins.rs:48. RegisteredCommand is at plugins.rs:62. script_path is used in run_plugin_command() when spawning the child process \u2014 the None case will be handled in US-003 when native dispatch is wired up. For now just make it compile."
+      "notes": "Both hooks use @tauri-apps/api/path (appConfigDir) and @tauri-apps/plugin-fs (mkdir, readTextFile, writeTextFile). Dev mode uses '-dev' suffix on config dir. See use-shortcuts-settings.ts and use-folder-settings.ts for exact patterns."
     },
     {
       "id": "US-002",
-      "title": "Create github.rs module with models, gh_exec helper, and command scaffolds",
-      "description": "As a developer, I need the github.rs module with shared infrastructure (gh CLI executor, serde models for gh JSON output) and stub functions for each command so the module compiles and can be wired in.",
+      "title": "Install TanStack Hotkeys and create hotkey adapter",
+      "description": "As a developer, I need TanStack Hotkeys installed and an adapter to convert between MRunner's Hotkey format and TanStack's string format.",
       "acceptanceCriteria": [
-        "Create apps/launcher/src/github.rs module",
-        "Add mod github to lib.rs",
-        "Implement async fn gh_exec(args: &[&str]) -> Result<String, String> that spawns gh with given args, captures stdout/stderr, returns Ok(stdout) or Err(stderr)",
-        "Define serde Deserialize structs for gh CLI JSON output: GhRepo (name, owner as nested {login}, description, url, isPrivate, stargazerCount, updatedAt), GhSearchRepo (fullName, description, url, stargazerCount), GhPr and GhIssue (number, title, repository as nested {nameWithOwner}, url, createdAt), GhRun (databaseId, displayTitle, status, conclusion, url, createdAt), GhRepoListItem (nameWithOwner)",
-        "Implement pub fn register() -> RegisteredPlugin that returns a RegisteredPlugin with plugin_id 'github', plugin_name 'GitHub', tier Native, runtime 'native', and RegisteredCommand entries for: cmd_hub, cmd_repos, cmd_prs, cmd_issues, cmd_actions (all with script_path: None, mode: List)",
-        "Implement pub async fn run_command(command_id: &str, context: &serde_json::Value) -> Result<serde_json::Value, String> that matches on command_id suffix and returns empty list results as placeholder (Ok(json!({\"items\": []})))",
-        "cargo check -p mrunner passes"
+        "Install @tanstack/react-hotkeys in apps/renderer: pnpm add @tanstack/react-hotkeys --filter @mrunner/renderer",
+        "Create apps/renderer/src/lib/hotkey-adapter.ts with hotkeyToTanStack(hotkey: Hotkey) -> string and tanStackToHotkey(str: string) -> Hotkey",
+        "hotkeyToTanStack maps Control->Control, Alt->Alt, Shift->Shift, Meta->Mod, Super->Mod and deduplicates",
+        "tanStackToHotkey splits on '+', maps Mod back to Super (Linux) or Meta (Mac) based on platform",
+        "pnpm check passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Use tokio::process::Command for gh_exec. The command_id format is 'github:cmd_hub', 'github:cmd_repos', etc. The register() function builds the full RegisteredPlugin struct matching the existing pattern. Use serde_json::json! macro for placeholder returns. Hub command keywords: ['gh', 'git']. Repos keywords: ['repositories']. PRs keywords: ['pull requests', 'merge']. Issues keywords: ['bugs', 'tickets']. Actions keywords: ['ci', 'cd', 'workflows', 'runs']. All command icons should be 'github' (will be added to frontend in US-009)."
+      "notes": "MRunner Hotkey type is { modifiers: Modifier[], key: string } where Modifier = 'Control' | 'Alt' | 'Shift' | 'Meta' | 'Super'. TanStack uses strings like 'Mod+Shift+S'. Types defined in apps/renderer/src/core/types/shortcuts.ts."
     },
     {
       "id": "US-003",
-      "title": "Wire native plugins into discover_plugins and run_plugin_command",
-      "description": "As a developer, I need the plugin system to include native plugins in discovery and route their execution through the Rust module instead of spawning a child process.",
+      "title": "Add HotkeysProvider and rewrite useKeyboardShortcuts",
+      "description": "As a developer, I need useKeyboardShortcuts rewritten to use TanStack HotkeyManager instead of manual keydown listener and modifier matching.",
       "acceptanceCriteria": [
-        "In discover_plugins() in plugins.rs, append github::register() to the returned Vec<RegisteredPlugin>",
-        "In run_plugin_command() in plugins.rs (or lib.rs \u2014 wherever the Tauri command is), add a match arm: if the resolved plugin's tier is PluginTier::Native, call github::run_command(command_id, context).await instead of spawning a child process",
-        "The existing Scriptable tier path remains unchanged",
-        "Verify that invoking discover_plugins from frontend would now include the GitHub plugin",
-        "Verify that invoking run_plugin_command with command_id 'github:cmd_hub' returns the placeholder empty list",
-        "cargo check -p mrunner passes"
+        "Add HotkeysProvider wrapper in apps/renderer/src/App.tsx (or main.tsx) around the app tree",
+        "Rewrite useKeyboardShortcuts to use getHotkeyManager().register() inside useEffect instead of window.addEventListener('keydown')",
+        "Each active internal launcher shortcut registers via hotkeyToTanStack conversion",
+        "Cleanup function unregisters all shortcuts on unmount or shortcut change",
+        "Actions dispatched: escape -> onHideWindow, edit-bookmark -> onEditBookmark, delete-bookmark -> onDeleteBookmark",
+        "pnpm check passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "run_plugin_command is a #[tauri::command] in lib.rs. It looks up the plugin from PluginState, then calls run_plugin_command_internal in plugins.rs. The tier match should happen in run_plugin_command_internal before the child process spawn. The script_path being None is fine because native tier never reaches the spawn code path."
+      "notes": "Cannot call useHotkey in a loop (Rules of Hooks). Use imperative HotkeyManager API: getHotkeyManager() from @tanstack/react-hotkeys. Filter shortcuts by type=internal, enabled=true, context=launcher. See current implementation in apps/renderer/src/hooks/use-keyboard-shortcuts.ts."
     },
     {
       "id": "US-004",
-      "title": "Implement cmd_hub - GitHub hub menu with push navigation",
-      "description": "As a user, I want a top-level 'GitHub' command in MRunner that shows a menu of sub-commands (Repos, PRs, Issues, Actions) so I can navigate to any GitHub feature.",
+      "title": "Rewrite HotkeyPicker with useHotkeyRecorder",
+      "description": "As a user, I want the hotkey recording UI to use TanStack's useHotkeyRecorder for more reliable cross-platform key capture.",
       "acceptanceCriteria": [
-        "Implement cmd_hub in github.rs that returns a ListResult with 4 items: Repositories, Pull Requests, Issues, Workflow Runs",
-        "Each item has: title, subtitle with brief description, icon 'github', and a primary action of type 'push' targeting the respective command ID (e.g., {type: 'push', commandId: 'github:cmd_repos'})",
-        "Items appear regardless of query (hub is a static menu)",
-        "If query is non-empty, filter items client-side by title match (case-insensitive contains)",
-        "cargo check -p mrunner passes"
+        "Rewrite apps/renderer/src/components/shortcuts/hotkey-picker.tsx to use useHotkeyRecorder from @tanstack/react-hotkeys",
+        "onRecord callback converts TanStack string to MRunner Hotkey via tanStackToHotkey and calls onChange",
+        "Display uses formatForDisplay(hotkeyToTanStack(value)) for platform-aware rendering",
+        "Recording starts on click, stops when non-modifier key is pressed",
+        "Cancel recording on blur or Escape",
+        "Props interface stays compatible: value?: Hotkey, onChange?: (hotkey: Hotkey) => void, disabled?: boolean",
+        "pnpm check passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "The push action type is already supported in the frontend's execute-plugin-action.ts. The ListResult format matches what PluginCommandView expects: {items: [{id, title, subtitle, icon, accessories, actions}]}. Each action: {type: 'push', commandId: 'github:cmd_repos'}."
+      "notes": "Import useHotkeyRecorder and formatForDisplay from @tanstack/react-hotkeys. Import hotkeyToTanStack/tanStackToHotkey from @/lib/hotkey-adapter. Current component is at apps/renderer/src/components/shortcuts/hotkey-picker.tsx."
     },
     {
       "id": "US-005",
-      "title": "Implement cmd_repos - list and search repositories",
-      "description": "As a user, I want to browse my GitHub repositories and search for any public repo so I can quickly open them in the browser.",
+      "title": "Update shortcut display and setup page",
+      "description": "As a user, I want keyboard shortcuts displayed with platform-aware symbols (e.g. ⌘ on Mac, Ctrl on Linux) in both the settings and setup pages.",
       "acceptanceCriteria": [
-        "When query is empty: run 'gh repo list --json name,owner,description,url,isPrivate,stargazerCount,updatedAt -L 30' and return results as ListItems",
-        "When query is non-empty: run 'gh search repos <query> --json fullName,description,url,stargazerCount -L 20' and return results as ListItems",
-        "Each ListItem has: id (repo full name), title (repo name or fullName), subtitle (description or empty), icon 'github'",
-        "Each ListItem has accessories showing star count and private/public badge where applicable",
-        "Primary action on each item: {type: 'url', url: <repo_url>} to open in browser",
-        "Handle gh CLI errors gracefully (return error string, don't panic)",
-        "cargo check -p mrunner passes"
+        "Update apps/renderer/src/components/shortcuts/shortcut-item.tsx to use formatForDisplay(hotkeyToTanStack(shortcut.hotkey)) for hotkey display",
+        "Update apps/renderer/src/pages/setup.tsx to work with the rewritten HotkeyPicker (should be drop-in if props are compatible)",
+        "Add i18n keys to en.json: shortcuts.pressKeys = 'Press a key combination...', shortcuts.clickToRecord = 'Click to record'",
+        "Add i18n keys to pt-BR.json: shortcuts.pressKeys = 'Pressione uma combinacao de teclas...', shortcuts.clickToRecord = 'Clique para gravar'",
+        "pnpm check passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "The owner field from gh repo list is a nested object {login: 'username'}. Construct fullName as '{owner.login}/{name}'. For accessories, use the format [{text: '\u2605 42'}, {text: 'Private', tag: 'warning'}] or similar based on existing Accessory type in the SDK. Parse gh JSON output using serde_json::from_str with the GhRepo/GhSearchRepo structs."
+      "notes": "formatForDisplay from @tanstack/react-hotkeys renders platform-specific symbols. shortcut-item.tsx is at apps/renderer/src/components/shortcuts/shortcut-item.tsx. i18n files at apps/renderer/src/locales/{en,pt-BR}.json."
     },
     {
       "id": "US-006",
-      "title": "Implement cmd_prs - list open Pull Requests",
-      "description": "As a user, I want to see my open pull requests across all repos so I can quickly jump to any PR.",
+      "title": "Extract parseQuery utility from useBookmarks",
+      "description": "As a developer, I need the parseQuery function extracted from useBookmarks into a standalone utility since it's pure logic with no hook dependency.",
       "acceptanceCriteria": [
-        "Run 'gh search prs --author=@me --state=open --json number,title,repository,url,createdAt -L 30'",
-        "If query is non-empty, add the query as search terms to the gh command",
-        "Return results as ListItems with: id (unique), title (PR title), subtitle (repo#number), icon 'github'",
-        "Each ListItem has accessories showing the created date in relative format (e.g., '2d ago')",
-        "Primary action: {type: 'url', url: <pr_url>}",
-        "Handle gh CLI errors gracefully",
-        "cargo check -p mrunner passes"
+        "Create apps/renderer/src/lib/parse-query.ts with the parseQuery function moved from use-bookmarks.ts",
+        "parseQuery parses query strings with #tag+syntax into structured search params",
+        "Update use-bookmarks.ts to import parseQuery from @/lib/parse-query",
+        "No behavior change — same input/output contract",
+        "pnpm check passes"
       ],
       "priority": 6,
       "passes": true,
-      "notes": "The repository field from gh search prs is a nested object {nameWithOwner: 'owner/repo'}. For relative date formatting, compute the difference from now in Rust using chrono or manual arithmetic. Format: '2h ago', '3d ago', '1w ago'. If chrono is not in Cargo.toml, either add it or use a simple manual calculation."
+      "notes": "parseQuery is defined inside use-bookmarks.ts. It's a pure function that takes a string and returns parsed query parts. See apps/renderer/src/hooks/use-bookmarks.ts."
     },
     {
       "id": "US-007",
-      "title": "Implement cmd_issues - list open Issues",
-      "description": "As a user, I want to see my open issues across all repos so I can quickly jump to any issue.",
+      "title": "Extract useBookmarkTags hook",
+      "description": "As a developer, I need tag management operations extracted from useBookmarks into a dedicated useBookmarkTags hook to reduce its complexity.",
       "acceptanceCriteria": [
-        "Run 'gh search issues --author=@me --state=open --json number,title,repository,url,createdAt -L 30'",
-        "If query is non-empty, add the query as search terms to the gh command",
-        "Return results as ListItems with: id (unique), title (issue title), subtitle (repo#number), icon 'github'",
-        "Each ListItem has accessories showing the created date in relative format",
-        "Primary action: {type: 'url', url: <issue_url>}",
-        "Handle gh CLI errors gracefully",
-        "cargo check -p mrunner passes"
+        "Create apps/renderer/src/hooks/use-bookmark-tags.ts with listTags, renameTag, deleteTag functions and own state (tags, loadingTags)",
+        "Each function invokes the corresponding Tauri command",
+        "Remove tag operations from use-bookmarks.ts",
+        "Update any consumers that destructure tag functions from useBookmarks to import from useBookmarkTags instead",
+        "pnpm check passes"
       ],
       "priority": 7,
       "passes": true,
-      "notes": "This is structurally identical to cmd_prs (US-006). The gh command differs only in 'issues' vs 'prs'. Consider extracting a shared helper for formatting PR/issue items since the JSON shape is the same (GhPr and GhIssue use the same struct)."
+      "notes": "Check which components destructure listTags/renameTag/deleteTag from useBookmarks. See apps/renderer/src/hooks/use-bookmarks.ts for current tag operations."
     },
     {
       "id": "US-008",
-      "title": "Implement cmd_actions - list recent workflow runs",
-      "description": "As a user, I want to see recent CI/CD workflow runs across my repos so I can monitor build status and jump to failing runs.",
+      "title": "Extract useBookmarkActions and simplify useBookmarks",
+      "description": "As a developer, I need bookmark interaction actions extracted so useBookmarks only handles core CRUD, reducing its complexity from CC=30.",
       "acceptanceCriteria": [
-        "Fetch recent repos: 'gh repo list --json nameWithOwner -L 5' to get the user's 5 most recent repos",
-        "For each repo, fetch runs: 'gh run list --repo <nameWithOwner> --json databaseId,displayTitle,status,conclusion,url,createdAt -L 3'",
-        "Run repo fetches concurrently using tokio::join or similar",
-        "Return combined results as ListItems sorted by createdAt descending",
-        "Each ListItem has: title (run display title), subtitle (repo name), icon 'github'",
-        "Accessories show status badge: success (green 'Passed'), failure (red 'Failed'), in_progress (yellow 'Running'), other (gray status text)",
-        "Primary action: {type: 'url', url: <run_url>}",
-        "If query is non-empty, filter results by title/repo containing the query",
-        "Handle gh CLI errors gracefully (if one repo fails, still show others)",
-        "cargo check -p mrunner passes"
+        "Create apps/renderer/src/hooks/use-bookmark-actions.ts with openBookmark, copyUrl, copyMarkdown functions",
+        "These are stateless action dispatchers (no own state needed)",
+        "Remove action functions from use-bookmarks.ts — keep only CRUD: list, search, getById, add, update, remove + state (bookmarks, loading, error)",
+        "Update any consumers that destructure action functions to import from useBookmarkActions instead",
+        "pnpm check passes"
       ],
       "priority": 8,
       "passes": true,
-      "notes": "Use futures::future::join_all or tokio::join! to run the per-repo gh commands concurrently. If futures crate is not in Cargo.toml, add it or use tokio::spawn + JoinHandle. The conclusion field is null for in-progress runs \u2014 check status field too. Sorting: parse createdAt as a datetime string and sort descending."
+      "notes": "openBookmark/copyUrl/copyMarkdown are interaction dispatchers that use Tauri invoke or clipboard API. See apps/renderer/src/hooks/use-bookmarks.ts for exact implementations."
     },
     {
       "id": "US-009",
-      "title": "Add github icon to frontend ICON_MAP and types",
-      "description": "As a developer, I need the 'github' icon value to be recognized by the frontend so native plugin commands render their icon correctly.",
+      "title": "Split command.ts into types, guards, and plugin-loader",
+      "description": "As a developer, I need command.ts (347 lines, 11 functions, 19 importers) split into focused modules so types, runtime guards, and plugin logic are separated.",
       "acceptanceCriteria": [
-        "Add 'github' entry to ICON_MAP in apps/renderer/src/lib/constants.ts, mapping to the Lucide Github icon component",
-        "Add 'github' to the CommandIcon type union in apps/renderer/src/core/types/command.ts (if it's a string literal union)",
-        "Add 'github' to the icon enum in packages/plugin/schemas/command.schema.json",
-        "Add 'github' to the icon enum in packages/plugin/schemas/plugin.schema.json",
-        "Verify the Github icon is available from lucide-react (import { Github } from 'lucide-react')",
+        "Create apps/renderer/src/core/types/command-guards.ts with 7 type guard functions: isShellAction, isOpenAction, isUrlAction, isFunctionAction, isSubmenuAction, isInputAction, isDialogAction",
+        "Create apps/renderer/src/core/types/plugin-loader.ts with 4 plugin functions: validatePluginConfig, parsePluginConfig, safeParsePluginConfig, pluginToCommand + PluginConfigSchema",
+        "Clean up command.ts to keep only type/interface definitions (~117 lines)",
+        "Update apps/renderer/src/core/types/index.ts to re-export from all 3 files so existing @/core/types imports don't break",
+        "All 19 importing files continue to resolve correctly",
         "pnpm check passes"
       ],
       "priority": 9,
       "passes": true,
-      "notes": "ICON_MAP in constants.ts maps string keys to Lucide icon components. The existing pattern is like: { terminal: Terminal, globe: Globe, ... }. Lucide has a Github icon. Check the exact import name \u2014 it might be 'Github' or 'GithubIcon'. The CommandIcon type may be inferred from ICON_MAP keys rather than a separate union \u2014 check the actual implementation."
+      "notes": "command.ts is at apps/renderer/src/core/types/command.ts. The barrel re-export at apps/renderer/src/core/types/index.ts must re-export everything for backward compatibility. 19 files import from @/commands/types or @/core/types. Guards are lines ~153-183, plugin functions lines ~306-346, Zod schemas lines ~185-270."
     },
     {
       "id": "US-010",
-      "title": "Add native tier type to use-plugins.ts",
-      "description": "As a frontend developer, I need the TypeScript types in use-plugins.ts to recognize the 'native' plugin tier so native plugins from discover_plugins are properly typed.",
+      "title": "Final verification and CGC re-analysis",
+      "description": "As a developer, I need to verify all changes pass quality checks and confirm the codebase health metrics improved.",
       "acceptanceCriteria": [
-        "Add 'native' to the PluginTier type in apps/renderer/src/hooks/use-plugins.ts (alongside 'json' and 'scriptable')",
-        "Ensure the RegisteredCommand TypeScript type has script_path as optional (string | null) to match the Rust Option<PathBuf>",
-        "Verify that native plugins from discover_plugins flow through to the command palette without errors",
-        "No filtering or special-casing of native tier needed \u2014 they should behave identically to scriptable plugins from the frontend's perspective",
-        "pnpm check passes"
+        "pnpm check passes",
+        "cargo check -p mrunner passes",
+        "Run find_most_complex_functions via CGC — useBookmarks and useKeyboardShortcuts should show reduced complexity",
+        "Run function density query — command.ts should have fewer functions",
+        "No new lint or type errors introduced"
       ],
       "priority": 10,
       "passes": true,
-      "notes": "The PluginTier type in use-plugins.ts mirrors the Rust enum. Since Rust serializes with camelCase rename_all, the value will be 'native' (lowercase). The scriptPath field will be null for native commands. Check if any frontend code assumes scriptPath is always present and guard accordingly."
-    },
-    {
-      "id": "US-011",
-      "title": "Add native plugin section to plugins-tab with validate and setup instructions",
-      "description": "As a user, I want to see native plugins (like GitHub) in the Settings Plugins tab with a validation button that checks if gh CLI is installed and authenticated, showing setup instructions if not.",
-      "acceptanceCriteria": [
-        "Add a 'Native Plugins' section to apps/renderer/src/components/settings/plugins-tab.tsx, visually separated from the existing scriptable plugins sections",
-        "Show the GitHub plugin with its name, description, and icon",
-        "Add a 'Validate' button that invokes a new Tauri command validate_native_plugin(plugin_id: String)",
-        "Create the validate_native_plugin Tauri command in lib.rs that for plugin_id 'github': runs 'gh --version' and 'gh auth status', returns JSON with {installed: bool, authenticated: bool, version: string|null, error: string|null}",
-        "Register validate_native_plugin in the invoke_handler",
-        "Display validation results: green checkmark badge if both installed and authenticated, yellow warning if installed but not authenticated, red X if not installed",
-        "Show setup instructions when validation fails: link to https://cli.github.com for installation, 'gh auth login' command for authentication",
-        "Add i18n keys for all new labels to en.json and pt-BR.json",
-        "cargo check -p mrunner passes",
-        "pnpm check passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "The plugins-tab.tsx already has sections for browsing and managing scriptable plugins. Add the native section above or below with clear visual distinction (e.g., a 'Built-in Plugins' heading). The validate_native_plugin command runs gh CLI directly via tokio::process::Command (same pattern as gh_exec in github.rs \u2014 consider reusing it). For the frontend, use a useState for validation results and show loading state while validating. Follow existing UI patterns from the plugins tab (badges, buttons, etc.)."
+      "notes": "Use CodeGraphContext MCP tools for re-analysis. May need to re-index the repo first via add_code_to_graph."
     }
   ]
 }

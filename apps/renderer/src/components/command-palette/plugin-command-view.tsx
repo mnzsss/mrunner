@@ -148,7 +148,7 @@ export function PluginCommandView({
 			disablePointerSelection
 			shouldFilter={false}
 		>
-			<div className="flex items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground">
+			<div className="flex items-center gap-2 border-b px-3 py-2 text-muted-foreground text-sm">
 				<button
 					type="button"
 					onClick={onBack}
@@ -175,11 +175,11 @@ export function PluginCommandView({
 			)}
 			<CommandList className="flex-1 overflow-y-auto p-2">
 				{error ? (
-					<div className="py-6 text-center text-sm text-destructive">
+					<div className="py-6 text-center text-destructive text-sm">
 						{t('plugins.error')}: {error}
 					</div>
 				) : loading && !detailResult && items.length === 0 ? (
-					<div className="py-6 text-center text-sm text-muted-foreground">
+					<div className="py-6 text-center text-muted-foreground text-sm">
 						{t('plugins.running')}
 					</div>
 				) : detailResult ? (
@@ -196,7 +196,7 @@ export function PluginCommandView({
 										onClick={() =>
 											executePluginAction(action, { onPush: onPushCommand })
 										}
-										className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+										className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground text-xs transition-colors hover:bg-primary/90"
 									>
 										{'title' in action && action.title
 											? action.title
@@ -207,7 +207,7 @@ export function PluginCommandView({
 						)}
 					</div>
 				) : items.length === 0 ? (
-					<div className="py-6 text-center text-sm text-muted-foreground">
+					<div className="py-6 text-center text-muted-foreground text-sm">
 						{t('search.empty')}
 					</div>
 				) : (
@@ -222,21 +222,21 @@ export function PluginCommandView({
 								value={item.id}
 								onSelect={() => handleItemSelect(item)}
 							>
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-data-[selected=true]:bg-popover text-muted-foreground">
+								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-data-[selected=true]:bg-popover">
 									<IconComponent className="size-4" aria-hidden="true" />
 								</div>
 								<div className="min-w-0 flex-1">
-									<div className="truncate text-sm font-medium">
+									<div className="truncate font-medium text-sm">
 										{item.title}
 									</div>
 									{item.subtitle && (
-										<div className="truncate text-xs text-muted-foreground">
+										<div className="truncate text-muted-foreground text-xs">
 											{item.subtitle}
 										</div>
 									)}
 								</div>
 								{item.accessories && item.accessories.length > 0 && (
-									<div className="flex items-center gap-1 text-xs text-muted-foreground">
+									<div className="flex items-center gap-1 text-muted-foreground text-xs">
 										{item.accessories.map((acc, i) => (
 											<span key={i}>{acc.text}</span>
 										))}

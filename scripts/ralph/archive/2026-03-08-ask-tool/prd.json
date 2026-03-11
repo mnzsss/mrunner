@@ -1,0 +1,176 @@
+{
+  "project": "MRunner",
+  "branchName": "feat/ask-tool",
+  "description": "Multi-Provider Ask Tool - Support Claude Code and Codex as AI backends with provider switching and model selector",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Expand check_tool_installed for Claude Code",
+      "description": "As a developer, I need the Rust backend to detect whether Claude Code CLI is installed, so the app can show install instructions or enable the provider.",
+      "acceptanceCriteria": [
+        "Add 'claude' match arm to check_tool_installed in apps/launcher/src/tools.rs using 'which claude' (linux) / 'where claude' (windows)",
+        "Invoking check_tool_installed('claude') returns correct ToolStatus",
+        "Existing 'codex' check still works",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Generalize model types and create unified list_ai_models command",
+      "description": "As a developer, I need generic AI model types and a unified model listing command so the frontend can load models for any provider.",
+      "acceptanceCriteria": [
+        "Rename CodexModel to AiModel and CodexReasoningLevel to AiReasoningLevel in apps/launcher/src/tools.rs",
+        "Add 'provider: String' field to AiModel struct",
+        "Create list_ai_models(provider: String) Tauri command that dispatches to codex (existing ~/.codex/models_cache.json logic) or claude (hardcoded list: claude-sonnet-4-6, claude-opus-4-6, claude-haiku-4-5 with low/medium/high reasoning levels)",
+        "Remove old list_codex_models command and update invoke_handler in apps/launcher/src/lib.rs",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add provider routing and Claude subprocess to send_ai_message",
+      "description": "As a developer, I need send_ai_message to accept a provider parameter and spawn the correct CLI tool (codex or claude) with proper arguments.",
+      "acceptanceCriteria": [
+        "Add 'provider: String' parameter to send_ai_message in apps/launcher/src/tools.rs",
+        "Codex path unchanged: codex exec --json --model X -c 'model_reasoning_effort=Y' message",
+        "Claude path: claude -p --output-format stream-json --model X message",
+        "Remove CLAUDECODE env var before spawning claude to avoid nested-session error",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Normalize Claude stream-json events to existing Tauri event protocol",
+      "description": "As a developer, I need Claude's stream-json output normalized to the same Tauri events the frontend already listens for, so the UI remains provider-agnostic.",
+      "acceptanceCriteria": [
+        "Create parse_claude_event() helper in apps/launcher/src/tools.rs",
+        "Extract existing codex parsing into parse_codex_event() helper",
+        "Claude 'assistant/text' events emit ai-event-item-completed with item_type 'agent_message'",
+        "Claude 'assistant/thinking' events emit ai-event-item-completed with item_type 'reasoning'",
+        "Claude 'result' events emit ai-event-turn-completed with usage data",
+        "Dispatch to correct parser based on provider in the streaming thread",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Update frontend types for multi-provider support",
+      "description": "As a developer, I need the frontend types updated to support multiple AI providers with per-provider model configuration.",
+      "acceptanceCriteria": [
+        "Add Claude Code entry to TOOL_PROVIDERS array in apps/renderer/src/core/types/tools.ts with id 'claude', amber color theme, install instructions, and docs URL",
+        "Rename CodexModel to AiModel (add provider: string field) and CodexReasoningLevel to AiReasoningLevel",
+        "Update UserPreferences.tools.ai in apps/renderer/src/core/types/command.ts to: { activeProvider: string, providers: { [id: string]: { model?: string, reasoningEffort?: string } } }",
+        "Update Zod schema accordingly",
+        "pnpm check passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add i18n keys for multi-provider UI",
+      "description": "As a user, I want all new UI text translated so the app works in both English and Portuguese.",
+      "acceptanceCriteria": [
+        "Add keys to apps/renderer/src/locales/en.json: tools.defaultProvider, tools.selectProvider, chat.selectModel, chat.searchModels, chat.noModelsFound",
+        "Add corresponding keys to apps/renderer/src/locales/pt-BR.json",
+        "pnpm check passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Refactor useAIModels hook for multi-provider support",
+      "description": "As a developer, I need the useAIModels hook to manage multiple providers with per-provider model/reasoning persistence.",
+      "acceptanceCriteria": [
+        "Add activeProvider state and setProvider() function to useAIModels in apps/renderer/src/hooks/use-ai-models.ts",
+        "Invoke list_ai_models with { provider: activeProvider } instead of list_codex_models",
+        "selectedModel and selectedReasoning are loaded per-provider from preferences.tools.ai.providers[id]",
+        "Switching provider reloads models and restores that provider's saved preferences",
+        "Add migration: detect old flat { provider, model, reasoningEffort } format and convert to new nested format on load",
+        "pnpm check passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Refactor useAIChat hook for provider-aware messaging",
+      "description": "As a developer, I need useAIChat to pass the active provider to the backend when sending messages.",
+      "acceptanceCriteria": [
+        "Add provider to UseAIChatOptions in apps/renderer/src/hooks/use-ai-chat.ts",
+        "Pass provider to invoke('send_ai_message', { provider, message, model, reasoningEffort })",
+        "checkToolInstalled uses the active provider's tool ID instead of hardcoded 'codex'",
+        "Event listeners remain unchanged (backend normalizes events)",
+        "pnpm check passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create ModelSelector component in packages/ui",
+      "description": "As a user, I want a searchable model selector dialog with provider logos so I can quickly find and switch models.",
+      "acceptanceCriteria": [
+        "Create packages/ui/src/components/ai-elements/model-selector.tsx with compound components: ModelSelector, ModelSelectorTrigger, ModelSelectorContent, ModelSelectorInput, ModelSelectorList, ModelSelectorEmpty, ModelSelectorGroup, ModelSelectorItem, ModelSelectorName, ModelSelectorLogo, ModelSelectorLogoGroup",
+        "ModelSelector wraps Dialog, ModelSelectorContent uses Command (cmdk) for search",
+        "ModelSelectorLogo uses Lucide icons for provider logos (no emoji, no large icon library barrel imports)",
+        "Component is importable from @mrunner/ui/ai-elements/model-selector",
+        "pnpm check passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Follow the ai-elements skill reference at .claude/skills/ai-elements/references/model-selector.md and example at .claude/skills/ai-elements/scripts/model-selector.tsx"
+    },
+    {
+      "id": "US-010",
+      "title": "Integrate ModelSelector into AIChatView",
+      "description": "As a user, I want to select the AI provider and model directly from the chat input so I can switch models per conversation.",
+      "acceptanceCriteria": [
+        "Replace TOOL_PROVIDERS[0] with dynamic provider lookup based on activeProvider in apps/renderer/src/components/ai-chat/ai-chat-view.tsx",
+        "Pass provider: activeProvider to useAIChat()",
+        "Add ModelSelector trigger button in PromptInputTools area of the chat footer",
+        "ModelSelector shows models grouped by provider with search",
+        "Selecting a model updates the conversation's active model",
+        "Header shows active provider name and selected model",
+        "All text uses t() function for i18n",
+        "pnpm check passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Update ToolsSettingsTab with default provider selector",
+      "description": "As a user, I want to set my default AI provider in Settings so new conversations use my preferred provider.",
+      "acceptanceCriteria": [
+        "Add 'Default Provider' select dropdown at the top of apps/renderer/src/components/settings/tools-tab.tsx",
+        "Show installation status for both codex and claude providers",
+        "Model and reasoning selectors update when active provider changes",
+        "Each provider's model and reasoning preferences are persisted independently",
+        "All text uses t() function for i18n",
+        "pnpm check passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

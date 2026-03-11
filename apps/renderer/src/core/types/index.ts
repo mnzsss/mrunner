@@ -20,11 +20,15 @@ export type {
 	UrlAction,
 	UserDirectory,
 	UserPreferences,
-	ValidatedPluginConfig,
 } from './command'
+export type { ValidatedPluginConfig } from './plugin-loader'
 export {
+	CommandIconSchema,
 	FolderConfigSchema,
 	FoldersConfigSchema,
+	UserPreferencesSchema,
+} from './command'
+export {
 	isDialogAction,
 	isFunctionAction,
 	isInputAction,
@@ -33,10 +37,11 @@ export {
 	isShellAction,
 	isSubmenuAction,
 	isUrlAction,
+} from './command-guards'
+export {
 	PluginConfigSchema,
 	parsePluginConfig,
 	pluginToCommand,
 	safeParsePluginConfig,
-	UserPreferencesSchema,
 	validatePluginConfig,
-} from './command'
+} from './plugin-loader'

@@ -1,65 +1,65 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mrunner.app/schemas/command.schema.json",
-  "title": "MRunner Plugin Command Config",
-  "description": "Configuration file for a single command within an MRunner plugin",
-  "type": "object",
-  "required": ["title", "mode"],
-  "additionalProperties": false,
-  "properties": {
-    "title": {
-      "type": "string",
-      "description": "Human-readable display name of the command"
-    },
-    "description": {
-      "type": "string",
-      "description": "Short description of what the command does"
-    },
-    "icon": {
-      "type": "string",
-      "description": "Icon name from MRunner's predefined icon set",
-      "enum": [
-        "search",
-        "calculator",
-        "globe",
-        "bookmark",
-        "clipboard",
-        "settings",
-        "power",
-        "folder",
-        "terminal",
-        "music",
-        "code",
-        "file",
-        "hash",
-        "cpu",
-        "monitor",
-        "wifi",
-        "bluetooth",
-        "volume",
-        "sun",
-        "moon",
-        "download",
-        "file-text",
-        "image",
-        "video",
-        "folder-plus",
-        "folder-cog",
-        "github"
-      ]
-    },
-    "mode": {
-      "type": "string",
-      "description": "Execution mode: list returns a list of items, detail returns markdown content, action executes immediately",
-      "enum": ["list", "detail", "action"]
-    },
-    "keywords": {
-      "type": "array",
-      "description": "Additional search keywords to improve discoverability in the command palette",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    }
-  }
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://mrunner.app/schemas/command.schema.json",
+	"title": "MRunner Plugin Command Config",
+	"description": "Configuration file for a single command within an MRunner plugin",
+	"type": "object",
+	"required": ["title", "mode"],
+	"additionalProperties": false,
+	"properties": {
+		"title": {
+			"type": "string",
+			"description": "Human-readable display name of the command"
+		},
+		"description": {
+			"type": "string",
+			"description": "Short description of what the command does"
+		},
+		"icon": {
+			"type": "string",
+			"description": "Icon name from MRunner's predefined icon set",
+			"enum": [
+				"search",
+				"calculator",
+				"globe",
+				"bookmark",
+				"clipboard",
+				"settings",
+				"power",
+				"folder",
+				"terminal",
+				"music",
+				"code",
+				"file",
+				"hash",
+				"cpu",
+				"monitor",
+				"wifi",
+				"bluetooth",
+				"volume",
+				"sun",
+				"moon",
+				"download",
+				"file-text",
+				"image",
+				"video",
+				"folder-plus",
+				"folder-cog",
+				"github"
+			]
+		},
+		"mode": {
+			"type": "string",
+			"description": "Execution mode: list returns a list of items, detail returns markdown content, action executes immediately",
+			"enum": ["list", "detail", "action"]
+		},
+		"keywords": {
+			"type": "array",
+			"description": "Additional search keywords to improve discoverability in the command palette",
+			"items": {
+				"type": "string"
+			},
+			"uniqueItems": true
+		}
+	}
 }

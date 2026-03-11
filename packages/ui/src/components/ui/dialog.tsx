@@ -1,5 +1,3 @@
-'use client'
-
 import type * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Cancel01Icon } from '@hugeicons/core-free-icons'
@@ -32,7 +30,7 @@ function DialogOverlay({
 		<DialogPrimitive.Backdrop
 			data-slot="dialog-overlay"
 			className={cn(
-				'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/80 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50',
+				'data-open:fade-in-0 data-closed:fade-out-0 glass-subtle fixed inset-0 isolate z-50 bg-black/50 duration-100 data-closed:animate-out data-open:animate-in supports-backdrop-filter:backdrop-blur-xs',
 				className,
 			)}
 			{...props}
@@ -48,21 +46,16 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
 	showCloseButton?: boolean
 }) {
-	const handleClick = (e: React.MouseEvent) => {
-		e.stopPropagation()
-	}
-
 	return (
 		<DialogPortal>
-			<DialogOverlay onClick={handleClick} />
+			<DialogOverlay />
 			<DialogPrimitive.Popup
 				data-slot="dialog-content"
-				{...props}
 				className={cn(
-					'bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/5 grid max-w-[calc(100%-2rem)] gap-6 rounded-4xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none',
+					'data-open:fade-in-0 data-open:zoom-in-95 data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-4xl bg-background p-6 text-sm outline-none ring-1 ring-foreground/5 duration-100 data-closed:animate-out data-open:animate-in sm:max-w-md',
 					className,
 				)}
-				onClick={handleClick}
+				{...props}
 			>
 				{children}
 				{showCloseButton && (
@@ -89,7 +82,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
 	return (
 		<div
 			data-slot="dialog-header"
-			className={cn('gap-2 flex flex-col', className)}
+			className={cn('flex flex-col gap-2', className)}
 			{...props}
 		/>
 	)
@@ -107,7 +100,7 @@ function DialogFooter({
 		<div
 			data-slot="dialog-footer"
 			className={cn(
-				'gap-2 flex flex-col-reverse sm:flex-row sm:justify-end',
+				'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
 				className,
 			)}
 			{...props}
@@ -126,7 +119,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
 	return (
 		<DialogPrimitive.Title
 			data-slot="dialog-title"
-			className={cn('text-base leading-none font-medium', className)}
+			className={cn('font-medium text-base leading-none', className)}
 			{...props}
 		/>
 	)
@@ -140,7 +133,7 @@ function DialogDescription({
 		<DialogPrimitive.Description
 			data-slot="dialog-description"
 			className={cn(
-				'text-muted-foreground *:[a]:hover:text-foreground text-sm *:[a]:underline *:[a]:underline-offset-3',
+				'text-muted-foreground text-sm *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground',
 				className,
 			)}
 			{...props}
