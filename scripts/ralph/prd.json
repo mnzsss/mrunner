@@ -1,0 +1,192 @@
+{
+  "project": "MRunner",
+  "branchName": "feat/plugin-system",
+  "description": "Native GitHub Plugin - A built-in MRunner plugin that uses the gh CLI to browse repositories, PRs, issues, and workflow runs from the command palette. Introduces PluginTier::Native for plugins implemented directly in Rust, bypassing the Node.js process runner while reusing the existing frontend PluginCommandView.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add PluginTier::Native variant to plugins.rs",
+      "description": "As a developer, I need a Native variant in the PluginTier enum so the system can distinguish built-in Rust plugins from Tier 1 JSON and Tier 2 scriptable plugins.",
+      "acceptanceCriteria": [
+        "Add Native variant to the PluginTier enum in apps/launcher/src/plugins.rs",
+        "Make script_path field on RegisteredCommand an Option<PathBuf> instead of PathBuf (native commands have no script file)",
+        "Update all existing code that constructs or accesses script_path to handle Option (load_scriptable_plugin, run_plugin_command, etc.)",
+        "Ensure serde serialization still works (camelCase rename, Option serializes as null)",
+        "cargo check -p mrunner passes with no warnings related to these changes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "The PluginTier enum is at plugins.rs:48. RegisteredCommand is at plugins.rs:62. script_path is used in run_plugin_command() when spawning the child process \u2014 the None case will be handled in US-003 when native dispatch is wired up. For now just make it compile."
+    },
+    {
+      "id": "US-002",
+      "title": "Create github.rs module with models, gh_exec helper, and command scaffolds",
+      "description": "As a developer, I need the github.rs module with shared infrastructure (gh CLI executor, serde models for gh JSON output) and stub functions for each command so the module compiles and can be wired in.",
+      "acceptanceCriteria": [
+        "Create apps/launcher/src/github.rs module",
+        "Add mod github to lib.rs",
+        "Implement async fn gh_exec(args: &[&str]) -> Result<String, String> that spawns gh with given args, captures stdout/stderr, returns Ok(stdout) or Err(stderr)",
+        "Define serde Deserialize structs for gh CLI JSON output: GhRepo (name, owner as nested {login}, description, url, isPrivate, stargazerCount, updatedAt), GhSearchRepo (fullName, description, url, stargazerCount), GhPr and GhIssue (number, title, repository as nested {nameWithOwner}, url, createdAt), GhRun (databaseId, displayTitle, status, conclusion, url, createdAt), GhRepoListItem (nameWithOwner)",
+        "Implement pub fn register() -> RegisteredPlugin that returns a RegisteredPlugin with plugin_id 'github', plugin_name 'GitHub', tier Native, runtime 'native', and RegisteredCommand entries for: cmd_hub, cmd_repos, cmd_prs, cmd_issues, cmd_actions (all with script_path: None, mode: List)",
+        "Implement pub async fn run_command(command_id: &str, context: &serde_json::Value) -> Result<serde_json::Value, String> that matches on command_id suffix and returns empty list results as placeholder (Ok(json!({\"items\": []})))",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Use tokio::process::Command for gh_exec. The command_id format is 'github:cmd_hub', 'github:cmd_repos', etc. The register() function builds the full RegisteredPlugin struct matching the existing pattern. Use serde_json::json! macro for placeholder returns. Hub command keywords: ['gh', 'git']. Repos keywords: ['repositories']. PRs keywords: ['pull requests', 'merge']. Issues keywords: ['bugs', 'tickets']. Actions keywords: ['ci', 'cd', 'workflows', 'runs']. All command icons should be 'github' (will be added to frontend in US-009)."
+    },
+    {
+      "id": "US-003",
+      "title": "Wire native plugins into discover_plugins and run_plugin_command",
+      "description": "As a developer, I need the plugin system to include native plugins in discovery and route their execution through the Rust module instead of spawning a child process.",
+      "acceptanceCriteria": [
+        "In discover_plugins() in plugins.rs, append github::register() to the returned Vec<RegisteredPlugin>",
+        "In run_plugin_command() in plugins.rs (or lib.rs \u2014 wherever the Tauri command is), add a match arm: if the resolved plugin's tier is PluginTier::Native, call github::run_command(command_id, context).await instead of spawning a child process",
+        "The existing Scriptable tier path remains unchanged",
+        "Verify that invoking discover_plugins from frontend would now include the GitHub plugin",
+        "Verify that invoking run_plugin_command with command_id 'github:cmd_hub' returns the placeholder empty list",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "run_plugin_command is a #[tauri::command] in lib.rs. It looks up the plugin from PluginState, then calls run_plugin_command_internal in plugins.rs. The tier match should happen in run_plugin_command_internal before the child process spawn. The script_path being None is fine because native tier never reaches the spawn code path."
+    },
+    {
+      "id": "US-004",
+      "title": "Implement cmd_hub - GitHub hub menu with push navigation",
+      "description": "As a user, I want a top-level 'GitHub' command in MRunner that shows a menu of sub-commands (Repos, PRs, Issues, Actions) so I can navigate to any GitHub feature.",
+      "acceptanceCriteria": [
+        "Implement cmd_hub in github.rs that returns a ListResult with 4 items: Repositories, Pull Requests, Issues, Workflow Runs",
+        "Each item has: title, subtitle with brief description, icon 'github', and a primary action of type 'push' targeting the respective command ID (e.g., {type: 'push', commandId: 'github:cmd_repos'})",
+        "Items appear regardless of query (hub is a static menu)",
+        "If query is non-empty, filter items client-side by title match (case-insensitive contains)",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "The push action type is already supported in the frontend's execute-plugin-action.ts. The ListResult format matches what PluginCommandView expects: {items: [{id, title, subtitle, icon, accessories, actions}]}. Each action: {type: 'push', commandId: 'github:cmd_repos'}."
+    },
+    {
+      "id": "US-005",
+      "title": "Implement cmd_repos - list and search repositories",
+      "description": "As a user, I want to browse my GitHub repositories and search for any public repo so I can quickly open them in the browser.",
+      "acceptanceCriteria": [
+        "When query is empty: run 'gh repo list --json name,owner,description,url,isPrivate,stargazerCount,updatedAt -L 30' and return results as ListItems",
+        "When query is non-empty: run 'gh search repos <query> --json fullName,description,url,stargazerCount -L 20' and return results as ListItems",
+        "Each ListItem has: id (repo full name), title (repo name or fullName), subtitle (description or empty), icon 'github'",
+        "Each ListItem has accessories showing star count and private/public badge where applicable",
+        "Primary action on each item: {type: 'url', url: <repo_url>} to open in browser",
+        "Handle gh CLI errors gracefully (return error string, don't panic)",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "The owner field from gh repo list is a nested object {login: 'username'}. Construct fullName as '{owner.login}/{name}'. For accessories, use the format [{text: '\u2605 42'}, {text: 'Private', tag: 'warning'}] or similar based on existing Accessory type in the SDK. Parse gh JSON output using serde_json::from_str with the GhRepo/GhSearchRepo structs."
+    },
+    {
+      "id": "US-006",
+      "title": "Implement cmd_prs - list open Pull Requests",
+      "description": "As a user, I want to see my open pull requests across all repos so I can quickly jump to any PR.",
+      "acceptanceCriteria": [
+        "Run 'gh search prs --author=@me --state=open --json number,title,repository,url,createdAt -L 30'",
+        "If query is non-empty, add the query as search terms to the gh command",
+        "Return results as ListItems with: id (unique), title (PR title), subtitle (repo#number), icon 'github'",
+        "Each ListItem has accessories showing the created date in relative format (e.g., '2d ago')",
+        "Primary action: {type: 'url', url: <pr_url>}",
+        "Handle gh CLI errors gracefully",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "The repository field from gh search prs is a nested object {nameWithOwner: 'owner/repo'}. For relative date formatting, compute the difference from now in Rust using chrono or manual arithmetic. Format: '2h ago', '3d ago', '1w ago'. If chrono is not in Cargo.toml, either add it or use a simple manual calculation."
+    },
+    {
+      "id": "US-007",
+      "title": "Implement cmd_issues - list open Issues",
+      "description": "As a user, I want to see my open issues across all repos so I can quickly jump to any issue.",
+      "acceptanceCriteria": [
+        "Run 'gh search issues --author=@me --state=open --json number,title,repository,url,createdAt -L 30'",
+        "If query is non-empty, add the query as search terms to the gh command",
+        "Return results as ListItems with: id (unique), title (issue title), subtitle (repo#number), icon 'github'",
+        "Each ListItem has accessories showing the created date in relative format",
+        "Primary action: {type: 'url', url: <issue_url>}",
+        "Handle gh CLI errors gracefully",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "This is structurally identical to cmd_prs (US-006). The gh command differs only in 'issues' vs 'prs'. Consider extracting a shared helper for formatting PR/issue items since the JSON shape is the same (GhPr and GhIssue use the same struct)."
+    },
+    {
+      "id": "US-008",
+      "title": "Implement cmd_actions - list recent workflow runs",
+      "description": "As a user, I want to see recent CI/CD workflow runs across my repos so I can monitor build status and jump to failing runs.",
+      "acceptanceCriteria": [
+        "Fetch recent repos: 'gh repo list --json nameWithOwner -L 5' to get the user's 5 most recent repos",
+        "For each repo, fetch runs: 'gh run list --repo <nameWithOwner> --json databaseId,displayTitle,status,conclusion,url,createdAt -L 3'",
+        "Run repo fetches concurrently using tokio::join or similar",
+        "Return combined results as ListItems sorted by createdAt descending",
+        "Each ListItem has: title (run display title), subtitle (repo name), icon 'github'",
+        "Accessories show status badge: success (green 'Passed'), failure (red 'Failed'), in_progress (yellow 'Running'), other (gray status text)",
+        "Primary action: {type: 'url', url: <run_url>}",
+        "If query is non-empty, filter results by title/repo containing the query",
+        "Handle gh CLI errors gracefully (if one repo fails, still show others)",
+        "cargo check -p mrunner passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Use futures::future::join_all or tokio::join! to run the per-repo gh commands concurrently. If futures crate is not in Cargo.toml, add it or use tokio::spawn + JoinHandle. The conclusion field is null for in-progress runs \u2014 check status field too. Sorting: parse createdAt as a datetime string and sort descending."
+    },
+    {
+      "id": "US-009",
+      "title": "Add github icon to frontend ICON_MAP and types",
+      "description": "As a developer, I need the 'github' icon value to be recognized by the frontend so native plugin commands render their icon correctly.",
+      "acceptanceCriteria": [
+        "Add 'github' entry to ICON_MAP in apps/renderer/src/lib/constants.ts, mapping to the Lucide Github icon component",
+        "Add 'github' to the CommandIcon type union in apps/renderer/src/core/types/command.ts (if it's a string literal union)",
+        "Add 'github' to the icon enum in packages/plugin/schemas/command.schema.json",
+        "Add 'github' to the icon enum in packages/plugin/schemas/plugin.schema.json",
+        "Verify the Github icon is available from lucide-react (import { Github } from 'lucide-react')",
+        "pnpm check passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "ICON_MAP in constants.ts maps string keys to Lucide icon components. The existing pattern is like: { terminal: Terminal, globe: Globe, ... }. Lucide has a Github icon. Check the exact import name \u2014 it might be 'Github' or 'GithubIcon'. The CommandIcon type may be inferred from ICON_MAP keys rather than a separate union \u2014 check the actual implementation."
+    },
+    {
+      "id": "US-010",
+      "title": "Add native tier type to use-plugins.ts",
+      "description": "As a frontend developer, I need the TypeScript types in use-plugins.ts to recognize the 'native' plugin tier so native plugins from discover_plugins are properly typed.",
+      "acceptanceCriteria": [
+        "Add 'native' to the PluginTier type in apps/renderer/src/hooks/use-plugins.ts (alongside 'json' and 'scriptable')",
+        "Ensure the RegisteredCommand TypeScript type has script_path as optional (string | null) to match the Rust Option<PathBuf>",
+        "Verify that native plugins from discover_plugins flow through to the command palette without errors",
+        "No filtering or special-casing of native tier needed \u2014 they should behave identically to scriptable plugins from the frontend's perspective",
+        "pnpm check passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "The PluginTier type in use-plugins.ts mirrors the Rust enum. Since Rust serializes with camelCase rename_all, the value will be 'native' (lowercase). The scriptPath field will be null for native commands. Check if any frontend code assumes scriptPath is always present and guard accordingly."
+    },
+    {
+      "id": "US-011",
+      "title": "Add native plugin section to plugins-tab with validate and setup instructions",
+      "description": "As a user, I want to see native plugins (like GitHub) in the Settings Plugins tab with a validation button that checks if gh CLI is installed and authenticated, showing setup instructions if not.",
+      "acceptanceCriteria": [
+        "Add a 'Native Plugins' section to apps/renderer/src/components/settings/plugins-tab.tsx, visually separated from the existing scriptable plugins sections",
+        "Show the GitHub plugin with its name, description, and icon",
+        "Add a 'Validate' button that invokes a new Tauri command validate_native_plugin(plugin_id: String)",
+        "Create the validate_native_plugin Tauri command in lib.rs that for plugin_id 'github': runs 'gh --version' and 'gh auth status', returns JSON with {installed: bool, authenticated: bool, version: string|null, error: string|null}",
+        "Register validate_native_plugin in the invoke_handler",
+        "Display validation results: green checkmark badge if both installed and authenticated, yellow warning if installed but not authenticated, red X if not installed",
+        "Show setup instructions when validation fails: link to https://cli.github.com for installation, 'gh auth login' command for authentication",
+        "Add i18n keys for all new labels to en.json and pt-BR.json",
+        "cargo check -p mrunner passes",
+        "pnpm check passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "The plugins-tab.tsx already has sections for browsing and managing scriptable plugins. Add the native section above or below with clear visual distinction (e.g., a 'Built-in Plugins' heading). The validate_native_plugin command runs gh CLI directly via tokio::process::Command (same pattern as gh_exec in github.rs \u2014 consider reusing it). For the frontend, use a useState for validation results and show loading state while validating. Follow existing UI patterns from the plugins tab (badges, buttons, etc.)."
+    }
+  ]
+}

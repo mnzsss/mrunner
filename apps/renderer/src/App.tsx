@@ -1,7 +1,13 @@
+import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { homeDir } from '@tauri-apps/api/path'
+import { sendNotification } from '@tauri-apps/plugin-notification'
 import { lazy, useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
-import { CommandPalette } from '@/components/command-palette'
+import type { Command } from '@/commands/types'
+import { isScriptableAction } from '@/commands/types'
+import { CommandPalette, PluginCommandView } from '@/components/command-palette'
 import { SettingsSheet } from '@/components/settings/settings-sheet'
 import {
 	useBookmarkSearch,
@@ -34,7 +40,11 @@ const FolderManager = lazy(() =>
 
 function App() {
 	const [query, setQuery] = useState('')
+	const [activeScriptableCommand, setActiveScriptableCommand] =
+		useState<Command | null>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
+
+	const { t, i18n } = useTranslation()
 
 	// Core data hooks
 	const { commands, executeCommand, folderActions } = useCommands()
@@ -53,6 +63,7 @@ function App() {
 	const { hideWindow } = useWindowManager({
 		onQueryReset: () => {
 			setQuery('')
+			setActiveScriptableCommand(null)
 			requestAnimationFrame(() => inputRef.current?.focus())
 		},
 		activeDialogs: dialogManager.activeDialogs,
@@ -128,13 +139,75 @@ function App() {
 				return
 			}
 
+			// Handle scriptable plugin actions
+			if (isScriptableAction(command.action)) {
+				const { commandId: pluginCommandId, mode } = command.action
+				if (mode === 'action') {
+					try {
+						const home = await homeDir()
+						await invoke('run_plugin_command', {
+							commandId: pluginCommandId,
+							context: {
+								query,
+								preferences: {},
+								environment: {
+									locale: i18n.language,
+									theme: 'dark',
+									platform: 'linux',
+									homeDir: home,
+								},
+							},
+						})
+						await sendNotification({
+							title: command.name,
+							body: t('plugins.success'),
+						})
+					} catch (e) {
+						console.error('Plugin action failed:', e)
+						await sendNotification({
+							title: command.name,
+							body: t('plugins.error'),
+						})
+					}
+					await hideWindow()
+					return
+				}
+				// list or detail mode: transition to sub-view
+				setQuery('')
+				setActiveScriptableCommand(command)
+				return
+			}
+
 			await executeCommand(command)
 
 			if (command.closeAfterRun !== false) {
 				await hideWindow()
 			}
 		},
-		[allItems, executeCommand, hideWindow, openBookmark, dialogManager],
+		[
+			allItems,
+			executeCommand,
+			hideWindow,
+			openBookmark,
+			dialogManager,
+			query,
+			i18n.language,
+			t,
+		],
+	)
+
+	const handlePushCommand = useCallback(
+		(pluginCommandId: string) => {
+			const target = allItems.find(
+				(c) =>
+					isScriptableAction(c.action) &&
+					c.action.commandId === pluginCommandId,
+			)
+			if (!target) return
+			setQuery('')
+			setActiveScriptableCommand(target)
+		},
+		[allItems],
 	)
 
 	return (
@@ -182,21 +255,36 @@ function App() {
 				onOpenChange={dialogManager.handleSettingsOpenChange}
 			/>
 
-			<CommandPalette
-				query={query}
-				onQueryChange={setQuery}
-				inputRef={inputRef}
-				bookmarks={bookmarks}
-				groupedCommands={groupedCommands}
-				allItems={allItems}
-				commandFilter={commandFilter}
-				onSelect={handleSelect}
-				onAddBookmark={() => dialogManager.setIsAddBookmarkOpen(true)}
-				onOpenBookmark={openBookmark}
-				onHideWindow={hideWindow}
-				executeCommand={executeCommand}
-				onOpenFolderManager={() => dialogManager.setIsFolderManagerOpen(true)}
-			/>
+			{activeScriptableCommand ? (
+				<PluginCommandView
+					command={activeScriptableCommand}
+					query={query}
+					onQueryChange={setQuery}
+					inputRef={inputRef}
+					onPushCommand={handlePushCommand}
+					onBack={() => {
+						setActiveScriptableCommand(null)
+						setQuery('')
+						requestAnimationFrame(() => inputRef.current?.focus())
+					}}
+				/>
+			) : (
+				<CommandPalette
+					query={query}
+					onQueryChange={setQuery}
+					inputRef={inputRef}
+					bookmarks={bookmarks}
+					groupedCommands={groupedCommands}
+					allItems={allItems}
+					commandFilter={commandFilter}
+					onSelect={handleSelect}
+					onAddBookmark={() => dialogManager.setIsAddBookmarkOpen(true)}
+					onOpenBookmark={openBookmark}
+					onHideWindow={hideWindow}
+					executeCommand={executeCommand}
+					onOpenFolderManager={() => dialogManager.setIsFolderManagerOpen(true)}
+				/>
+			)}
 		</div>
 	)
 }

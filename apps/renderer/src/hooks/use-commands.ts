@@ -76,7 +76,8 @@ export function useCommands(): UseCommandsReturn {
 
 					case 'input':
 					case 'submenu':
-					case 'dialog': {
+					case 'dialog':
+					case 'scriptable': {
 						return { success: true }
 					}
 

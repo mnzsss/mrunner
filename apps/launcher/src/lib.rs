@@ -1,6 +1,8 @@
 mod bookmarks;
 mod chrome;
+pub mod github;
 mod platform;
+pub mod plugins;
 mod shortcuts;
 
 use std::process::Command;
@@ -14,6 +16,8 @@ use tauri::{
 use tauri_plugin_autostart::MacosLauncher;
 
 use shortcuts::{load_saved_shortcuts, RegisteredShortcuts};
+
+type PluginRegistry = Mutex<Vec<plugins::RegisteredPlugin>>;
 
 fn is_command_allowed(cmd: &str) -> bool {
     let executable = cmd.split_whitespace().next().unwrap_or("");
@@ -87,6 +91,123 @@ fn toggle_autostart(app: tauri::AppHandle, enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn discover_plugins(
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<Vec<plugins::RegisteredPlugin>, String> {
+    let discovered = plugins::discover_plugins();
+    *state.lock().map_err(|e| e.to_string())? = discovered.clone();
+    Ok(discovered)
+}
+
+#[tauri::command]
+async fn run_plugin_command(
+    command_id: String,
+    context: serde_json::Value,
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<serde_json::Value, String> {
+    let (plugin, command) = {
+        let registry = state.lock().map_err(|e| e.to_string())?;
+        let (p, c) = plugins::find_command(&registry, &command_id).ok_or_else(|| {
+            format!(
+                "Plugin command '{}' not found — run discover_plugins first",
+                command_id
+            )
+        })?;
+        (p.clone(), c.clone())
+    };
+    plugins::run_plugin_command(&plugin, &command, context).await
+}
+
+#[tauri::command]
+async fn prepare_plugin_install(git_url: String) -> Result<plugins::PluginPreviewInfo, String> {
+    plugins::prepare_plugin_install(&git_url)
+}
+
+#[tauri::command]
+async fn complete_plugin_install(
+    temp_path: String,
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<Vec<plugins::RegisteredPlugin>, String> {
+    plugins::complete_plugin_install(&temp_path)?;
+    let discovered = plugins::discover_plugins();
+    *state.lock().map_err(|e| e.to_string())? = discovered.clone();
+    Ok(discovered)
+}
+
+#[tauri::command]
+async fn cancel_plugin_install(temp_path: String) {
+    plugins::cancel_plugin_install(&temp_path);
+}
+
+#[tauri::command]
+async fn check_plugin_updates(
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<Vec<plugins::UpdateResult>, String> {
+    let plugins = state.lock().map_err(|e| e.to_string())?.clone();
+    let results = plugins::check_plugin_updates(&plugins);
+    Ok(results)
+}
+
+#[derive(serde::Serialize)]
+struct NativePluginValidation {
+    installed: bool,
+    authenticated: bool,
+    version: Option<String>,
+    error: Option<String>,
+}
+
+#[tauri::command]
+async fn validate_native_plugin(plugin_id: String) -> Result<NativePluginValidation, String> {
+    if plugin_id != "github" {
+        return Err(format!("Unknown native plugin: {}", plugin_id));
+    }
+
+    let version_output = tokio::process::Command::new("gh")
+        .args(["--version"])
+        .output()
+        .await;
+
+    let (installed, version) = match version_output {
+        Ok(out) if out.status.success() => {
+            let raw = String::from_utf8_lossy(&out.stdout).to_string();
+            let ver = raw.lines().next().unwrap_or("").to_string();
+            (true, Some(ver))
+        }
+        _ => (false, None),
+    };
+
+    if !installed {
+        return Ok(NativePluginValidation {
+            installed: false,
+            authenticated: false,
+            version: None,
+            error: Some("gh CLI is not installed".to_string()),
+        });
+    }
+
+    let auth_output = tokio::process::Command::new("gh")
+        .args(["auth", "status"])
+        .output()
+        .await;
+
+    let authenticated = match auth_output {
+        Ok(out) => out.status.success(),
+        Err(_) => false,
+    };
+
+    Ok(NativePluginValidation {
+        installed: true,
+        authenticated,
+        version,
+        error: if !authenticated {
+            Some("Not authenticated. Run 'gh auth login'.".to_string())
+        } else {
+            None
+        },
+    })
+}
+
+#[tauri::command]
 fn hide_main_window(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         shortcuts::unfocus_window(&window);
@@ -99,6 +220,7 @@ pub fn run() {
         .manage(Mutex::new(RegisteredShortcuts {
             registered: vec![],
         }))
+        .manage(Mutex::new(Vec::<plugins::RegisteredPlugin>::new()))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -210,6 +332,13 @@ pub fn run() {
             bookmarks::bookmark_list_tags,
             bookmarks::bookmark_rename_tag,
             bookmarks::bookmark_delete_tag,
+            discover_plugins,
+            run_plugin_command,
+            prepare_plugin_install,
+            complete_plugin_install,
+            cancel_plugin_install,
+            check_plugin_updates,
+            validate_native_plugin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

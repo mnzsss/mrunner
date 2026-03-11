@@ -10,6 +10,7 @@ export type CommandAction =
 	| SubmenuAction
 	| InputAction
 	| DialogAction
+	| ScriptableAction
 
 export interface Bookmark {
 	index: number
@@ -35,6 +36,15 @@ export interface DialogAction {
 	type: 'dialog'
 	dialog: DialogType
 	bookmark?: Bookmark
+}
+
+export type CommandMode = 'list' | 'detail' | 'action'
+
+export interface ScriptableAction {
+	type: 'scriptable'
+	commandId: string
+	mode: CommandMode
+	pluginName: string
 }
 
 export interface ShellAction {
@@ -96,6 +106,7 @@ export type CommandIcon =
 	| 'video'
 	| 'folder-plus'
 	| 'folder-cog'
+	| 'github'
 
 // User directory returned from backend
 export interface UserDirectory {
@@ -181,6 +192,12 @@ export function isDialogAction(action: CommandAction): action is DialogAction {
 	return action.type === 'dialog'
 }
 
+export function isScriptableAction(
+	action: CommandAction,
+): action is ScriptableAction {
+	return action.type === 'scriptable'
+}
+
 // Zod schemas for plugin validation
 const CommandIconSchema = z.enum([
 	'search',
@@ -209,6 +226,7 @@ const CommandIconSchema = z.enum([
 	'video',
 	'folder-plus',
 	'folder-cog',
+	'github',
 ])
 
 // Schema for folder configuration
@@ -227,6 +245,9 @@ export interface UserPreferences {
 	customFolders: FolderConfig[]
 	hiddenSystemFolders: string[]
 	shortcuts: ShortcutsSettings
+	plugins?: {
+		disabledPlugins: string[]
+	}
 }
 
 // Simplified schema that doesn't require circular imports
@@ -240,6 +261,11 @@ export const UserPreferencesSchema = z.object({
 		.object({
 			shortcuts: z.array(z.any()).default([]),
 			conflictResolution: z.enum(['warn', 'block', 'allow']).default('warn'),
+		})
+		.optional(),
+	plugins: z
+		.object({
+			disabledPlugins: z.array(z.string()).default([]),
 		})
 		.optional(),
 })

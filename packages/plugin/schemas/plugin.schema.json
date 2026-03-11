@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mrunner.app/schemas/plugin.schema.json",
+  "title": "MRunner Plugin Manifest",
+  "description": "Manifest file for a scriptable MRunner plugin",
+  "type": "object",
+  "required": ["id", "name", "version", "runtime"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the plugin (kebab-case)",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable display name of the plugin"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the plugin",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of what the plugin does"
+    },
+    "author": {
+      "type": "string",
+      "description": "Name or email of the plugin author"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon name from MRunner's predefined icon set",
+      "enum": [
+        "search",
+        "calculator",
+        "globe",
+        "bookmark",
+        "clipboard",
+        "settings",
+        "power",
+        "folder",
+        "terminal",
+        "music",
+        "code",
+        "file",
+        "hash",
+        "cpu",
+        "monitor",
+        "wifi",
+        "bluetooth",
+        "volume",
+        "sun",
+        "moon",
+        "download",
+        "file-text",
+        "image",
+        "video",
+        "folder-plus",
+        "folder-cog",
+        "github"
+      ]
+    },
+    "runtime": {
+      "type": "string",
+      "description": "JavaScript/script runtime to use for executing plugin commands",
+      "enum": ["node", "deno", "bun", "python", "bash"]
+    }
+  }
+}

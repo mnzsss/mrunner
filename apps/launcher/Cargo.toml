@@ -27,6 +27,7 @@ tauri-plugin-autostart = "2"
 serde.workspace = true
 serde_json.workspace = true
 dirs.workspace = true
+tokio = { version = "1", features = ["process", "time", "io-util", "rt"] }
 bookmarks = { path = "../../packages/bookmarks" }
 shell-words = "1.1"
 chrono = "0.4"
