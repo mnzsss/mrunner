@@ -21,7 +21,7 @@ export function AddBookmarkButton({ onSelect }: AddBookmarkButtonProps) {
 				<span className="truncate font-medium text-[13px]">
 					{t('bookmarks.add')}
 				</span>
-				<span className="truncate text-muted-foreground/50 text-xs">
+				<span className="truncate text-muted-foreground/70 text-xs">
 					{t('bookmarks.addDescription')}
 				</span>
 			</div>

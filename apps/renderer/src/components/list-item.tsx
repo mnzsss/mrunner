@@ -36,7 +36,7 @@ export const ListItem = ({
 			<div className="flex min-w-0 flex-1 items-baseline gap-2">
 				<span className="truncate font-medium text-[13px]">{title}</span>
 				{description && (
-					<span className="truncate text-muted-foreground/50 text-xs">
+					<span className="truncate text-muted-foreground/70 text-xs">
 						{description}
 					</span>
 				)}
