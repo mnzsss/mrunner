@@ -98,6 +98,102 @@ interface NativeValidationResult {
 	error: string | null
 }
 
+function NativeValidationBadge({
+	validation,
+}: {
+	validation: NativeValidationResult
+}) {
+	const { t } = useTranslation()
+
+	if (validation.installed && validation.authenticated) {
+		return (
+			<Badge
+				variant="secondary"
+				className="w-fit text-green-700 text-xs dark:text-green-400"
+			>
+				✓ {t('settings.plugins.validationPassed')}
+				{validation.version ? ` — ${validation.version}` : ''}
+			</Badge>
+		)
+	}
+
+	if (validation.installed) {
+		return (
+			<Badge
+				variant="secondary"
+				className="w-fit text-xs text-yellow-700 dark:text-yellow-400"
+			>
+				⚠ {t('settings.plugins.validationWarning')}
+			</Badge>
+		)
+	}
+
+	return (
+		<Badge variant="secondary" className="w-fit text-destructive text-xs">
+			✗ {t('settings.plugins.validationFailed')}
+		</Badge>
+	)
+}
+
+function NativeValidationDetails({
+	validation,
+}: {
+	validation: NativeValidationResult
+}) {
+	const { t } = useTranslation()
+
+	if (!validation.error || (validation.installed && validation.authenticated))
+		return null
+
+	return (
+		<div className="rounded-md border bg-muted/30 p-2 text-muted-foreground text-xs">
+			<p className="mb-1 font-medium">
+				{t('settings.plugins.setupInstructions')}
+			</p>
+			{!validation.installed && <p>• {t('settings.plugins.setupInstallGh')}</p>}
+			{validation.installed && !validation.authenticated && (
+				<p>• {t('settings.plugins.setupAuthGh')}</p>
+			)}
+		</div>
+	)
+}
+
+function UpdateResultsList({ results }: { results: UpdateResult[] }) {
+	const { t } = useTranslation()
+
+	function getStatusColor(status: UpdateResult['status']) {
+		if (status === 'updated') return 'text-green-600 dark:text-green-400'
+		if (status === 'error') return 'text-destructive'
+		return 'text-muted-foreground'
+	}
+
+	function getStatusText(result: UpdateResult) {
+		if (result.status === 'updated')
+			return t('settings.plugins.updateStatusUpdated')
+		if (result.status === 'up-to-date')
+			return t('settings.plugins.updateStatusUpToDate')
+		if (result.status === 'error')
+			return `${t('settings.plugins.updateStatusError')}: ${result.message ?? ''}`
+		return t('settings.plugins.updateStatusSkipped')
+	}
+
+	return (
+		<div className="space-y-1 rounded-md border bg-muted/30 p-2">
+			{results.map((result) => (
+				<div
+					key={result.pluginId}
+					className="flex items-center justify-between px-2 py-1 text-sm"
+				>
+					<span className="font-medium">{result.pluginName}</span>
+					<span className={getStatusColor(result.status)}>
+						{getStatusText(result)}
+					</span>
+				</div>
+			))}
+		</div>
+	)
+}
+
 export function PluginsTab() {
 	const { t } = useTranslation()
 	const [plugins, setPlugins] = useState<ScriptableRegisteredPlugin[]>([])
@@ -383,49 +479,8 @@ export function PluginsTab() {
 						</ItemDescription>
 						{nativeValidation && (
 							<div className="mt-1 flex flex-col gap-1">
-								{nativeValidation.installed &&
-								nativeValidation.authenticated ? (
-									<Badge
-										variant="secondary"
-										className="w-fit text-green-700 text-xs dark:text-green-400"
-									>
-										✓ {t('settings.plugins.validationPassed')}
-										{nativeValidation.version
-											? ` — ${nativeValidation.version}`
-											: ''}
-									</Badge>
-								) : nativeValidation.installed ? (
-									<Badge
-										variant="secondary"
-										className="w-fit text-xs text-yellow-700 dark:text-yellow-400"
-									>
-										⚠ {t('settings.plugins.validationWarning')}
-									</Badge>
-								) : (
-									<Badge
-										variant="secondary"
-										className="w-fit text-destructive text-xs"
-									>
-										✗ {t('settings.plugins.validationFailed')}
-									</Badge>
-								)}
-								{nativeValidation.error &&
-									!(
-										nativeValidation.installed && nativeValidation.authenticated
-									) && (
-										<div className="rounded-md border bg-muted/30 p-2 text-muted-foreground text-xs">
-											<p className="mb-1 font-medium">
-												{t('settings.plugins.setupInstructions')}
-											</p>
-											{!nativeValidation.installed && (
-												<p>• {t('settings.plugins.setupInstallGh')}</p>
-											)}
-											{nativeValidation.installed &&
-												!nativeValidation.authenticated && (
-													<p>• {t('settings.plugins.setupAuthGh')}</p>
-												)}
-										</div>
-									)}
+								<NativeValidationBadge validation={nativeValidation} />
+								<NativeValidationDetails validation={nativeValidation} />
 							</div>
 						)}
 					</ItemContent>
@@ -780,33 +835,7 @@ export function PluginsTab() {
 				</div>
 
 				{updateResults && updateResults.length > 0 && (
-					<div className="space-y-1 rounded-md border bg-muted/30 p-2">
-						{updateResults.map((result) => (
-							<div
-								key={result.pluginId}
-								className="flex items-center justify-between px-2 py-1 text-sm"
-							>
-								<span className="font-medium">{result.pluginName}</span>
-								<span
-									className={
-										result.status === 'updated'
-											? 'text-green-600 dark:text-green-400'
-											: result.status === 'error'
-												? 'text-destructive'
-												: 'text-muted-foreground'
-									}
-								>
-									{result.status === 'updated'
-										? t('settings.plugins.updateStatusUpdated')
-										: result.status === 'up-to-date'
-											? t('settings.plugins.updateStatusUpToDate')
-											: result.status === 'error'
-												? `${t('settings.plugins.updateStatusError')}: ${result.message ?? ''}`
-												: t('settings.plugins.updateStatusSkipped')}
-								</span>
-							</div>
-						))}
-					</div>
+					<UpdateResultsList results={updateResults} />
 				)}
 			</div>
 
