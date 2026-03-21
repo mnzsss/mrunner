@@ -6,7 +6,9 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"dependencies": {
 		"@mrunner/plugin": "workspace:*",
@@ -39,12 +41,16 @@
 	"devDependencies": {
 		"@sentry/vite-plugin": "^3.3.0",
 		"@tailwindcss/vite": "^4.0.0",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
 		"@vitejs/plugin-react": "^4.3.4",
 		"babel-plugin-react-compiler": "^1.0.0",
+		"jsdom": "^29.0.1",
 		"tailwindcss": "^4",
 		"typescript": "^5",
-		"vite": "^7"
+		"vite": "^7",
+		"vitest": "^4.1.0"
 	}
 }

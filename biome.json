@@ -98,7 +98,8 @@
 			"includes": [
 				"apps/renderer/src/core/types/tools.ts",
 				"apps/renderer/src/hooks/use-platform.ts",
-				"apps/renderer/src/lib/hotkey-adapter.ts"
+				"apps/renderer/src/lib/hotkey-adapter.ts",
+				"**/__tests__/**"
 			],
 			"linter": {
 				"rules": {
