@@ -36,7 +36,7 @@ pub struct GhSearchRepo {
     pub full_name: String,
     pub description: Option<String>,
     pub url: String,
-    pub stargazer_count: u64,
+    pub stargazers_count: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -227,24 +227,49 @@ async fn cmd_repos(context: &serde_json::Value) -> Result<serde_json::Value, Str
             })
             .collect::<Vec<_>>()
     } else {
-        let stdout = gh_exec(&[
-            "search",
-            "repos",
-            &query,
-            "--json",
-            "fullName,description,url,stargazerCount",
-            "-L",
-            "20",
-        ])
-        .await?;
+        let search_handle = tokio::spawn(gh_exec_owned(vec![
+            "search".to_string(),
+            "repos".to_string(),
+            query,
+            "--json".to_string(),
+            "fullName,description,url,stargazersCount".to_string(),
+            "-L".to_string(),
+            "20".to_string(),
+        ]));
+        let user_handle = tokio::spawn(gh_exec_owned(vec![
+            "api".to_string(),
+            "user".to_string(),
+            "--jq".to_string(),
+            ".login".to_string(),
+        ]));
 
-        let repos: Vec<GhSearchRepo> = serde_json::from_str(&stdout)
+        let stdout = search_handle
+            .await
+            .map_err(|e| format!("Search task failed: {}", e))??;
+        let username = user_handle
+            .await
+            .map_err(|e| format!("User task failed: {}", e))
+            .ok()
+            .and_then(|r| r.ok())
+            .map(|s| s.trim().to_string())
+            .unwrap_or_default();
+
+        let mut repos: Vec<GhSearchRepo> = serde_json::from_str(&stdout)
             .map_err(|e| format!("Failed to parse search repos: {}", e))?;
+
+        if !username.is_empty() {
+            let prefix = format!("{}/", username);
+            repos.sort_by(|a, b| {
+                let a_owned = a.full_name.starts_with(&prefix);
+                let b_owned = b.full_name.starts_with(&prefix);
+                b_owned.cmp(&a_owned)
+            });
+        }
 
         repos
             .into_iter()
             .map(|r| {
-                let accessories = vec![json!({ "text": format!("★ {}", r.stargazer_count) })];
+                let accessories = vec![json!({ "text": format!("★ {}", r.stargazers_count) })];
                 json!({
                     "id": r.full_name,
                     "title": r.full_name,
