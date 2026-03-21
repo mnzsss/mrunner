@@ -118,16 +118,21 @@ function App() {
 		}
 	}, [dialogManager])
 
+	const handleBookmarkSelect = useCallback(
+		async (commandId: string): Promise<boolean> => {
+			if (!commandId.startsWith('bookmark-')) return false
+			const bookmarkIndex = parseInt(commandId.replace('bookmark-', ''), 10)
+			if (Number.isNaN(bookmarkIndex)) return false
+			await openBookmark(bookmarkIndex)
+			await hideWindow()
+			return true
+		},
+		[openBookmark, hideWindow],
+	)
+
 	const handleSelect = useCallback(
 		async (commandId: string) => {
-			if (commandId.startsWith('bookmark-')) {
-				const bookmarkIndex = parseInt(commandId.replace('bookmark-', ''), 10)
-				if (!Number.isNaN(bookmarkIndex)) {
-					await openBookmark(bookmarkIndex)
-					await hideWindow()
-					return
-				}
-			}
+			if (await handleBookmarkSelect(commandId)) return
 
 			const command = allItems.find((c) => c.id === commandId)
 			if (!command) return
@@ -190,8 +195,8 @@ function App() {
 		[
 			allItems,
 			executeCommand,
+			handleBookmarkSelect,
 			hideWindow,
-			openBookmark,
 			dialogManager,
 			query,
 			i18n.language,
