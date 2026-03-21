@@ -241,6 +241,11 @@
 		"errorNotInstalled": "Ferramenta de IA não disponível.",
 		"selectModel": "Selecionar modelo",
 		"searchModels": "Buscar modelos...",
-		"noModelsFound": "Nenhum modelo encontrado."
+		"noModelsFound": "Nenhum modelo encontrado.",
+		"commandNotAvailable": "Execução de comandos não está disponível para este provedor.",
+		"selectDirectory": "Diretório de Trabalho",
+		"selectDirectoryDescription": "Insira o caminho da pasta onde o Claude pode executar comandos.",
+		"directoryPlaceholder": "/home/usuario/projetos/meu-projeto",
+		"startChat": "Iniciar Chat"
 	}
 }

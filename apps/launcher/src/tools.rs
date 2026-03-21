@@ -303,6 +303,7 @@ pub fn send_ai_message(
     message: String,
     model: Option<String>,
     reasoning_effort: Option<String>,
+    working_directory: Option<String>,
     app: tauri::AppHandle,
     state: State<'_, AiProcessState>,
 ) -> Result<(), String> {
@@ -320,6 +321,11 @@ pub fn send_ai_message(
             if let Some(ref m) = model {
                 if !m.is_empty() {
                     cmd.arg("--model").arg(m);
+                }
+            }
+            if let Some(ref dir) = working_directory {
+                if !dir.is_empty() {
+                    cmd.arg("--directory").arg(dir);
                 }
             }
             cmd.arg(&message);

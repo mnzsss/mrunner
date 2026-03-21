@@ -52,6 +52,7 @@ import { TOOL_PROVIDERS } from '@/core/types/tools'
 import { useAIChat } from '@/hooks/use-ai-chat'
 import { useAIModels } from '@/hooks/use-ai-models'
 
+import { DirectoryPicker } from './directory-picker'
 import { ToolNotInstalledCard } from './tool-not-installed-card'
 
 const ChatMessageItem = memo(function ChatMessageItem({
@@ -149,11 +150,15 @@ interface AIChatViewProps {
 export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 	const { t } = useTranslation()
 	const [followUp, setFollowUp] = useState('')
+	const [workingDirectory, setWorkingDirectory] = useState<string | null>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 	const sentInitialRef = useRef(false)
 
 	const { selectedModel, selectedReasoning, activeProvider, models, setModel } =
 		useAIModels()
+
+	const needsDirectory =
+		activeProvider === 'claude' && workingDirectory === null
 
 	const {
 		messages,
@@ -168,17 +173,19 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 		provider: activeProvider,
 		model: selectedModel,
 		reasoningEffort: selectedReasoning,
+		workingDirectory: workingDirectory ?? undefined,
 	})
 
-	// Check tool on mount and send initial message
+	// Check tool on mount and send initial message (skip if waiting for directory)
 	useEffect(() => {
+		if (needsDirectory) return
 		checkToolInstalled().then(() => {
 			if (!sentInitialRef.current) {
 				sentInitialRef.current = true
 				sendMessage(initialMessage)
 			}
 		})
-	}, [checkToolInstalled, sendMessage, initialMessage])
+	}, [checkToolInstalled, sendMessage, initialMessage, needsDirectory])
 
 	// Focus textarea after streaming ends
 	useEffect(() => {
@@ -238,6 +245,26 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 		window.addEventListener('keydown', handler, true)
 		return () => window.removeEventListener('keydown', handler, true)
 	}, [isStreaming, cancelStream, handleBack])
+
+	if (needsDirectory) {
+		return (
+			<div className="flex h-full flex-col">
+				<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
+					<button
+						type="button"
+						onClick={handleBack}
+						className="flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1.5 text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+						aria-label={t('chat.back')}
+					>
+						<ArrowLeft className="size-4" />
+						<Kbd>esc</Kbd>
+					</button>
+					<span className="font-medium text-sm">{t('chat.title')}</span>
+				</div>
+				<DirectoryPicker onSelect={setWorkingDirectory} />
+			</div>
+		)
+	}
 
 	if (isCheckingTool) {
 		return (

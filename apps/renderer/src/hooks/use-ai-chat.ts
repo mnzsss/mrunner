@@ -11,9 +11,12 @@ import type {
 	ToolStatus,
 } from '@/core/types/tools'
 
-function applyItemCompleted(
+const COMMAND_EXEC_ALLOWED_PROVIDERS = new Set(['claude'])
+
+export function applyItemCompleted(
 	msg: ChatMessage,
 	payload: CodexItemEventPayload,
+	provider: string,
 ): ChatMessage {
 	const { item_type, text, command, aggregated_output, exit_code } = payload
 
@@ -28,6 +31,12 @@ function applyItemCompleted(
 	}
 
 	if (item_type === 'command_execution') {
+		if (!COMMAND_EXEC_ALLOWED_PROVIDERS.has(provider)) {
+			const notice =
+				'\n\n> Command execution is not available for this provider.\n'
+			return { ...msg, content: `${msg.content}${notice}` }
+		}
+
 		const cmdId = payload.id
 		const existing = msg.commands ?? []
 		const found = existing.some((c) => c.id === cmdId)
@@ -65,6 +74,7 @@ export interface UseAIChatOptions {
 	provider?: string
 	model?: string
 	reasoningEffort?: string
+	workingDirectory?: string
 }
 
 export interface UseAIChatReturn {
@@ -79,7 +89,12 @@ export interface UseAIChatReturn {
 }
 
 export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
-	const { provider = 'codex', model, reasoningEffort } = options
+	const {
+		provider = 'codex',
+		model,
+		reasoningEffort,
+		workingDirectory,
+	} = options
 	const [messages, setMessages] = useState<ChatMessage[]>([])
 	const [isStreaming, setIsStreaming] = useState(false)
 	const [toolStatus, setToolStatus] = useState<ToolStatus | null>(null)
@@ -96,7 +111,9 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
 				setMessages((prev) =>
 					prev.map((msg) =>
-						msg.id === id ? applyItemCompleted(msg, event.payload) : msg,
+						msg.id === id
+							? applyItemCompleted(msg, event.payload, provider)
+							: msg,
 					),
 				)
 			},
@@ -109,6 +126,8 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 				if (!id) return
 
 				if (event.payload.item_type === 'command_execution') {
+					if (!COMMAND_EXEC_ALLOWED_PROVIDERS.has(provider)) return
+
 					const newCmd: CommandExecution = {
 						id: event.payload.id,
 						command: event.payload.command ?? '',
@@ -198,7 +217,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 			unlistenDone.then((fn) => fn())
 			unlistenError.then((fn) => fn())
 		}
-	}, [])
+	}, [provider])
 
 	const checkToolInstalled = useCallback(async () => {
 		setIsCheckingTool(true)
@@ -242,6 +261,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 				message: content,
 				model: model || null,
 				reasoningEffort: reasoningEffort || null,
+				workingDirectory: workingDirectory || null,
 			}).catch((err) => {
 				setMessages((prev) =>
 					prev.map((msg) =>
@@ -254,7 +274,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 				streamingIdRef.current = null
 			})
 		},
-		[provider, model, reasoningEffort],
+		[provider, model, reasoningEffort, workingDirectory],
 	)
 
 	const cancelStream = useCallback(() => {

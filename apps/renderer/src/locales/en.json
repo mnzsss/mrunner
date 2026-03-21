@@ -241,6 +241,11 @@
 		"errorNotInstalled": "AI tool is not available.",
 		"selectModel": "Select model",
 		"searchModels": "Search models...",
-		"noModelsFound": "No models found."
+		"noModelsFound": "No models found.",
+		"commandNotAvailable": "Command execution is not available for this provider.",
+		"selectDirectory": "Working Directory",
+		"selectDirectoryDescription": "Enter the folder path where Claude can execute commands.",
+		"directoryPlaceholder": "/home/user/projects/my-project",
+		"startChat": "Start Chat"
 	}
 }
