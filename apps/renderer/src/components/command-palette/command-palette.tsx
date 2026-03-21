@@ -8,11 +8,11 @@ import {
 	CommandList,
 	Kbd,
 } from '@mrunner/ui'
-import { lazy, type RefObject, Suspense, useCallback } from 'react'
+import { lazy, type RefObject, Suspense, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Command as CommandType } from '@/commands/types'
-import type { ToolProvider } from '@/core/types/tools'
+import type { SlashShortcut, ToolProvider } from '@/core/types/tools'
 import { CommandFooter } from '@/components/command-footer'
 import { UpdateBanner } from '@/components/update-banner'
 import { useSlashCommands } from '@/hooks/use-slash-commands'
@@ -65,7 +65,8 @@ export function CommandPalette({
 	const {
 		isSlashMode,
 		activeCommand,
-		filteredTools,
+		filteredEntries,
+		matchedShortcut,
 		activateCommand,
 		deactivateCommand,
 	} = useSlashCommands(query)
@@ -78,13 +79,32 @@ export function CommandPalette({
 		[activateCommand, onQueryChange],
 	)
 
+	const handleShortcutSelect = useCallback(
+		(shortcut: SlashShortcut) => {
+			onQueryChange('')
+			onSelect(shortcut.commandId)
+		},
+		[onQueryChange, onSelect],
+	)
+
+	// Auto-activate shortcut when space is typed after an exact command match (e.g. "/gr ")
+	useEffect(() => {
+		if (matchedShortcut) {
+			handleShortcutSelect(matchedShortcut)
+		}
+	}, [matchedShortcut, handleShortcutSelect])
+
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
-			// Tab to activate first filtered tool in slash mode
-			if (e.key === 'Tab' && isSlashMode && filteredTools.length > 0) {
+			// Tab to activate first filtered entry in slash mode
+			if (e.key === 'Tab' && isSlashMode && filteredEntries.length > 0) {
 				e.preventDefault()
-				const tool = filteredTools[0]
-				if (tool) handleToolSelect(tool)
+				const first = filteredEntries[0]
+				if (first?.kind === 'shortcut') {
+					handleShortcutSelect(first.entry)
+				} else if (first?.kind === 'tool') {
+					handleToolSelect(first.entry)
+				}
 				return
 			}
 
@@ -109,10 +129,11 @@ export function CommandPalette({
 		},
 		[
 			isSlashMode,
-			filteredTools,
+			filteredEntries,
 			activeCommand,
 			query,
 			handleToolSelect,
+			handleShortcutSelect,
 			onStartChat,
 			deactivateCommand,
 			onQueryChange,
@@ -170,23 +191,46 @@ export function CommandPalette({
 			<CommandList className="flex-1 overflow-y-auto p-2">
 				{isSlashMode && (
 					<CommandGroup heading={t('groups.Tools')}>
-						{filteredTools.map((tool) => (
-							<CommandItem
-								key={tool.id}
-								value={`/${tool.command} ${tool.name}`}
-								onSelect={() => handleToolSelect(tool)}
-								className={`w-full cursor-pointer ${tool.color.selectedBg}`}
-							>
-								<tool.icon className={`size-4 ${tool.color.icon}`} />
-								<span className={`font-medium ${tool.color.text}`}>
-									/{tool.command}
-								</span>
-								<span className="text-muted-foreground/50">
-									{tool.description}
-								</span>
-								<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
-							</CommandItem>
-						))}
+						{filteredEntries.map((item) => {
+							if (item.kind === 'shortcut') {
+								const s = item.entry
+								return (
+									<CommandItem
+										key={s.id}
+										value={`/${s.command} ${s.name}`}
+										onSelect={() => handleShortcutSelect(s)}
+										className={`w-full cursor-pointer ${s.color.selectedBg}`}
+									>
+										<s.icon className={`size-4 ${s.color.icon}`} />
+										<span className={`font-medium ${s.color.text}`}>
+											/{s.command}
+										</span>
+										<span className="text-muted-foreground/70">
+											{t(s.descriptionKey)}
+										</span>
+										<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
+									</CommandItem>
+								)
+							}
+							const tool = item.entry
+							return (
+								<CommandItem
+									key={tool.id}
+									value={`/${tool.command} ${tool.name}`}
+									onSelect={() => handleToolSelect(tool)}
+									className={`w-full cursor-pointer ${tool.color.selectedBg}`}
+								>
+									<tool.icon className={`size-4 ${tool.color.icon}`} />
+									<span className={`font-medium ${tool.color.text}`}>
+										/{tool.command}
+									</span>
+									<span className="text-muted-foreground/70">
+										{tool.description}
+									</span>
+									<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
+								</CommandItem>
+							)
+						})}
 					</CommandGroup>
 				)}
 

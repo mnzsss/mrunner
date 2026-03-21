@@ -220,6 +220,12 @@
 		"defaultProvider": "Provedor Padrão",
 		"selectProvider": "Selecione o provedor"
 	},
+	"slashShortcuts": {
+		"ghRepos": "Buscar repositórios",
+		"ghPrs": "Buscar pull requests",
+		"ghIssues": "Buscar issues",
+		"ghActions": "Buscar execuções de workflow"
+	},
 	"chat": {
 		"title": "Perguntar à IA",
 		"placeholder": "Digite sua mensagem...",

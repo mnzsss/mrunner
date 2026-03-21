@@ -1,4 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
+import { Github } from 'lucide-react'
 
 import { ClaudeLogo } from '@/components/icons/claude-logo'
 import { MRunnerAskIcon } from '@/components/icons/mrunner-ask'
@@ -129,5 +130,64 @@ export const TOOL_PROVIDERS: ToolProvider[] = [
 			windows: 'npm install -g @anthropic-ai/claude-code',
 		},
 		docsUrl: 'https://github.com/anthropics/claude-code',
+	},
+]
+
+export interface SlashShortcut {
+	id: string
+	name: string
+	command: string
+	descriptionKey: string
+	icon: ToolIcon
+	color: ToolColor
+	commandId: string
+}
+
+const ghColor: ToolColor = {
+	badge: 'bg-[#8b5cf6]/15 text-[#8b5cf6] border border-[#8b5cf6]/25',
+	border:
+		'border-[#8b5cf6]/40 focus-within:border-[#8b5cf6] focus-within:ring-[#8b5cf6]/20',
+	icon: 'text-[#8b5cf6]',
+	text: 'text-[#8b5cf6]',
+	selectedBg:
+		'data-selected:bg-[#8b5cf6]/8 data-selected:border-[#8b5cf6]/30 border border-transparent',
+}
+
+export const SLASH_SHORTCUTS: SlashShortcut[] = [
+	{
+		id: 'gh-repos',
+		name: 'GitHub Repos',
+		command: 'gr',
+		descriptionKey: 'slashShortcuts.ghRepos',
+		icon: Github as ToolIcon,
+		color: ghColor,
+		commandId: 'github:cmd_repos',
+	},
+	{
+		id: 'gh-prs',
+		name: 'GitHub PRs',
+		command: 'gp',
+		descriptionKey: 'slashShortcuts.ghPrs',
+		icon: Github as ToolIcon,
+		color: ghColor,
+		commandId: 'github:cmd_prs',
+	},
+	{
+		id: 'gh-issues',
+		name: 'GitHub Issues',
+		command: 'gi',
+		descriptionKey: 'slashShortcuts.ghIssues',
+		icon: Github as ToolIcon,
+		color: ghColor,
+		commandId: 'github:cmd_issues',
+	},
+	{
+		id: 'gh-actions',
+		name: 'GitHub Actions',
+		command: 'ga',
+		descriptionKey: 'slashShortcuts.ghActions',
+		icon: Github as ToolIcon,
+		color: ghColor,
+		commandId: 'github:cmd_actions',
 	},
 ]

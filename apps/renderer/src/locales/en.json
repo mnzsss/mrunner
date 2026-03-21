@@ -220,6 +220,12 @@
 		"defaultProvider": "Default Provider",
 		"selectProvider": "Select provider"
 	},
+	"slashShortcuts": {
+		"ghRepos": "Search repositories",
+		"ghPrs": "Search pull requests",
+		"ghIssues": "Search issues",
+		"ghActions": "Search workflow runs"
+	},
 	"chat": {
 		"title": "Ask AI",
 		"placeholder": "Type your message...",
