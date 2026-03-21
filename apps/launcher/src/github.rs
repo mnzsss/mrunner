@@ -560,3 +560,227 @@ async fn cmd_hub(context: &serde_json::Value) -> Result<serde_json::Value, Strin
 
     Ok(json!({ "items": items }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Duration, Utc};
+    use serde_json::json;
+
+    // --- register() tests ---
+
+    #[test]
+    fn register_returns_correct_plugin() {
+        let plugin = register();
+
+        assert_eq!(plugin.plugin_id, "github");
+        assert_eq!(plugin.commands.len(), 5);
+
+        let expected_ids = [
+            "github:cmd_hub",
+            "github:cmd_repos",
+            "github:cmd_prs",
+            "github:cmd_issues",
+            "github:cmd_actions",
+        ];
+
+        for (cmd, expected_id) in plugin.commands.iter().zip(expected_ids.iter()) {
+            assert_eq!(&cmd.id, expected_id);
+            assert!(matches!(cmd.mode, CommandMode::List));
+            assert_eq!(cmd.icon, "github");
+        }
+    }
+
+    // --- relative_time() tests ---
+
+    #[test]
+    fn relative_time_just_now() {
+        let now = Utc::now();
+        let ts = now.to_rfc3339();
+        assert_eq!(relative_time(&ts), "just now");
+    }
+
+    #[test]
+    fn relative_time_minutes_ago() {
+        let ts = (Utc::now() - Duration::minutes(5)).to_rfc3339();
+        assert_eq!(relative_time(&ts), "5m ago");
+    }
+
+    #[test]
+    fn relative_time_hours_ago() {
+        let ts = (Utc::now() - Duration::hours(3)).to_rfc3339();
+        assert_eq!(relative_time(&ts), "3h ago");
+    }
+
+    #[test]
+    fn relative_time_days_ago() {
+        let ts = (Utc::now() - Duration::days(2)).to_rfc3339();
+        assert_eq!(relative_time(&ts), "2d ago");
+    }
+
+    #[test]
+    fn relative_time_weeks_ago() {
+        let ts = (Utc::now() - Duration::days(10)).to_rfc3339();
+        assert_eq!(relative_time(&ts), "1w ago");
+    }
+
+    #[test]
+    fn relative_time_months_ago() {
+        let ts = (Utc::now() - Duration::days(45)).to_rfc3339();
+        assert_eq!(relative_time(&ts), "1mo ago");
+    }
+
+    #[test]
+    fn relative_time_invalid_string() {
+        assert_eq!(relative_time("not-a-date"), "not-a-date");
+    }
+
+    // --- Serde deserialization tests ---
+
+    #[test]
+    fn deserialize_gh_repo_with_all_fields() {
+        let data = json!({
+            "name": "mrunner",
+            "owner": { "login": "mnzs" },
+            "description": "A launcher",
+            "url": "https://github.com/mnzs/mrunner",
+            "isPrivate": false,
+            "stargazerCount": 42,
+            "updatedAt": "2025-01-01T00:00:00Z"
+        });
+        let repo: GhRepo = serde_json::from_value(data).unwrap();
+        assert_eq!(repo.full_name(), "mnzs/mrunner");
+        assert_eq!(repo.description, Some("A launcher".to_string()));
+        assert_eq!(repo.stargazer_count, 42);
+    }
+
+    #[test]
+    fn deserialize_gh_repo_with_null_description() {
+        let data = json!({
+            "name": "test",
+            "owner": { "login": "user" },
+            "description": null,
+            "url": "https://github.com/user/test",
+            "isPrivate": true,
+            "stargazerCount": 0,
+            "updatedAt": null
+        });
+        let repo: GhRepo = serde_json::from_value(data).unwrap();
+        assert_eq!(repo.full_name(), "user/test");
+        assert!(repo.description.is_none());
+    }
+
+    #[test]
+    fn deserialize_gh_search_repo() {
+        let data = json!({
+            "fullName": "owner/repo",
+            "description": "desc",
+            "url": "https://github.com/owner/repo",
+            "stargazersCount": 100
+        });
+        let repo: GhSearchRepo = serde_json::from_value(data).unwrap();
+        assert_eq!(repo.full_name, "owner/repo");
+        assert_eq!(repo.stargazers_count, 100);
+    }
+
+    #[test]
+    fn deserialize_gh_pr() {
+        let data = json!({
+            "number": 7,
+            "title": "Fix bug",
+            "repository": { "nameWithOwner": "mnzs/mrunner" },
+            "url": "https://github.com/mnzs/mrunner/pull/7",
+            "createdAt": "2025-06-01T00:00:00Z"
+        });
+        let pr: GhPr = serde_json::from_value(data).unwrap();
+        assert_eq!(pr.repo_name(), "mnzs/mrunner");
+        assert_eq!(pr.number, 7);
+    }
+
+    #[test]
+    fn deserialize_gh_issue() {
+        let data = json!({
+            "number": 12,
+            "title": "Add feature",
+            "repository": { "nameWithOwner": "org/project" },
+            "url": "https://github.com/org/project/issues/12",
+            "createdAt": "2025-03-15T10:00:00Z"
+        });
+        let issue: GhIssue = serde_json::from_value(data).unwrap();
+        assert_eq!(issue.repo_name(), "org/project");
+        assert_eq!(issue.number, 12);
+    }
+
+    #[test]
+    fn deserialize_gh_run_in_progress() {
+        let data = json!({
+            "databaseId": 999,
+            "displayTitle": "CI Build",
+            "status": "in_progress",
+            "conclusion": null,
+            "url": "https://github.com/org/repo/actions/runs/999",
+            "createdAt": "2025-01-01T00:00:00Z"
+        });
+        let run: GhRun = serde_json::from_value(data).unwrap();
+        assert_eq!(run.database_id, 999);
+        assert!(run.conclusion.is_none());
+    }
+
+    #[test]
+    fn deserialize_gh_run_success() {
+        let data = json!({
+            "databaseId": 1000,
+            "displayTitle": "Deploy",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/org/repo/actions/runs/1000",
+            "createdAt": "2025-01-01T00:00:00Z"
+        });
+        let run: GhRun = serde_json::from_value(data).unwrap();
+        assert_eq!(run.conclusion, Some("success".to_string()));
+    }
+
+    #[test]
+    fn deserialize_gh_repo_list_item() {
+        let data = json!({ "nameWithOwner": "mnzs/mrunner" });
+        let item: GhRepoListItem = serde_json::from_value(data).unwrap();
+        assert_eq!(item.name_with_owner, "mnzs/mrunner");
+    }
+
+    // --- cmd_hub() async tests ---
+
+    #[tokio::test]
+    async fn cmd_hub_empty_query_returns_4_items() {
+        let ctx = json!({ "query": "" });
+        let result = cmd_hub(&ctx).await.unwrap();
+        let items = result["items"].as_array().unwrap();
+        assert_eq!(items.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn cmd_hub_query_pull_returns_1_item() {
+        let ctx = json!({ "query": "pull" });
+        let result = cmd_hub(&ctx).await.unwrap();
+        let items = result["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["title"], "Pull Requests");
+    }
+
+    #[tokio::test]
+    async fn cmd_hub_query_xyz_returns_0_items() {
+        let ctx = json!({ "query": "xyz" });
+        let result = cmd_hub(&ctx).await.unwrap();
+        let items = result["items"].as_array().unwrap();
+        assert_eq!(items.len(), 0);
+    }
+
+    // --- run_command() tests ---
+
+    #[tokio::test]
+    async fn run_command_unknown_returns_err() {
+        let ctx = json!({});
+        let result = run_command("github:nonexistent", &ctx).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Unknown github command"));
+    }
+}

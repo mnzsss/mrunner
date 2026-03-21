@@ -5,7 +5,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use tauri::{Emitter, State};
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct ToolStatus {
     pub installed: bool,
     pub path: Option<String>,
@@ -59,13 +59,13 @@ pub fn check_tool_installed(tool_id: String) -> Result<ToolStatus, String> {
 
 // --- Model listing ---
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct AiReasoningLevel {
     pub effort: String,
     pub description: String,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct AiModel {
     pub slug: String,
     pub display_name: String,
@@ -412,4 +412,179 @@ pub fn cancel_ai_message(state: State<'_, AiProcessState>) -> Result<(), String>
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    // --- list_ai_models("claude") ---
+
+    #[test]
+    fn list_ai_models_claude_returns_3_models() {
+        let models = list_ai_models("claude".to_string()).unwrap();
+        assert_eq!(models.len(), 3);
+    }
+
+    #[test]
+    fn list_ai_models_claude_correct_slugs() {
+        let models = list_ai_models("claude".to_string()).unwrap();
+        let slugs: Vec<&str> = models.iter().map(|m| m.slug.as_str()).collect();
+        assert_eq!(
+            slugs,
+            vec!["claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5"]
+        );
+    }
+
+    #[test]
+    fn list_ai_models_claude_all_have_claude_provider() {
+        let models = list_ai_models("claude".to_string()).unwrap();
+        for model in &models {
+            assert_eq!(model.provider, "claude");
+        }
+    }
+
+    #[test]
+    fn list_ai_models_claude_each_has_3_reasoning_levels() {
+        let models = list_ai_models("claude".to_string()).unwrap();
+        for model in &models {
+            let efforts: Vec<&str> = model
+                .supported_reasoning_levels
+                .iter()
+                .map(|r| r.effort.as_str())
+                .collect();
+            assert_eq!(efforts, vec!["low", "medium", "high"]);
+        }
+    }
+
+    #[test]
+    fn list_ai_models_claude_default_reasoning_levels() {
+        let models = list_ai_models("claude".to_string()).unwrap();
+        let defaults: Vec<&str> = models
+            .iter()
+            .map(|m| m.default_reasoning_level.as_str())
+            .collect();
+        assert_eq!(defaults, vec!["medium", "medium", "low"]);
+    }
+
+    // --- list_ai_models("unknown") ---
+
+    #[test]
+    fn list_ai_models_unknown_provider_returns_err() {
+        let result = list_ai_models("unknown".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Unknown provider"));
+    }
+
+    // --- extract_item_event ---
+
+    #[test]
+    fn extract_item_event_full_json() {
+        let item = json!({
+            "id": "item-1",
+            "type": "message",
+            "text": "hello",
+            "command": "ls",
+            "aggregated_output": "file.txt",
+            "exit_code": 0,
+            "status": "completed"
+        });
+        let event = extract_item_event(&item).unwrap();
+        assert_eq!(event.id, "item-1");
+        assert_eq!(event.item_type, "message");
+        assert_eq!(event.text.as_deref(), Some("hello"));
+        assert_eq!(event.command.as_deref(), Some("ls"));
+        assert_eq!(event.aggregated_output.as_deref(), Some("file.txt"));
+        assert_eq!(event.exit_code, Some(0));
+        assert_eq!(event.status.as_deref(), Some("completed"));
+    }
+
+    #[test]
+    fn extract_item_event_minimal_json() {
+        let item = json!({
+            "id": "item-2",
+            "type": "tool_call"
+        });
+        let event = extract_item_event(&item).unwrap();
+        assert_eq!(event.id, "item-2");
+        assert_eq!(event.item_type, "tool_call");
+        assert!(event.text.is_none());
+        assert!(event.command.is_none());
+        assert!(event.aggregated_output.is_none());
+        assert!(event.exit_code.is_none());
+        assert!(event.status.is_none());
+    }
+
+    #[test]
+    fn extract_item_event_missing_id_returns_none() {
+        let item = json!({ "type": "message" });
+        assert!(extract_item_event(&item).is_none());
+    }
+
+    #[test]
+    fn extract_item_event_missing_type_returns_none() {
+        let item = json!({ "id": "item-3" });
+        assert!(extract_item_event(&item).is_none());
+    }
+
+    #[test]
+    fn extract_item_event_exit_code_zero() {
+        let item = json!({
+            "id": "item-4",
+            "type": "tool_call",
+            "exit_code": 0
+        });
+        let event = extract_item_event(&item).unwrap();
+        assert_eq!(event.exit_code, Some(0));
+    }
+
+    // --- extract_usage ---
+
+    #[test]
+    fn extract_usage_full_object() {
+        let event = json!({
+            "usage": {
+                "input_tokens": 100,
+                "cached_input_tokens": 50,
+                "output_tokens": 200
+            }
+        });
+        let usage = extract_usage(&event);
+        assert_eq!(usage.input_tokens, 100);
+        assert_eq!(usage.cached_input_tokens, 50);
+        assert_eq!(usage.output_tokens, 200);
+    }
+
+    #[test]
+    fn extract_usage_no_usage_key() {
+        let event = json!({ "type": "turn.completed" });
+        let usage = extract_usage(&event);
+        assert_eq!(usage.input_tokens, 0);
+        assert_eq!(usage.cached_input_tokens, 0);
+        assert_eq!(usage.output_tokens, 0);
+    }
+
+    #[test]
+    fn extract_usage_partial_missing_cached() {
+        let event = json!({
+            "usage": {
+                "input_tokens": 42,
+                "output_tokens": 99
+            }
+        });
+        let usage = extract_usage(&event);
+        assert_eq!(usage.input_tokens, 42);
+        assert_eq!(usage.cached_input_tokens, 0);
+        assert_eq!(usage.output_tokens, 99);
+    }
+
+    // --- check_tool_installed ---
+
+    #[test]
+    fn check_tool_installed_unknown_returns_err() {
+        let result = check_tool_installed("bogus".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Unknown tool"));
+    }
 }
