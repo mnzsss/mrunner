@@ -1,0 +1,28 @@
+{
+	"name": "@mrunner/plugin",
+	"version": "0.1.0",
+	"private": false,
+	"type": "module",
+	"sideEffects": false,
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"import": "./src/index.ts"
+		}
+	},
+	"bin": {
+		"mrunner-plugin-runner": "./dist/runner.js"
+	},
+	"scripts": {
+		"build": "tsup src/runner.ts --format esm --target node20 --out-dir dist --no-splitting"
+	},
+	"devDependencies": {
+		"tsup": "^8.5.1",
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"tsx": "^4.21.0"
+	}
+}

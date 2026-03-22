@@ -3,6 +3,7 @@ export type {
 	Command,
 	CommandAction,
 	CommandIcon,
+	CommandMode,
 	CommandResult,
 	DialogAction,
 	DialogType,
@@ -12,28 +13,35 @@ export type {
 	OpenAction,
 	PluginAction,
 	PluginConfig,
+	ScriptableAction,
 	ShellAction,
 	SubmenuAction,
 	Tag,
 	UrlAction,
 	UserDirectory,
 	UserPreferences,
-	ValidatedPluginConfig,
 } from './command'
+export type { ValidatedPluginConfig } from './plugin-loader'
 export {
+	CommandIconSchema,
 	FolderConfigSchema,
 	FoldersConfigSchema,
+	UserPreferencesSchema,
+} from './command'
+export {
 	isDialogAction,
 	isFunctionAction,
 	isInputAction,
 	isOpenAction,
+	isScriptableAction,
 	isShellAction,
 	isSubmenuAction,
 	isUrlAction,
+} from './command-guards'
+export {
 	PluginConfigSchema,
 	parsePluginConfig,
 	pluginToCommand,
 	safeParsePluginConfig,
-	UserPreferencesSchema,
 	validatePluginConfig,
-} from './command'
+} from './plugin-loader'

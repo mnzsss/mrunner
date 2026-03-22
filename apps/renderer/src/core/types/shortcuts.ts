@@ -114,7 +114,7 @@ export const DEFAULT_SHORTCUTS: ShortcutConfig[] = [
 		id: 'global-toggle-window',
 		type: 'global',
 		context: 'all',
-		hotkey: { modifiers: ['Super'], key: 'Space' },
+		hotkey: { modifiers: ['Alt'], key: 'T' },
 		description: 'Toggle launcher window',
 		action: 'toggle-window',
 		enabled: true,

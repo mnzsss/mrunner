@@ -10,6 +10,7 @@ import {
 	FolderCog,
 	FolderOpen,
 	FolderPlus,
+	Github,
 	Globe,
 	Hash,
 	Image,
@@ -67,4 +68,5 @@ export const ICON_MAP: Record<CommandIcon, LucideIcon> = {
 	video: Video,
 	'folder-plus': FolderPlus,
 	'folder-cog': FolderCog,
+	github: Github,
 }
