@@ -136,8 +136,8 @@ async fn complete_plugin_install(
 }
 
 #[tauri::command]
-async fn cancel_plugin_install(temp_path: String) {
-    plugins::cancel_plugin_install(&temp_path);
+async fn cancel_plugin_install(temp_path: String) -> Result<(), String> {
+    plugins::cancel_plugin_install(&temp_path)
 }
 
 #[tauri::command]

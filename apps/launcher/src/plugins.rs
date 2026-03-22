@@ -340,9 +340,71 @@ pub async fn run_plugin_command(
     }
 }
 
+/// Validates that a git URL uses a safe scheme (https, http, ssh, git) and does
+/// not start with `-` (argument injection). Rejects dangerous transports like `ext::`.
+fn validate_git_url(url: &str) -> Result<(), String> {
+    let url = url.trim();
+    if url.starts_with('-') {
+        return Err("Invalid git URL: must not start with '-'".to_string());
+    }
+    let allowed_schemes = ["https://", "http://", "ssh://", "git://", "git@"];
+    if !allowed_schemes.iter().any(|s| url.starts_with(s)) {
+        return Err(format!(
+            "Invalid git URL scheme — only https, http, ssh, and git protocols are allowed"
+        ));
+    }
+    Ok(())
+}
+
+/// Validates that a plugin id contains only safe characters (alphanumeric, hyphens, underscores).
+fn validate_plugin_id(id: &str) -> Result<(), String> {
+    if id.is_empty() {
+        return Err("Plugin id must not be empty".to_string());
+    }
+    if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err(format!(
+            "Invalid plugin id '{}': must contain only alphanumeric characters, hyphens, and underscores",
+            id
+        ));
+    }
+    Ok(())
+}
+
+/// Validates that a path resides within the expected plugins base directory.
+fn validate_temp_path(temp_path: &str) -> Result<PathBuf, String> {
+    let plugins_base = dirs::config_dir()
+        .ok_or("Could not find config directory")?
+        .join("mrunner")
+        .join("plugins");
+
+    let path = PathBuf::from(temp_path);
+    let canonical = path
+        .canonicalize()
+        .map_err(|e| format!("Invalid temp path: {}", e))?;
+    let canonical_base = plugins_base
+        .canonicalize()
+        .map_err(|e| format!("Plugins directory not found: {}", e))?;
+
+    if !canonical.starts_with(&canonical_base) {
+        return Err("Temp path is outside the plugins directory".to_string());
+    }
+
+    let dir_name = canonical
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+    if !dir_name.starts_with(".installing-") {
+        return Err("Temp path does not match expected .installing-* pattern".to_string());
+    }
+
+    Ok(canonical)
+}
+
 /// Clones the repository to a temporary directory inside the plugins folder and
 /// returns a preview of the plugin manifest so the user can confirm before installation.
 pub fn prepare_plugin_install(git_url: &str) -> Result<PluginPreviewInfo, String> {
+    validate_git_url(git_url)?;
+
     let plugins_base = dirs::config_dir()
         .ok_or("Could not find config directory")?
         .join("mrunner")
@@ -360,6 +422,7 @@ pub fn prepare_plugin_install(git_url: &str) -> Result<PluginPreviewInfo, String
 
     let status = std::process::Command::new("git")
         .arg("clone")
+        .arg("--")
         .arg(git_url)
         .arg(&temp_dir)
         .status()
@@ -398,13 +461,15 @@ pub fn prepare_plugin_install(git_url: &str) -> Result<PluginPreviewInfo, String
 
 /// Moves the previously cloned temp directory to its final location and runs npm install.
 pub fn complete_plugin_install(temp_path: &str) -> Result<(), String> {
-    let temp_dir = PathBuf::from(temp_path);
+    let temp_dir = validate_temp_path(temp_path)?;
 
     let manifest_path = temp_dir.join("plugin.json");
     let content = std::fs::read_to_string(&manifest_path)
         .map_err(|e| format!("Failed to read plugin.json: {}", e))?;
     let manifest: PluginManifest = serde_json::from_str(&content)
         .map_err(|e| format!("Invalid plugin.json: {}", e))?;
+
+    validate_plugin_id(&manifest.id)?;
 
     let final_dir = dirs::config_dir()
         .ok_or("Could not find config directory")?
@@ -442,8 +507,10 @@ pub fn complete_plugin_install(temp_path: &str) -> Result<(), String> {
 }
 
 /// Cleans up a temporary install directory (used when the user cancels).
-pub fn cancel_plugin_install(temp_path: &str) {
-    let _ = std::fs::remove_dir_all(temp_path);
+pub fn cancel_plugin_install(temp_path: &str) -> Result<(), String> {
+    let validated = validate_temp_path(temp_path)?;
+    let _ = std::fs::remove_dir_all(validated);
+    Ok(())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
