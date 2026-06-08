@@ -6,10 +6,12 @@ import {
 	ItemTitle,
 	Switch,
 } from '@mrunner/ui'
+import { formatForDisplay } from '@tanstack/react-hotkeys'
 import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import type { Hotkey, ShortcutConfig } from '@/core/types/shortcuts'
+import { hotkeyToTanStack } from '@/lib/hotkey-adapter'
 
 import { HotkeyPicker } from './hotkey-picker'
 
@@ -36,7 +38,7 @@ export function ShortcutItem({
 				<ItemTitle className={isConflicting ? 'text-destructive' : ''}>
 					{shortcut.description}
 					{isConflicting && (
-						<span className="ml-2 text-xs text-destructive">(Conflicting)</span>
+						<span className="ml-2 text-destructive text-xs">(Conflicting)</span>
 					)}
 				</ItemTitle>
 				<ItemDescription className="text-xs">
@@ -59,13 +61,11 @@ export function ShortcutItem({
 						variant="outline"
 						size="sm"
 						onClick={() => setIsEditing(true)}
-						className="font-mono min-w-32"
+						className="min-w-32 font-mono"
 						title={`Edit ${shortcut.description} shortcut`}
 						aria-label={`Edit ${shortcut.description} shortcut`}
 					>
-						{shortcut.hotkey.modifiers.join('+')}
-						{shortcut.hotkey.modifiers.length > 0 && '+'}
-						{shortcut.hotkey.key}
+						{formatForDisplay(hotkeyToTanStack(shortcut.hotkey))}
 					</Button>
 				)}
 

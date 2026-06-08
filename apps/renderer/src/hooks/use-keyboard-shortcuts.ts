@@ -1,6 +1,9 @@
+import type { RegisterableHotkey } from '@tanstack/react-hotkeys'
+import { getHotkeyManager } from '@tanstack/react-hotkeys'
 import { useCallback, useEffect } from 'react'
 
 import type { Bookmark } from '@/commands/types'
+import { hotkeyToTanStack } from '@/lib/hotkey-adapter'
 
 import type { BookmarkDialogState } from './use-dialog-manager'
 import { useShortcutsSettings } from './use-shortcuts-settings'
@@ -37,26 +40,23 @@ export function useKeyboardShortcuts({
 	}, [bookmarks])
 
 	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			const activeShortcuts = shortcuts.filter(
-				(sc) =>
-					sc.type === 'internal' && sc.enabled && sc.context === 'launcher',
-			)
+		const manager = getHotkeyManager()
+		const handles: Array<{ unregister(): void }> = []
 
-			for (const sc of activeShortcuts) {
-				const modifiersMatch =
-					sc.hotkey.modifiers.includes('Control') === e.ctrlKey &&
-					sc.hotkey.modifiers.includes('Alt') === e.altKey &&
-					sc.hotkey.modifiers.includes('Shift') === e.shiftKey &&
-					sc.hotkey.modifiers.includes('Meta') === e.metaKey &&
-					sc.hotkey.modifiers.includes('Super') === e.metaKey
+		const activeShortcuts = shortcuts.filter(
+			(sc) => sc.type === 'internal' && sc.enabled && sc.context === 'launcher',
+		)
 
-				const keyMatches = e.key.toLowerCase() === sc.hotkey.key.toLowerCase()
+		for (const sc of activeShortcuts) {
+			const tanStackStr = hotkeyToTanStack(
+				sc.hotkey,
+			) as unknown as RegisterableHotkey
+			const action = sc.action
 
-				if (modifiersMatch && keyMatches) {
-					e.preventDefault()
-
-					switch (sc.action) {
+			const handle = manager.register(
+				tanStackStr,
+				() => {
+					switch (action) {
 						case 'escape':
 							onHideWindow()
 							break
@@ -71,13 +71,18 @@ export function useKeyboardShortcuts({
 							break
 						}
 					}
-					break
-				}
-			}
+				},
+				{ preventDefault: true },
+			)
+
+			handles.push(handle)
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
+		return () => {
+			for (const handle of handles) {
+				handle.unregister()
+			}
+		}
 	}, [
 		shortcuts,
 		onHideWindow,

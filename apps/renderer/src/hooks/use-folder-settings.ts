@@ -1,18 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
-import { homeDir } from '@tauri-apps/api/path'
-import {
-	exists,
-	mkdir,
-	readTextFile,
-	writeTextFile,
-} from '@tauri-apps/plugin-fs'
 import { useCallback, useEffect, useState } from 'react'
 
 import type { CommandIcon, FolderConfig, UserDirectory } from '@/commands/types'
 import { UserPreferencesSchema } from '@/commands/types'
+import { readConfigFile, writeConfigFile } from '@/lib/config-file'
 import { SYSTEM_ICON_TO_COMMAND_ICON } from '@/lib/constants'
+import { createLogger } from '@/lib/logger'
 
-const CONFIG_DIR = '.config/mrunner'
+const logger = createLogger('folders')
+
 const CONFIG_FILE = 'preferences.json'
 
 interface UseFolderSettingsReturn {
@@ -44,27 +40,13 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const getConfigPath = useCallback(async () => {
-		const home = await homeDir()
-		return `${home}/${CONFIG_DIR}/${CONFIG_FILE}`
-	}, [])
-
-	const ensureConfigDir = useCallback(async () => {
-		const home = await homeDir()
-		const configDir = `${home}/${CONFIG_DIR}`
-		const dirExists = await exists(configDir)
-		if (!dirExists) {
-			await mkdir(configDir, { recursive: true })
-		}
-	}, [])
-
 	const loadSystemDirectories = useCallback(async () => {
 		try {
 			const dirs = await invoke<UserDirectory[]>('get_user_directories')
 			setSystemDirectories(dirs)
 			return dirs
 		} catch (e) {
-			console.error('Failed to load system directories:', e)
+			logger.error('Failed to load system directories', { error: String(e) })
 			return []
 		}
 	}, [])
@@ -74,30 +56,26 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 		setError(null)
 
 		try {
-			const [configPath, sysDirs] = await Promise.all([
-				getConfigPath(),
-				loadSystemDirectories(),
-			])
+			const sysDirs = await loadSystemDirectories()
 
 			let customFolders: FolderConfig[] = []
 			let hiddenFolders: string[] = []
 
-			const configExists = await exists(configPath)
-			if (configExists) {
-				try {
-					const content = await readTextFile(configPath)
-					const json: unknown = JSON.parse(content)
+			try {
+				const json = await readConfigFile<unknown>(CONFIG_FILE, null)
+				if (json !== null) {
 					const result = UserPreferencesSchema.safeParse(json)
-
 					if (result.success) {
 						customFolders = result.data.customFolders
 						hiddenFolders = result.data.hiddenSystemFolders
 					} else {
-						console.warn('Invalid preferences config:', result.error.issues)
+						logger.warn('Invalid preferences config', {
+							error: String(result.error.issues),
+						})
 					}
-				} catch (e) {
-					console.error('Failed to parse preferences config:', e)
 				}
+			} catch (e) {
+				logger.error('Failed to parse preferences config', { error: String(e) })
 			}
 
 			setHiddenSystemFolders(hiddenFolders)
@@ -116,32 +94,27 @@ export function useFolderSettings(): UseFolderSettingsReturn {
 			setFolders([...systemFolders, ...customFolders])
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
-			console.error('Failed to load folders:', message)
+			logger.error('Failed to load folders', { error: message })
 			setError(message)
 		} finally {
 			setLoading(false)
 		}
-	}, [getConfigPath, loadSystemDirectories])
+	}, [loadSystemDirectories])
 
 	const savePreferences = useCallback(
 		async (customFolders: FolderConfig[], hiddenFolders: string[]) => {
 			try {
-				await ensureConfigDir()
-				const configPath = await getConfigPath()
-
-				const preferences = {
+				await writeConfigFile(CONFIG_FILE, {
 					customFolders,
 					hiddenSystemFolders: hiddenFolders,
-				}
-
-				await writeTextFile(configPath, JSON.stringify(preferences, null, 2))
+				})
 			} catch (e) {
 				const message = e instanceof Error ? e.message : String(e)
-				console.error('Failed to save preferences:', message)
+				logger.error('Failed to save preferences', { error: message })
 				throw new Error(message)
 			}
 		},
-		[ensureConfigDir, getConfigPath],
+		[],
 	)
 
 	const addFolder = useCallback(

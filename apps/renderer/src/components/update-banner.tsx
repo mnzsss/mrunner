@@ -15,7 +15,7 @@ export function UpdateBanner() {
 			: 0
 
 	return (
-		<div className="flex items-center justify-between gap-3 border-b border-border bg-primary/10 px-4 py-2">
+		<div className="flex items-center justify-between gap-3 border-border border-b bg-primary/10 px-4 py-2">
 			<div className="flex items-center gap-2 text-sm">
 				<Download className="size-4 text-primary" aria-hidden="true" />
 				<span>

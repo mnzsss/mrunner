@@ -1,0 +1,61 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://mrunner.app/schemas/registry.schema.json",
+	"title": "MRunner Plugin Registry",
+	"description": "Index of community plugins installable from the MRunner settings UI",
+	"type": "object",
+	"required": ["version", "updatedAt", "plugins"],
+	"additionalProperties": false,
+	"properties": {
+		"version": {
+			"type": "string",
+			"description": "Registry format version"
+		},
+		"updatedAt": {
+			"type": "string",
+			"description": "ISO 8601 date of the last registry update",
+			"format": "date"
+		},
+		"plugins": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["id", "name", "description", "author", "url", "tags"],
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for the plugin (kebab-case)",
+						"pattern": "^[a-z][a-z0-9-]*$"
+					},
+					"name": {
+						"type": "string",
+						"description": "Human-readable display name of the plugin"
+					},
+					"description": {
+						"type": "string",
+						"description": "Short description of what the plugin does"
+					},
+					"author": {
+						"type": "string",
+						"description": "Name or email of the plugin author"
+					},
+					"url": {
+						"type": "string",
+						"description": "Git URL to install the plugin from (https or ssh)",
+						"pattern": "^(https://|ssh://|git@)"
+					},
+					"tags": {
+						"type": "array",
+						"items": { "type": "string" },
+						"uniqueItems": true
+					},
+					"verified": {
+						"type": "boolean",
+						"description": "Whether the plugin has been reviewed by the MRunner maintainers"
+					}
+				}
+			}
+		}
+	}
+}

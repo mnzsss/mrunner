@@ -35,6 +35,8 @@
 			]
 		},
 		"dialog:allow-open",
-		"notification:default"
+		"notification:default",
+		"log:default",
+		"updater:default"
 	]
 }

@@ -1,9 +1,13 @@
+import { attachConsole } from '@tauri-apps/plugin-log'
+
 import { initSentry } from '@/lib/sentry'
 
 initSentry()
+attachConsole()
 
 import '@/lib/i18n'
 
+import { HotkeysProvider } from '@tanstack/react-hotkeys'
 import { homeDir } from '@tauri-apps/api/path'
 import { exists, readTextFile } from '@tauri-apps/plugin-fs'
 import i18next from 'i18next'
@@ -78,19 +82,21 @@ if (!rootElement) throw new Error('Root element not found')
 ReactDOM.createRoot(rootElement).render(
 	<React.StrictMode>
 		<ErrorBoundary>
-			<BrowserRouter>
-				<Routes>
-					<Route path="/setup" element={<Setup />} />
-					<Route
-						path="/"
-						element={
-							<SetupGuard>
-								<App />
-							</SetupGuard>
-						}
-					/>
-				</Routes>
-			</BrowserRouter>
+			<HotkeysProvider>
+				<BrowserRouter>
+					<Routes>
+						<Route path="/setup" element={<Setup />} />
+						<Route
+							path="/"
+							element={
+								<SetupGuard>
+									<App />
+								</SetupGuard>
+							}
+						/>
+					</Routes>
+				</BrowserRouter>
+			</HotkeysProvider>
 		</ErrorBoundary>
 	</React.StrictMode>,
 )

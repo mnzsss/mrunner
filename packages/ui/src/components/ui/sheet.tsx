@@ -25,7 +25,7 @@ function SheetOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
 		<DialogPrimitive.Backdrop
 			data-slot="sheet-overlay"
 			className={cn(
-				'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/80 duration-200 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50',
+				'data-closed:fade-out-0 data-open:fade-in-0 glass-subtle fixed inset-0 isolate z-50 bg-black/50 duration-200 data-closed:animate-out data-open:animate-in supports-backdrop-filter:backdrop-blur-xs',
 				className,
 			)}
 			{...props}
@@ -45,10 +45,10 @@ function SheetContent({
 				data-slot="sheet-content"
 				{...props}
 				className={cn(
-					'bg-background fixed inset-y-0 right-0 z-50 flex w-[90%] flex-col outline-none',
-					'data-open:animate-in data-closed:animate-out',
+					'fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-md flex-col bg-background outline-none',
+					'data-closed:animate-out data-open:animate-in',
 					'data-closed:slide-out-to-right data-open:slide-in-from-right',
-					'duration-200',
+					'duration-300',
 					className,
 				)}
 			>
@@ -75,7 +75,10 @@ function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
 	return (
 		<div
 			data-slot="sheet-header"
-			className={cn('flex flex-col gap-1 border-b px-6 py-4', className)}
+			className={cn(
+				'flex flex-col gap-1 border-border/30 border-b px-6 py-4',
+				className,
+			)}
 			{...props}
 		/>
 	)
@@ -85,7 +88,7 @@ function SheetTitle({ className, ...props }: DialogPrimitive.Title.Props) {
 	return (
 		<DialogPrimitive.Title
 			data-slot="sheet-title"
-			className={cn('text-base font-medium leading-none', className)}
+			className={cn('font-medium text-base leading-none', className)}
 			{...props}
 		/>
 	)

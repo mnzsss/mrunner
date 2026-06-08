@@ -1,0 +1,5 @@
+logs
+.*
+progress.txt
+prd.json
+!archive/*

@@ -1,0 +1,145 @@
+# Ralph Progress Log
+Started: Sat Mar  8 02:00:00 PM -03 2026
+---
+
+## Codebase Patterns
+- pnpm check = biome lint/format only (exit 0 = pass). tsc must be run separately in apps/renderer.
+- cargo check -p mrunner validates all Rust changes.
+- All frontend user-facing text must use t() with keys in both en.json and pt-BR.json.
+- UserPreferences stored in ~/.config/mrunner[-dev]/preferences.json, validated with UserPreferencesSchema (zod).
+- Tauri commands registered in apps/launcher/src/lib.rs invoke_handler array.
+- @mrunner/ui exports from packages/ui/src/index.ts; ai-elements via @mrunner/ui/ai-elements/*.
+- Config file I/O is now centralized in apps/renderer/src/lib/config-file.ts: getConfigFilePath, ensureConfigDir, readConfigFile<T>, writeConfigFile<T>. Import from @/lib/config-file.
+- Keyboard shortcuts types in apps/renderer/src/core/types/shortcuts.ts: Hotkey { modifiers: Modifier[], key: string }, ShortcutConfig { id, type, context, hotkey, action, enabled, isCustom }.
+- Global shortcuts sync to Rust via invoke('sync_global_shortcuts') — only type=global shortcuts.
+- Internal shortcuts now use getHotkeyManager().register() from @tanstack/react-hotkeys — only type=internal, context=launcher. HotkeysProvider wraps app in main.tsx.
+- HotkeyPicker at apps/renderer/src/components/shortcuts/hotkey-picker.tsx uses useHotkeyRecorder; recording starts on click, cancels on blur/Escape. Display via formatForDisplay(hotkeyToTanStack(value)).
+- @tanstack/react-hotkeys installed (v0.4.0). Adapter at apps/renderer/src/lib/hotkey-adapter.ts: hotkeyToTanStack(Hotkey)->string, tanStackToHotkey(string)->Hotkey. Mod=Super on Linux, Mod=Meta on Mac.
+- Shortcut consumers: App.tsx, settings-sheet.tsx, setup.tsx, shortcut-item.tsx.
+- command.ts (347 lines) has types (lines 5-117), guards (lines 153-183), Zod schemas (lines 185-270), plugin functions (lines 306-346). 19 files import from it via @/commands/types or @/core/types.
+- useBookmarks has 6 responsibilities: CRUD, interactions (open/copy), tag management, state, Tauri invocations, parseQuery utility.
+- Pure utilities extracted from hooks go in apps/renderer/src/lib/. Module-level functions are stable refs — no useCallback needed when re-exporting imports.
+---
+
+## 2026-03-08 - US-001
+- Created apps/renderer/src/lib/config-file.ts with getConfigFilePath, ensureConfigDir, readConfigFile<T>, writeConfigFile<T>
+- Refactored use-shortcuts-settings.ts to remove getConfigPath/ensureConfigDir and use readConfigFile/writeConfigFile
+- Refactored use-folder-settings.ts to remove getConfigPath/ensureConfigDir and use readConfigFile/writeConfigFile
+- Files changed: apps/renderer/src/lib/config-file.ts (new), apps/renderer/src/hooks/use-shortcuts-settings.ts, apps/renderer/src/hooks/use-folder-settings.ts
+- **Learnings for future iterations:**
+  - readConfigFile<T> returns T (already JSON.parsed) or the fallback — callers don't need to JSON.parse again
+  - CONFIG_DIR uses DEV mode suffix in config-file.ts, so useFolderSettings (which had hardcoded mrunner without -dev) now correctly respects dev mode
+  - Pre-existing tsc errors exist in ai-chat-view.tsx, tools-tab.tsx, use-ai-models.ts — not introduced by this story
+---
+
+## 2026-03-08 - US-002
+- Installed @tanstack/react-hotkeys in apps/renderer
+- Created apps/renderer/src/lib/hotkey-adapter.ts with hotkeyToTanStack and tanStackToHotkey
+- Files changed: apps/renderer/package.json, pnpm-lock.yaml, apps/renderer/src/lib/hotkey-adapter.ts (new)
+- **Learnings for future iterations:**
+  - @tanstack/react-hotkeys v0.4.0 exists; API: useHotkey, useHotkeyRecorder, formatForDisplay, getHotkeyManager from @tanstack/react-hotkeys
+  - TanStack 'Mod' = Meta on macOS, Control elsewhere. MRunner uses Super (Linux global) and Meta (Mac); both collapse to Mod in hotkeyToTanStack
+  - tanStackToHotkey resolves Mod -> Super (Linux) or Meta (macOS) via navigator.userAgent check
+  - Platform detection: /Mac/i.test(navigator.userAgent) is reliable for renderer context (Tauri WebView)
+  - hotkeyToTanStack deduplicates via Set — safe if both Meta and Super appear in modifiers array
+---
+
+## 2026-03-08 - US-003
+- Added HotkeysProvider from @tanstack/react-hotkeys wrapping BrowserRouter in apps/renderer/src/main.tsx
+- Rewrote useKeyboardShortcuts to use getHotkeyManager().register() instead of window.addEventListener('keydown')
+- Each active internal launcher shortcut registers via hotkeyToTanStack conversion; all handles unregistered on cleanup
+- Files changed: apps/renderer/src/hooks/use-keyboard-shortcuts.ts, apps/renderer/src/main.tsx
+- **Learnings for future iterations:**
+  - TanStack's Hotkey type is a complex template literal union — plain strings must be cast as `unknown as RegisterableHotkey` to satisfy the type
+  - HotkeysProvider is required in the React tree for hooks (useHotkey etc.) but getHotkeyManager() singleton works without it; add HotkeysProvider anyway for consistency
+  - pnpm check (biome) reorders type imports before value imports automatically
+---
+
+## 2026-03-08 - US-004
+- Rewrote apps/renderer/src/components/shortcuts/hotkey-picker.tsx to use useHotkeyRecorder from @tanstack/react-hotkeys
+- onRecord converts TanStack Hotkey string to MRunner Hotkey via tanStackToHotkey; cast as string since TanStack Hotkey IS a string union
+- Display uses formatForDisplay(hotkeyToTanStack(value)) for platform-aware rendering; live preview uses formatForDisplay(recorder.recordedHotkey)
+- Recording starts on click, cancels on blur via cancelRecording(); Escape handled automatically by TanStack
+- Added i18n keys shortcuts.pressKeys and shortcuts.clickToRecord to en.json and pt-BR.json
+- Removed Kbd overlay chips — display is now the formatted string in the Input value
+- Files changed: apps/renderer/src/components/shortcuts/hotkey-picker.tsx, apps/renderer/src/locales/en.json, apps/renderer/src/locales/pt-BR.json
+- **Learnings for future iterations:**
+  - useHotkeyRecorder options: onRecord (required), onCancel/onClear (optional) — omit optional callbacks if no-op
+  - recordedHotkey is Hotkey | null — safe to pass to formatForDisplay when non-null
+  - formatForDisplay accepts Hotkey | (string & {}) | ParsedHotkey — plain string from hotkeyToTanStack works
+  - setup.tsx passes placeholder={t('setup.hotkeyPlaceholder')} — kept placeholder prop in HotkeyPickerProps for compatibility
+  - US-005 i18n keys (pressKeys/clickToRecord) added here since CLAUDE.md mandates i18n for all user-facing text
+---
+
+## 2026-03-08 - US-006
+- Created apps/renderer/src/lib/parse-query.ts with the parseQuery pure function moved from use-bookmarks.ts
+- Updated use-bookmarks.ts to import parseQuery from @/lib/parse-query; removed useCallback wrapper (module-level function is stable)
+- No consumer changes needed — useBookmarks still returns parseQuery, so App.tsx and use-bookmark-search.ts are unaffected
+- Files changed: apps/renderer/src/lib/parse-query.ts (new), apps/renderer/src/hooks/use-bookmarks.ts
+- **Learnings for future iterations:**
+  - Module-level functions are stable references — no need for useCallback when a hook just re-exports an imported pure function
+  - Consumers that destructure parseQuery from useBookmarks continue to work without changes; only internal structure of the hook changed
+---
+
+## 2026-03-08 - US-005
+- Updated apps/renderer/src/components/shortcuts/shortcut-item.tsx to use formatForDisplay(hotkeyToTanStack(shortcut.hotkey)) for platform-aware hotkey display
+- i18n keys (shortcuts.pressKeys, shortcuts.clickToRecord) were already added in US-004
+- setup.tsx was already compatible with rewritten HotkeyPicker (placeholder prop preserved)
+- Files changed: apps/renderer/src/components/shortcuts/shortcut-item.tsx
+- **Learnings for future iterations:**
+  - When US-004 added i18n keys early (to satisfy CLAUDE.md), US-005 i18n criteria were pre-satisfied — check progress.txt before adding duplicate keys
+  - setup.tsx compatibility check is trivial: HotkeyPicker props (value, onChange, placeholder) are the same interface
+  - formatForDisplay from @tanstack/react-hotkeys renders platform-specific symbols (e.g. ⌘ on Mac, Ctrl on Linux) automatically
+---
+
+## 2026-03-08 - US-007
+- Created apps/renderer/src/hooks/use-bookmark-tags.ts with listTags, renameTag, deleteTag + own state (tags, loadingTags)
+- Removed tag operations and tags state from use-bookmarks.ts; updated UseBookmarksReturn interface
+- Moved Tag type export to use-bookmark-tags.ts; updated hooks/index.ts to export Tag from new file and export useBookmarkTags
+- No consumer changes needed — no external code destructured tag functions from useBookmarks
+- Files changed: apps/renderer/src/hooks/use-bookmark-tags.ts (new), apps/renderer/src/hooks/use-bookmarks.ts, apps/renderer/src/hooks/index.ts
+- **Learnings for future iterations:**
+  - Before extracting hook operations, grep for external consumers first — if none exist, no consumer updates needed
+  - hooks/index.ts re-exports types; when moving a type to a new file, update the index to export from the new location
+  - loadingTags is separate from loading in useBookmarks — avoids shared loading state confusion between CRUD and tag ops
+---
+
+## 2026-03-08 - US-008
+- Created apps/renderer/src/hooks/use-bookmark-actions.ts with openBookmark(id), copyUrl(bookmark), copyMarkdown(bookmark); accepts bookmarks[] param for openBookmark fallback
+- Removed openBookmark, copyUrl, copyMarkdown + related imports (writeText, open) from use-bookmarks.ts
+- Updated App.tsx: destructures bookmarks from useBookmarks(), passes to useBookmarkActions(bookmarks) for openBookmark
+- Updated bookmark-actions.tsx: destructures bookmarks from useBookmarks(), uses useBookmarkActions(bookmarks) for openBookmark + copyUrl
+- Exported useBookmarkActions from hooks/index.ts
+- Files changed: apps/renderer/src/hooks/use-bookmark-actions.ts (new), apps/renderer/src/hooks/use-bookmarks.ts, apps/renderer/src/hooks/index.ts, apps/renderer/src/App.tsx, apps/renderer/src/components/bookmark/bookmark-actions.tsx
+- **Learnings for future iterations:**
+  - openBookmark(id) has a fallback that needs bookmarks[] state — pass it as a hook parameter instead of changing the API signature
+  - bookmark-actions.tsx did NOT destructure bookmarks previously — must add it when refactoring to pass to the new actions hook
+  - useBookmarkActions is "stateless" in the sense of no useState, but accepts bookmarks[] as parameter for the fallback behavior
+---
+
+## 2026-03-08 - US-009
+- Created apps/renderer/src/core/types/command-guards.ts with 7 type guard functions (isShellAction, isOpenAction, isUrlAction, isFunctionAction, isSubmenuAction, isInputAction, isDialogAction)
+- Created apps/renderer/src/core/types/plugin-loader.ts with PluginConfigSchema, ValidatedPluginConfig, validatePluginConfig, parsePluginConfig, safeParsePluginConfig, pluginToCommand; imports CommandIconSchema from command.ts
+- Cleaned up command.ts: removed guard functions and all plugin-specific Zod/functions; exported CommandIconSchema (needed by plugin-loader.ts and FolderConfigSchema)
+- Updated core/types/index.ts to re-export from all 3 files; all 19 importing files resolve via the barrel without changes
+- Files changed: apps/renderer/src/core/types/command.ts, apps/renderer/src/core/types/command-guards.ts (new), apps/renderer/src/core/types/plugin-loader.ts (new), apps/renderer/src/core/types/index.ts
+- **Learnings for future iterations:**
+  - CommandIconSchema must be exported from command.ts because both FolderConfigSchema (stays in command.ts) and PluginConfigSchema (in plugin-loader.ts) use it
+  - The barrel index.ts means no consumer files need to change when splitting internal modules
+  - ValidatedPluginConfig is z.infer<typeof PluginConfigSchema> — it moves to plugin-loader.ts with the schema
+  - 4 pre-existing tsc errors (ai-chat-view, tools-tab, use-ai-models) are unrelated to this split
+---
+
+## 2026-03-08 - US-010
+- pnpm check passes (biome, 128 files, no fixes needed)
+- cargo check -p mrunner passes
+- CGC re-analysis: deleted stale graph, re-indexed 198 files
+- useBookmarks: CC=30 → CC=20 (extracted tags + actions hooks)
+- useKeyboardShortcuts: CC=25 → no longer in top 10 (TanStack migration)
+- command.ts: 0 functions remain (all 11 extracted to command-guards.ts and plugin-loader.ts)
+- No new lint or type errors introduced (4 pre-existing tsc errors unchanged)
+- Files changed: scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - CGC requires delete+re-add to pick up changes (add_code_to_graph returns "already indexed" on existing repos)
+  - After re-index, complexity results reflect the refactored codebase accurately
+---

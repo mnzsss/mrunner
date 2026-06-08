@@ -30,15 +30,15 @@ export const ListItem = ({
 
 	return (
 		<CommandItem value={value} onSelect={() => onSelect(id)}>
-			<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-data-[selected=true]:bg-popover text-muted-foreground">
+			<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 text-muted-foreground transition-all duration-150 group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
 				<IconComponent className="size-4" aria-hidden="true" />
 			</div>
-			<div className="min-w-0 flex-1">
-				<div className="truncate text-sm font-medium">{title}</div>
+			<div className="flex min-w-0 flex-1 items-baseline gap-2">
+				<span className="truncate font-medium text-[13px]">{title}</span>
 				{description && (
-					<div className="truncate text-xs text-muted-foreground">
+					<span className="truncate text-muted-foreground/70 text-xs">
 						{description}
-					</div>
+					</span>
 				)}
 			</div>
 			{shortcut && <Kbd>{shortcut}</Kbd>}

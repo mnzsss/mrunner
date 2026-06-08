@@ -3,6 +3,10 @@ import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('locale')
+
 const SUPPORTED_LOCALES = [
 	{ code: 'en', label: 'English' },
 	{ code: 'pt-BR', label: 'Português (BR)' },
@@ -25,7 +29,7 @@ export function useLocale() {
 				preferences.locale = locale
 				await writeTextFile(configPath, JSON.stringify(preferences, null, 2))
 			} catch (e) {
-				console.error('Failed to persist locale:', e)
+				logger.error('Failed to persist locale', { error: String(e) })
 			}
 		},
 		[i18n],

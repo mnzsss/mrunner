@@ -118,14 +118,14 @@ pub fn sync_global_shortcuts(
     app: tauri::AppHandle,
     shortcuts: Vec<ShortcutConfig>,
 ) -> Result<(), String> {
-    println!("[shortcuts] sync_global_shortcuts called with {} shortcuts", shortcuts.len());
+    log::debug!("sync_global_shortcuts called with {} shortcuts", shortcuts.len());
 
     let state = app.state::<Mutex<RegisteredShortcuts>>();
     let mut state = state.lock().map_err(|e| format!("Failed to lock state: {}", e))?;
 
     // Unregister all existing shortcuts
     for shortcut_str in &state.registered {
-        println!("[shortcuts] Unregistering: {}", shortcut_str);
+        log::debug!("Unregistering shortcut: {}", shortcut_str);
         if let Ok(shortcut) = shortcut_str.parse::<Shortcut>() {
             let _ = app.global_shortcut().unregister(shortcut);
         }
@@ -134,7 +134,7 @@ pub fn sync_global_shortcuts(
 
     // Register new shortcuts
     for sc in &shortcuts {
-        println!("[shortcuts] Registering: {} -> {}", sc.hotkey, sc.action);
+        log::debug!("Registering shortcut: {} -> {}", sc.hotkey, sc.action);
 
         match sc.hotkey.parse::<Shortcut>() {
             Ok(shortcut) => {
@@ -160,21 +160,21 @@ pub fn sync_global_shortcuts(
                             _ => {}
                         }
                     }) {
-                    println!("[shortcuts] Failed to register {}: {}", sc.hotkey, e);
+                    log::warn!("Failed to register {}: {}", sc.hotkey, e);
                     return Err(format!("Failed to register shortcut '{}': {}", sc.hotkey, e));
                 }
 
                 state.registered.push(sc.hotkey.clone());
-                println!("[shortcuts] Registered successfully: {}", sc.hotkey);
+                log::debug!("Registered shortcut: {}", sc.hotkey);
             }
             Err(e) => {
-                println!("[shortcuts] Failed to parse hotkey '{}': {}", sc.hotkey, e);
+                log::warn!("Failed to parse hotkey '{}': {}", sc.hotkey, e);
                 return Err(format!("Invalid hotkey format '{}': {}", sc.hotkey, e));
             }
         }
     }
 
-    println!("[shortcuts] All shortcuts registered successfully");
+    log::info!("All shortcuts registered successfully");
     Ok(())
 }
 
@@ -193,7 +193,7 @@ pub fn load_saved_shortcuts(app: &tauri::AppHandle) -> Result<(), String> {
     let mut config_content = None;
     for path in &config_paths {
         if let Ok(content) = fs::read_to_string(path) {
-            println!("[shortcuts] Found config at: {}", path);
+            log::debug!("Found config at: {}", path);
             config_content = Some(content);
             break;
         }
@@ -234,7 +234,7 @@ pub fn load_saved_shortcuts(app: &tauri::AppHandle) -> Result<(), String> {
 
         let action = sc.get("action").and_then(|a| a.as_str()).unwrap_or("").to_string();
 
-        println!("[shortcuts] Loading saved shortcut: {} -> {}", hotkey_str, action);
+        log::debug!("Loading saved shortcut: {} -> {}", hotkey_str, action);
 
         if let Ok(shortcut) = hotkey_str.parse::<Shortcut>() {
             let action_clone = action.clone();
@@ -258,13 +258,13 @@ pub fn load_saved_shortcuts(app: &tauri::AppHandle) -> Result<(), String> {
                         _ => {}
                     }
                 }) {
-                println!("[shortcuts] Failed to register {}: {}", hotkey_str, e);
+                log::warn!("Failed to register {}: {}", hotkey_str, e);
             } else {
                 state.registered.push(hotkey_str.clone());
-                println!("[shortcuts] Registered: {}", hotkey_str);
+                log::debug!("Registered shortcut: {}", hotkey_str);
             }
         } else {
-            println!("[shortcuts] Failed to parse hotkey: {}", hotkey_str);
+            log::warn!("Failed to parse hotkey: {}", hotkey_str);
         }
     }
 
