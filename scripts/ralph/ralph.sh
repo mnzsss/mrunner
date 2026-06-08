@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ralph Wiggum - Long-running AI agent loop
 # Always runs in background. Use `rls` to check status.
-# Usage: ./ralph.sh [--tool amp|claude|copilot] [--model MODEL] [max_iterations]
+# Usage: ./ralph.sh [--tool claude|copilot] [--model MODEL] [max_iterations]
 
 set -e
 
@@ -66,6 +66,14 @@ if [[ "$LOOP_MODE" == "false" ]]; then
   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
   LOG_FILE="$LOG_DIR/ralph-$TIMESTAMP.log"
   PID_FILE="$SCRIPT_DIR/.ralph.pid"
+
+  # Serialize concurrent launches: noclobber makes the lock creation atomic
+  LOCK_FILE="$SCRIPT_DIR/.ralph.lock"
+  if ! (set -o noclobber; echo "$$" > "$LOCK_FILE") 2>/dev/null; then
+    echo "Ralph is already starting (lock held by PID $(cat "$LOCK_FILE" 2>/dev/null))"
+    exit 1
+  fi
+  trap 'rm -f "$LOCK_FILE"' EXIT
 
   if [ -f "$PID_FILE" ]; then
     OLD_PID=$(cat "$PID_FILE")
@@ -145,9 +153,7 @@ for i in $(seq 1 $MAX_ITERATIONS); do
   echo "  Ralph Iteration $i of $MAX_ITERATIONS ($TOOL)"
   echo "==============================================================="
 
-  if [[ "$TOOL" == "amp" ]]; then
-    OUTPUT=$(cat "$SCRIPT_DIR/prompt.md" | amp --dangerously-allow-all 2>&1) || true
-  elif [[ "$TOOL" == "claude" ]]; then
+  if [[ "$TOOL" == "claude" ]]; then
     OUTPUT=$(claude --dangerously-skip-permissions --model "$MODEL" --print < "$SCRIPT_DIR/CLAUDE.md" 2>&1) || true
   else
     OUTPUT=$(gh copilot -- -p "$(cat "$SCRIPT_DIR/CLAUDE.md")" --model "$MODEL" --allow-all-tools --allow-all-paths --allow-all-urls -s 2>&1) || true
