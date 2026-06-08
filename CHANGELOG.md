@@ -3,6 +3,13 @@
 All notable changes to MRunner will be documented in this file.
 
 
+## [0.2.0](https://github.com/mnzsss/mrunner/compare/v0.1.1...v0.2.0) (2026-06-08)
+
+### Bug Fixes
+
+* **ci:** add workflow_dispatch trigger ([bd2f394](https://github.com/mnzsss/mrunner/commit/bd2f3947cc972d20bbd6a458a8e462e8c07ba04a))
+* **ci:** call release workflow when version changes ([37179df](https://github.com/mnzsss/mrunner/commit/37179df8a4f63f2781cf1dd1bbf6ad188591ef36))
+
 ## [0.1.1](https://github.com/mnzsss/mrunner/compare/v0.0.9...v0.1.1) (2026-03-08)
 
 ### Features
