@@ -69,7 +69,6 @@ const ChatMessageItem = memo(function ChatMessageItem({
 	return (
 		<Message from={message.role}>
 			<MessageContent className={isError ? 'text-destructive' : undefined}>
-				{/* Reasoning */}
 				{hasReasoning && (
 					<Reasoning isStreaming={isStreaming && !hasContent}>
 						<ReasoningTrigger
@@ -84,7 +83,6 @@ const ChatMessageItem = memo(function ChatMessageItem({
 					</Reasoning>
 				)}
 
-				{/* Command executions */}
 				{message.commands?.map((cmd) => (
 					<div
 						key={cmd.id}
@@ -109,12 +107,10 @@ const ChatMessageItem = memo(function ChatMessageItem({
 					</div>
 				))}
 
-				{/* Main message content */}
 				{hasContent ? (
 					<MessageResponse>{message.content}</MessageResponse>
 				) : null}
 
-				{/* Streaming indicator */}
 				{isStreaming && !hasContent && !hasReasoning && (
 					<Shimmer duration={1.5}>...</Shimmer>
 				)}
@@ -122,7 +118,6 @@ const ChatMessageItem = memo(function ChatMessageItem({
 					<span className="inline-block size-1.5 rounded-full bg-current motion-safe:animate-pulse" />
 				)}
 
-				{/* Token usage */}
 				{message.usage && (
 					<div className="flex gap-3 pt-1 text-[10px] text-muted-foreground/60">
 						<span>
@@ -203,10 +198,12 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 		const handler = (e: MouseEvent) => {
 			const anchor = (e.target as HTMLElement).closest('a')
 			if (!anchor) return
+			// Always intercept: http(s) opens in the default browser, any other
+			// scheme (file:, javascript:, ...) is blocked from navigating the app
+			e.preventDefault()
+			e.stopPropagation()
 			const href = anchor.getAttribute('href')
 			if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-				e.preventDefault()
-				e.stopPropagation()
 				open(href)
 			}
 		}
@@ -291,7 +288,6 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 			role="region"
 			aria-label={t('chat.title')}
 		>
-			{/* Header */}
 			<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
 				<button
 					type="button"
@@ -318,7 +314,6 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 				)}
 			</div>
 
-			{/* Messages */}
 			<Conversation className="flex-1">
 				<ConversationContent className="gap-4 p-3" aria-live="polite">
 					{messages.map((msg) => (
@@ -328,7 +323,6 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 				<ConversationScrollButton />
 			</Conversation>
 
-			{/* Input */}
 			<div className="border-border/50 border-t px-3 py-2.5">
 				<PromptInput onSubmit={handleSubmit}>
 					<PromptInputBody>
