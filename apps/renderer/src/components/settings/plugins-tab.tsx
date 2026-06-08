@@ -53,12 +53,12 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 interface PluginPreviewInfo {
 	id: string
 	name: string
-	version?: string
+	version: string
 	description?: string
 	author?: string
 	icon?: string
 	runtime: string
-	tempPath: string
+	installToken: string
 }
 
 interface RegistryPlugin {
@@ -79,7 +79,7 @@ interface RegistryCache {
 interface UpdateResult {
 	pluginId: string
 	pluginName: string
-	status: 'updated' | 'up-to-date' | 'error' | 'skipped'
+	status: 'updated' | 'update-available' | 'up-to-date' | 'error' | 'skipped'
 	message?: string
 }
 
@@ -158,11 +158,21 @@ function NativeValidationDetails({
 	)
 }
 
-function UpdateResultsList({ results }: { results: UpdateResult[] }) {
+function UpdateResultsList({
+	results,
+	updatingPluginId,
+	onUpdatePlugin,
+}: {
+	results: UpdateResult[]
+	updatingPluginId: string | null
+	onUpdatePlugin: (pluginId: string) => void
+}) {
 	const { t } = useTranslation()
 
 	function getStatusColor(status: UpdateResult['status']) {
 		if (status === 'updated') return 'text-green-600 dark:text-green-400'
+		if (status === 'update-available')
+			return 'text-yellow-700 dark:text-yellow-400'
 		if (status === 'error') return 'text-destructive'
 		return 'text-muted-foreground'
 	}
@@ -170,6 +180,8 @@ function UpdateResultsList({ results }: { results: UpdateResult[] }) {
 	function getStatusText(result: UpdateResult) {
 		if (result.status === 'updated')
 			return t('settings.plugins.updateStatusUpdated')
+		if (result.status === 'update-available')
+			return t('settings.plugins.updateStatusAvailable')
 		if (result.status === 'up-to-date')
 			return t('settings.plugins.updateStatusUpToDate')
 		if (result.status === 'error')
@@ -182,11 +194,26 @@ function UpdateResultsList({ results }: { results: UpdateResult[] }) {
 			{results.map((result) => (
 				<div
 					key={result.pluginId}
-					className="flex items-center justify-between px-2 py-1 text-sm"
+					className="flex items-center justify-between gap-2 px-2 py-1 text-sm"
 				>
 					<span className="font-medium">{result.pluginName}</span>
-					<span className={getStatusColor(result.status)}>
-						{getStatusText(result)}
+					<span className="flex items-center gap-2">
+						<span className={getStatusColor(result.status)}>
+							{getStatusText(result)}
+						</span>
+						{result.status === 'update-available' && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="text-xs"
+								disabled={updatingPluginId !== null}
+								onClick={() => onUpdatePlugin(result.pluginId)}
+							>
+								{updatingPluginId === result.pluginId
+									? t('settings.plugins.updating')
+									: t('settings.plugins.updatePlugin')}
+							</Button>
+						)}
 					</span>
 				</div>
 			))}
@@ -219,6 +246,7 @@ export function PluginsTab() {
 		null,
 	)
 	const [checkingUpdates, setCheckingUpdates] = useState(false)
+	const [updatingPluginId, setUpdatingPluginId] = useState<string | null>(null)
 
 	// Native plugin validation state
 	const [nativeValidation, setNativeValidation] =
@@ -334,7 +362,7 @@ export function PluginsTab() {
 		try {
 			const discovered = await invoke<ScriptableRegisteredPlugin[]>(
 				'complete_plugin_install',
-				{ tempPath: pluginPreview.tempPath },
+				{ installToken: pluginPreview.installToken },
 			)
 			setPlugins(discovered)
 			setInstallStatus('success')
@@ -349,7 +377,7 @@ export function PluginsTab() {
 	const handleCancelInstall = async () => {
 		if (pluginPreview) {
 			await invoke('cancel_plugin_install', {
-				tempPath: pluginPreview.tempPath,
+				installToken: pluginPreview.installToken,
 			}).catch(() => {})
 		}
 		setPluginPreview(null)
@@ -407,16 +435,31 @@ export function PluginsTab() {
 		setCheckingUpdates(true)
 		setUpdateResults(null)
 		try {
+			// Read-only: fetches and compares revisions, never pulls code
 			const results = await invoke<UpdateResult[]>('check_plugin_updates')
 			setUpdateResults(results)
-			// Re-discover plugins in case updates brought new commands
-			const discovered =
-				await invoke<ScriptableRegisteredPlugin[]>('discover_plugins')
-			setPlugins(discovered)
 		} catch (e) {
 			console.error('Failed to check updates:', e)
 		} finally {
 			setCheckingUpdates(false)
+		}
+	}
+
+	const handleUpdatePlugin = async (pluginId: string) => {
+		setUpdatingPluginId(pluginId)
+		try {
+			const result = await invoke<UpdateResult>('update_plugin', { pluginId })
+			setUpdateResults((prev) =>
+				(prev ?? []).map((r) => (r.pluginId === pluginId ? result : r)),
+			)
+			// Re-discover plugins in case the update brought new commands
+			const discovered =
+				await invoke<ScriptableRegisteredPlugin[]>('discover_plugins')
+			setPlugins(discovered)
+		} catch (e) {
+			console.error('Failed to update plugin:', e)
+		} finally {
+			setUpdatingPluginId(null)
 		}
 	}
 
@@ -462,7 +505,6 @@ export function PluginsTab() {
 
 	return (
 		<div className="space-y-6">
-			{/* Native (Built-in) Plugins */}
 			<div className="space-y-3">
 				<h3 className="font-medium text-muted-foreground text-sm">
 					{t('settings.plugins.nativePlugins')}
@@ -599,7 +641,6 @@ export function PluginsTab() {
 
 			<Separator />
 
-			{/* Install from Git URL */}
 			<div className="space-y-3">
 				<h3 className="font-medium text-muted-foreground text-sm">
 					{t('settings.plugins.installFromGit')}
@@ -654,7 +695,6 @@ export function PluginsTab() {
 				)}
 			</div>
 
-			{/* Confirmation dialog */}
 			<AlertDialog
 				open={installStatus === 'confirming'}
 				onOpenChange={(open) => {
@@ -723,7 +763,6 @@ export function PluginsTab() {
 
 			<Separator />
 
-			{/* Browse Plugins Registry */}
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
 					<h3 className="font-medium text-muted-foreground text-sm">
@@ -812,7 +851,6 @@ export function PluginsTab() {
 
 			<Separator />
 
-			{/* Check for Updates */}
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
 					<h3 className="font-medium text-muted-foreground text-sm">
@@ -835,7 +873,11 @@ export function PluginsTab() {
 				</div>
 
 				{updateResults && updateResults.length > 0 && (
-					<UpdateResultsList results={updateResults} />
+					<UpdateResultsList
+						results={updateResults}
+						updatingPluginId={updatingPluginId}
+						onUpdatePlugin={handleUpdatePlugin}
+					/>
 				)}
 			</div>
 

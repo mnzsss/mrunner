@@ -10,12 +10,8 @@ export interface ExecuteActionOptions {
 }
 
 /**
- * Executes a plugin action. All action types (url, open, copy, shell,
- * notification, push) are handled here so every call-site stays consistent.
- *
  * The `push` action requires app-level navigation and is delegated via the
- * optional `onPush` callback. If `onPush` is not provided the action is
- * silently ignored (no-op).
+ * optional `onPush` callback; if `onPush` is not provided it is a no-op.
  */
 export async function executePluginAction(
 	action: Action,

@@ -99,7 +99,7 @@ async function loadScriptablePlugins(): Promise<Command[]> {
 			}
 		}
 	} catch (e) {
-		console.error('Failed to discover scriptable plugins:', e)
+		logger.error('Failed to discover scriptable plugins', { error: String(e) })
 	}
 	return commands
 }

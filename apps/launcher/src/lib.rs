@@ -104,6 +104,8 @@ async fn discover_plugins(
 async fn run_plugin_command(
     command_id: String,
     context: serde_json::Value,
+    method: Option<String>,
+    item_id: Option<String>,
     state: tauri::State<'_, PluginRegistry>,
 ) -> Result<serde_json::Value, String> {
     let (plugin, command) = {
@@ -116,28 +118,52 @@ async fn run_plugin_command(
         })?;
         (p.clone(), c.clone())
     };
-    plugins::run_plugin_command(&plugin, &command, context).await
+    plugins::run_plugin_command(&plugin, &command, context, method, item_id).await
 }
 
+type InstallSessionsState = std::sync::Arc<plugins::InstallSessions>;
+
 #[tauri::command]
-async fn prepare_plugin_install(git_url: String) -> Result<plugins::PluginPreviewInfo, String> {
-    plugins::prepare_plugin_install(&git_url)
+async fn prepare_plugin_install(
+    git_url: String,
+    sessions: tauri::State<'_, InstallSessionsState>,
+) -> Result<plugins::PluginPreviewInfo, String> {
+    let sessions = std::sync::Arc::clone(&sessions);
+    tauri::async_runtime::spawn_blocking(move || {
+        plugins::prepare_plugin_install(&sessions, &git_url)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
 async fn complete_plugin_install(
-    temp_path: String,
+    install_token: String,
+    sessions: tauri::State<'_, InstallSessionsState>,
     state: tauri::State<'_, PluginRegistry>,
 ) -> Result<Vec<plugins::RegisteredPlugin>, String> {
-    plugins::complete_plugin_install(&temp_path)?;
-    let discovered = plugins::discover_plugins();
+    let sessions = std::sync::Arc::clone(&sessions);
+    let discovered = tauri::async_runtime::spawn_blocking(move || {
+        plugins::complete_plugin_install(&sessions, &install_token)?;
+        Ok::<_, String>(plugins::discover_plugins())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     *state.lock().map_err(|e| e.to_string())? = discovered.clone();
     Ok(discovered)
 }
 
 #[tauri::command]
-async fn cancel_plugin_install(temp_path: String) -> Result<(), String> {
-    plugins::cancel_plugin_install(&temp_path)
+async fn cancel_plugin_install(
+    install_token: String,
+    sessions: tauri::State<'_, InstallSessionsState>,
+) -> Result<(), String> {
+    let sessions = std::sync::Arc::clone(&sessions);
+    tauri::async_runtime::spawn_blocking(move || {
+        plugins::cancel_plugin_install(&sessions, &install_token)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -145,8 +171,20 @@ async fn check_plugin_updates(
     state: tauri::State<'_, PluginRegistry>,
 ) -> Result<Vec<plugins::UpdateResult>, String> {
     let plugins = state.lock().map_err(|e| e.to_string())?.clone();
-    let results = plugins::check_plugin_updates(&plugins);
-    Ok(results)
+    tauri::async_runtime::spawn_blocking(move || plugins::check_plugin_updates(&plugins))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_plugin(
+    plugin_id: String,
+    state: tauri::State<'_, PluginRegistry>,
+) -> Result<plugins::UpdateResult, String> {
+    let plugins = state.lock().map_err(|e| e.to_string())?.clone();
+    tauri::async_runtime::spawn_blocking(move || plugins::update_plugin(&plugins, &plugin_id))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[derive(serde::Serialize)]
@@ -222,6 +260,7 @@ pub fn run() {
             registered: vec![],
         }))
         .manage(Mutex::new(Vec::<plugins::RegisteredPlugin>::new()))
+        .manage(std::sync::Arc::new(plugins::InstallSessions::default()))
         .manage(tools::AiProcessState(Mutex::new(None)))
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -356,6 +395,7 @@ pub fn run() {
             complete_plugin_install,
             cancel_plugin_install,
             check_plugin_updates,
+            update_plugin,
             validate_native_plugin,
             tools::check_tool_installed,
             tools::list_ai_models,

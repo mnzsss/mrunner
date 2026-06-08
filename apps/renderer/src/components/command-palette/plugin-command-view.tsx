@@ -2,7 +2,6 @@ import type { DetailResult, ListItem } from '@mrunner/plugin'
 import type { RefObject } from 'react'
 import { Command, CommandInput, CommandItem, CommandList } from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
-import { homeDir } from '@tauri-apps/api/path'
 import { ChevronLeft, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +12,7 @@ import { isScriptableAction } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
 import { ICON_MAP } from '@/lib/constants'
 import { executePluginAction } from '@/lib/execute-plugin-action'
+import { getPluginEnvironment } from '@/lib/plugin-environment'
 
 export interface PluginCommandViewProps {
 	command: CommandType
@@ -64,23 +64,23 @@ export function PluginCommandView({
 	const mode = isScriptableAction(command.action) ? command.action.mode : 'list'
 
 	const runCommand = useCallback(
-		async (currentQuery: string) => {
+		async (
+			currentQuery: string,
+			options?: { method: 'onItemSelect'; itemId: string },
+		) => {
 			if (!isScriptableAction(command.action)) return
 			setLoading(true)
 			setError(null)
 			try {
-				const home = await homeDir()
+				const environment = await getPluginEnvironment(i18n.language)
 				const result = await invoke('run_plugin_command', {
 					commandId: command.action.commandId,
+					method: options?.method ?? null,
+					itemId: options?.itemId ?? null,
 					context: {
 						query: currentQuery,
 						preferences: {},
-						environment: {
-							locale: i18n.language,
-							theme: 'dark',
-							platform: 'linux',
-							homeDir: home,
-						},
+						environment,
 					},
 				})
 				if (isDetailResult(result)) {
@@ -133,12 +133,16 @@ export function PluginCommandView({
 
 	const handleItemSelect = useCallback(
 		async (item: ListItem) => {
-			if (!item.actions || item.actions.length === 0) return
-			const firstAction = item.actions[0]
-			if (!firstAction) return
-			await executePluginAction(firstAction, { onPush: onPushCommand })
+			const firstAction = item.actions?.[0]
+			if (firstAction) {
+				await executePluginAction(firstAction, { onPush: onPushCommand })
+				return
+			}
+			// No declared actions: delegate to the plugin's onItemSelect hook,
+			// which can return a new list or detail result to render.
+			await runCommand(query, { method: 'onItemSelect', itemId: item.id })
 		},
-		[onPushCommand],
+		[onPushCommand, runCommand, query],
 	)
 
 	return (

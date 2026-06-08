@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { homeDir } from '@tauri-apps/api/path'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import { lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +19,7 @@ import {
 	usePlugins,
 	useWindowManager,
 } from '@/hooks'
+import { getPluginEnvironment } from '@/lib/plugin-environment'
 
 const BookmarkDialog = lazy(() =>
 	import('@/components/bookmark/bookmark-dialog').then((mod) => ({
@@ -152,18 +152,13 @@ function App() {
 				const { commandId: pluginCommandId, mode } = command.action
 				if (mode === 'action') {
 					try {
-						const home = await homeDir()
+						const environment = await getPluginEnvironment(i18n.language)
 						await invoke('run_plugin_command', {
 							commandId: pluginCommandId,
 							context: {
 								query,
 								preferences: {},
-								environment: {
-									locale: i18n.language,
-									theme: 'dark',
-									platform: 'linux',
-									homeDir: home,
-								},
+								environment,
 							},
 						})
 						await sendNotification({
