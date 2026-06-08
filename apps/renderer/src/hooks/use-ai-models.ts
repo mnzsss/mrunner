@@ -195,18 +195,50 @@ export function useAIModels(): UseAIModelsReturn {
 		[ensureConfigDir, getConfigPath],
 	)
 
+	// Persists the active provider without touching any provider's saved
+	// model/reasoning prefs. Saving the previous provider's selections here
+	// would corrupt the new provider's entry.
+	const saveActiveProvider = useCallback(
+		async (provider: string) => {
+			await ensureConfigDir()
+			const configPath = await getConfigPath()
+
+			const currentPrefs: UserPreferences = (await readPreferencesFile(
+				configPath,
+			)) ?? {
+				setupCompleted: false,
+				customFolders: [],
+				hiddenSystemFolders: [],
+				shortcuts: { shortcuts: [], conflictResolution: 'warn' },
+			}
+
+			const currentAi = currentPrefs.tools?.ai
+			const existingProviders =
+				currentAi && 'providers' in currentAi ? currentAi.providers : {}
+
+			const updatedPrefs = {
+				...currentPrefs,
+				tools: {
+					ai: {
+						activeProvider: provider,
+						providers: existingProviders,
+					},
+				},
+			}
+
+			await writeTextFile(configPath, JSON.stringify(updatedPrefs, null, 2))
+		},
+		[ensureConfigDir, getConfigPath],
+	)
+
 	const setProvider = useCallback(
 		async (provider: string) => {
-			logger.debug('setProvider', {
-				provider,
-				prevModel: selectedModel,
-				prevReasoning: selectedReasoning,
-			})
+			logger.debug('setProvider', { provider })
 			setActiveProvider(provider)
-			await saveToolPrefs(provider, selectedModel, selectedReasoning)
+			await saveActiveProvider(provider)
 			await loadModelsForProvider(provider)
 		},
-		[saveToolPrefs, selectedModel, selectedReasoning, loadModelsForProvider],
+		[saveActiveProvider, loadModelsForProvider],
 	)
 
 	const setModel = useCallback(
