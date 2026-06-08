@@ -57,8 +57,6 @@ pub fn check_tool_installed(tool_id: String) -> Result<ToolStatus, String> {
     }
 }
 
-// --- Model listing ---
-
 #[derive(Serialize, Clone, Debug)]
 pub struct AiReasoningLevel {
     pub effort: String,
@@ -174,8 +172,6 @@ pub fn list_ai_models(provider: String) -> Result<Vec<AiModel>, String> {
     }
 }
 
-// --- AI message handling ---
-
 #[derive(Serialize, Clone)]
 struct CodexItemEvent {
     id: String,
@@ -248,7 +244,7 @@ fn parse_claude_event(event: &Value, app_handle: &tauri::AppHandle) {
                             .or_else(|| block.get("thinking").and_then(|v| v.as_str()))
                             .map(String::from);
                         let payload = CodexItemEvent {
-                            id: uuid_v4(),
+                            id: unique_event_id(),
                             item_type: item_type.to_string(),
                             text,
                             command: None,
@@ -269,13 +265,17 @@ fn parse_claude_event(event: &Value, app_handle: &tauri::AppHandle) {
     }
 }
 
-fn uuid_v4() -> String {
+/// Generates a unique event id. Combines a timestamp with a process-wide
+/// atomic counter so two events created in the same instant never collide.
+fn unique_event_id() -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    format!("claude-{}", t)
+    format!("claude-{}-{}", t, COUNTER.fetch_add(1, Ordering::Relaxed))
 }
 
 
@@ -307,7 +307,6 @@ pub fn send_ai_message(
     app: tauri::AppHandle,
     state: State<'_, AiProcessState>,
 ) -> Result<(), String> {
-    // Kill any existing process
     if let Ok(mut guard) = state.0.lock() {
         if let Some(mut child) = guard.take() {
             let _ = child.kill();
@@ -337,7 +336,6 @@ pub fn send_ai_message(
                 .map_err(|e| format!("Failed to start claude: {}", e))?
         }
         _ => {
-            // Default: codex
             let mut cmd = Command::new("codex");
             cmd.arg("exec").arg("--json");
             if let Some(ref m) = model {
@@ -346,7 +344,13 @@ pub fn send_ai_message(
                 }
             }
             if let Some(ref effort) = reasoning_effort {
+                // Only pass through plain identifiers — the value is
+                // interpolated into a codex `-c` config expression, so reject
+                // anything that could inject extra config keys.
                 if !effort.is_empty() {
+                    if !effort.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+                        return Err(format!("Invalid reasoning effort '{}'", effort));
+                    }
                     cmd.arg("-c").arg(format!("model_reasoning_effort=\"{}\"", effort));
                 }
             }
@@ -360,7 +364,6 @@ pub fn send_ai_message(
 
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
 
-    // Store child process handle for cancellation
     if let Ok(mut guard) = state.0.lock() {
         *guard = Some(child);
     }
@@ -419,8 +422,6 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    // --- list_ai_models("claude") ---
-
     #[test]
     fn list_ai_models_claude_returns_3_models() {
         let models = list_ai_models("claude".to_string()).unwrap();
@@ -468,16 +469,12 @@ mod tests {
         assert_eq!(defaults, vec!["medium", "medium", "low"]);
     }
 
-    // --- list_ai_models("unknown") ---
-
     #[test]
     fn list_ai_models_unknown_provider_returns_err() {
         let result = list_ai_models("unknown".to_string());
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unknown provider"));
     }
-
-    // --- extract_item_event ---
 
     #[test]
     fn extract_item_event_full_json() {
@@ -539,8 +536,6 @@ mod tests {
         assert_eq!(event.exit_code, Some(0));
     }
 
-    // --- extract_usage ---
-
     #[test]
     fn extract_usage_full_object() {
         let event = json!({
@@ -578,8 +573,6 @@ mod tests {
         assert_eq!(usage.cached_input_tokens, 0);
         assert_eq!(usage.output_tokens, 99);
     }
-
-    // --- check_tool_installed ---
 
     #[test]
     fn check_tool_installed_unknown_returns_err() {

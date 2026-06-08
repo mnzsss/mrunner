@@ -369,8 +369,8 @@ describe('useAIChat', () => {
 		})
 
 		const assistant = result.current.messages[1]
-		expect(assistant.commands).toBeUndefined()
-		expect(assistant.content).toContain('not available')
+		expect(assistant?.commands).toBeUndefined()
+		expect(assistant?.content).toContain('not available')
 	})
 
 	it('codex skips command_execution from item-started events', () => {
@@ -390,7 +390,7 @@ describe('useAIChat', () => {
 		})
 
 		const assistant = result.current.messages[1]
-		expect(assistant.commands).toBeUndefined()
+		expect(assistant?.commands).toBeUndefined()
 	})
 
 	it('claude allows command_execution events', () => {
@@ -420,9 +420,9 @@ describe('useAIChat', () => {
 		})
 
 		const assistant = result.current.messages[1]
-		expect(assistant.commands).toHaveLength(1)
-		expect(assistant.commands?.[0]?.command).toBe('ls -la')
-		expect(assistant.commands?.[0]?.status).toBe('completed')
+		expect(assistant?.commands).toHaveLength(1)
+		expect(assistant?.commands?.[0]?.command).toBe('ls -la')
+		expect(assistant?.commands?.[0]?.status).toBe('completed')
 	})
 
 	it('ignores events when no streaming ID is active', () => {

@@ -236,14 +236,14 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 	const sendMessage = useCallback(
 		(content: string) => {
 			const userMsg: ChatMessage = {
-				id: `user-${Date.now()}`,
+				id: `user-${crypto.randomUUID()}`,
 				role: 'user',
 				content,
 				timestamp: Date.now(),
 				status: 'complete',
 			}
 
-			const assistantId = `assistant-${Date.now()}`
+			const assistantId = `assistant-${crypto.randomUUID()}`
 			const assistantMsg: ChatMessage = {
 				id: assistantId,
 				role: 'assistant',
