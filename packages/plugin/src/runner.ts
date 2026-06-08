@@ -3,6 +3,11 @@ import { register } from 'tsx/esm/api'
 import type { Command, CommandContext, CommandResult } from './index.js'
 
 async function readStdin(): Promise<string> {
+	if (process.stdin.isTTY) {
+		throw new Error(
+			'stdin is a TTY — context JSON must be piped into the runner',
+		)
+	}
 	return new Promise((resolve, reject) => {
 		let data = ''
 		process.stdin.setEncoding('utf8')
@@ -16,8 +21,20 @@ async function readStdin(): Promise<string> {
 
 async function main(): Promise<void> {
 	const commandPath = process.argv[2]
+	const method = process.argv[3] ?? 'run'
+	const itemId = process.argv[4]
+
 	if (!commandPath) {
-		process.stderr.write('Usage: runner.js <command-module-path>\n')
+		process.stderr.write(
+			'Usage: runner.js <command-module-path> [method] [itemId]\n',
+		)
+		process.exit(1)
+	}
+
+	if (method !== 'run' && method !== 'onItemSelect') {
+		process.stderr.write(
+			`Unknown method '${method}' — expected 'run' or 'onItemSelect'\n`,
+		)
 		process.exit(1)
 	}
 
@@ -73,7 +90,21 @@ async function main(): Promise<void> {
 
 	let result: CommandResult
 	try {
-		result = await instance.run(context)
+		if (method === 'onItemSelect') {
+			if (typeof instance.onItemSelect !== 'function') {
+				process.stderr.write(
+					`Command class does not implement onItemSelect(itemId, context)\n`,
+				)
+				process.exit(1)
+			}
+			if (!itemId) {
+				process.stderr.write(`Method 'onItemSelect' requires an itemId\n`)
+				process.exit(1)
+			}
+			result = await instance.onItemSelect(itemId, context)
+		} else {
+			result = await instance.run(context)
+		}
 	} catch (err) {
 		process.stderr.write(`Command execution failed: ${err}\n`)
 		process.exit(1)

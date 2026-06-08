@@ -64,8 +64,8 @@
 		},
 		"runtime": {
 			"type": "string",
-			"description": "JavaScript/script runtime to use for executing plugin commands",
-			"enum": ["node", "deno", "bun", "python", "bash"]
+			"description": "JavaScript runtime used to execute the plugin runner (a Node ESM bundle); only Node-compatible runtimes are supported",
+			"enum": ["node", "deno", "bun"]
 		}
 	}
 }
