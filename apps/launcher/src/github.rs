@@ -5,8 +5,6 @@ use std::path::PathBuf;
 
 use crate::plugins::{CommandMode, PluginTier, RegisteredCommand, RegisteredPlugin};
 
-// --- gh CLI JSON output structs ---
-
 #[derive(Debug, Deserialize)]
 struct GhOwner {
     login: String,
@@ -94,8 +92,6 @@ pub struct GhRepoListItem {
     pub name_with_owner: String,
 }
 
-// --- gh CLI executor ---
-
 pub async fn gh_exec(args: &[&str]) -> Result<String, String> {
     let output = tokio::process::Command::new("gh")
         .args(args)
@@ -109,8 +105,6 @@ pub async fn gh_exec(args: &[&str]) -> Result<String, String> {
         Err(String::from_utf8_lossy(&output.stderr).to_string())
     }
 }
-
-// --- Plugin registration ---
 
 pub fn register() -> RegisteredPlugin {
     RegisteredPlugin {
@@ -174,8 +168,6 @@ pub fn register() -> RegisteredPlugin {
         ],
     }
 }
-
-// --- Command dispatch ---
 
 pub async fn run_command(
     command_id: &str,
@@ -567,8 +559,6 @@ mod tests {
     use chrono::{Duration, Utc};
     use serde_json::json;
 
-    // --- register() tests ---
-
     #[test]
     fn register_returns_correct_plugin() {
         let plugin = register();
@@ -590,8 +580,6 @@ mod tests {
             assert_eq!(cmd.icon, "github");
         }
     }
-
-    // --- relative_time() tests ---
 
     #[test]
     fn relative_time_just_now() {
@@ -634,8 +622,6 @@ mod tests {
     fn relative_time_invalid_string() {
         assert_eq!(relative_time("not-a-date"), "not-a-date");
     }
-
-    // --- Serde deserialization tests ---
 
     #[test]
     fn deserialize_gh_repo_with_all_fields() {
@@ -747,8 +733,6 @@ mod tests {
         assert_eq!(item.name_with_owner, "mnzs/mrunner");
     }
 
-    // --- cmd_hub() async tests ---
-
     #[tokio::test]
     async fn cmd_hub_empty_query_returns_4_items() {
         let ctx = json!({ "query": "" });
@@ -773,8 +757,6 @@ mod tests {
         let items = result["items"].as_array().unwrap();
         assert_eq!(items.len(), 0);
     }
-
-    // --- run_command() tests ---
 
     #[tokio::test]
     async fn run_command_unknown_returns_err() {

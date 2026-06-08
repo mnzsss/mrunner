@@ -137,7 +137,11 @@ export interface SlashShortcut {
 	id: string
 	name: string
 	command: string
-	descriptionKey: string
+	descriptionKey:
+		| 'slashShortcuts.ghRepos'
+		| 'slashShortcuts.ghPrs'
+		| 'slashShortcuts.ghIssues'
+		| 'slashShortcuts.ghActions'
 	icon: ToolIcon
 	color: ToolColor
 	commandId: string
