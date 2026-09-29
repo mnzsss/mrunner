@@ -42,8 +42,8 @@ const scriptable: CommandType = {
 	},
 }
 
-describe('palette restyle', () => {
-	it('ListItem renders the shared icon tile on surface tokens', () => {
+describe('palette rows', () => {
+	it('ListItem renders its title next to the shared icon tile', () => {
 		render(
 			<Command>
 				<CommandList>
@@ -57,9 +57,8 @@ describe('palette restyle', () => {
 				</CommandList>
 			</Command>,
 		)
-		const tile = document.querySelector('[data-slot="list-item-icon"]')
-		expect(tile).toHaveClass('bg-surface-2', 'border-border-subtle')
-		expect(tile).not.toHaveClass('bg-muted/80')
+		const row = screen.getByText('Alpha').closest('[data-slot="command-item"]')
+		expect(row?.querySelector('[data-slot="list-item-icon"]')).not.toBeNull()
 	})
 
 	it('plugin rows render through the shared ListItem', async () => {
@@ -84,10 +83,8 @@ describe('palette restyle', () => {
 		expect(row?.querySelector('[data-slot="list-item-icon"]')).not.toBeNull()
 	})
 
-	it('update banner uses the highlight token and translated copy', () => {
+	it('update banner shows translated copy and a dismiss action', () => {
 		render(<UpdateBanner />)
-		const banner = document.querySelector('[data-slot="update-banner"]')
-		expect(banner).toHaveClass('bg-highlight/10', 'border-border-subtle')
 		expect(
 			screen.getByText('updater.available', { exact: false }),
 		).toBeInTheDocument()

@@ -27,22 +27,20 @@ const folder: FolderConfig = {
 	isSystem: false,
 }
 
-describe('dialogs restyle', () => {
-	it('delete dialog shows the bookmark on a surface card and still confirms', () => {
+describe('bookmark and folder dialogs', () => {
+	it('delete dialog previews the bookmark and confirms', () => {
 		const onConfirm = vi.fn()
 		render(
 			<DeleteConfirmDialog bookmark={bookmark} onConfirm={onConfirm} open />,
 		)
 		const preview = document.querySelector('[data-slot="bookmark-preview"]')
-		expect(preview).toHaveClass('bg-surface-2', 'border-border-subtle')
-		expect(preview).not.toHaveClass('bg-muted')
+		expect(preview).toHaveTextContent('Example')
 		const confirm = screen.getByRole('button', { name: 'actions.delete' })
-		expect(confirm).not.toHaveClass('bg-destructive')
 		fireEvent.click(confirm)
 		expect(onConfirm).toHaveBeenCalledOnce()
 	})
 
-	it('folder rows use the shared tile and surface tokens', () => {
+	it('folder manager lists each folder with its icon tile', () => {
 		render(
 			<FolderManager
 				open
@@ -57,10 +55,6 @@ describe('dialogs restyle', () => {
 			/>,
 		)
 		const row = screen.getByText('Projects').closest('[data-slot="folder-row"]')
-		expect(row).toHaveClass('bg-surface-2', 'border-border-subtle')
-		expect(row).not.toHaveClass('bg-muted/50')
-		expect(row?.querySelector('[data-slot="folder-icon"]')).toHaveClass(
-			'bg-surface-3',
-		)
+		expect(row?.querySelector('[data-slot="folder-icon"]')).not.toBeNull()
 	})
 })

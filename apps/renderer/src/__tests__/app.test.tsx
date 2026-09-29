@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -10,6 +11,8 @@ const windowMock = vi.hoisted(() => ({
 	setSize: vi.fn((_size: { width: number }) => Promise.resolve()),
 	center: vi.fn(() => Promise.resolve()),
 }))
+
+const shortcuts = vi.hoisted(() => ({ onEscape: () => {} }))
 
 const listCommand = vi.hoisted(
 	(): Command => ({
@@ -95,7 +98,9 @@ vi.mock('@/hooks', async (importOriginal) => ({
 		deleteDialog: {},
 		setIsSettingsOpen: vi.fn(),
 	}),
-	useKeyboardShortcuts: () => {},
+	useKeyboardShortcuts: ({ onEscape }: { onEscape: () => void }) => {
+		shortcuts.onEscape = onEscape
+	},
 }))
 
 function widths() {
@@ -136,5 +141,25 @@ describe('App preview window', () => {
 
 		expect(screen.getByText('plugin page')).toBeInTheDocument()
 		expect(widths()).toEqual([960, 640])
+	})
+})
+
+describe('App Escape', () => {
+	it('pops the open page without hiding the window', async () => {
+		await renderApp()
+		await click('open page')
+
+		await act(async () => shortcuts.onEscape())
+
+		expect(screen.queryByText('plugin page')).not.toBeInTheDocument()
+		expect(invoke).not.toHaveBeenCalledWith('hide_main_window')
+	})
+
+	it('hides the window at the root palette', async () => {
+		await renderApp()
+
+		await act(async () => shortcuts.onEscape())
+
+		expect(invoke).toHaveBeenCalledWith('hide_main_window')
 	})
 })
