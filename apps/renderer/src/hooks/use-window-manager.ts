@@ -7,6 +7,7 @@ const BLUR_DEBOUNCE_MS = 150
 
 export interface UseWindowManagerOptions {
 	onQueryReset?: () => void
+	onWindowHidden?: () => void | Promise<void>
 	activeDialogs?: number
 }
 
@@ -17,6 +18,7 @@ export interface UseWindowManagerReturn {
 
 export function useWindowManager({
 	onQueryReset,
+	onWindowHidden,
 	activeDialogs = 0,
 }: UseWindowManagerOptions = {}): UseWindowManagerReturn {
 	const onQueryResetRef = useRef(onQueryReset)
@@ -27,8 +29,14 @@ export function useWindowManager({
 		onQueryResetRef.current = onQueryReset
 	}, [onQueryReset])
 
+	const onWindowHiddenRef = useRef(onWindowHidden)
+	useEffect(() => {
+		onWindowHiddenRef.current = onWindowHidden
+	}, [onWindowHidden])
+
 	const hideWindow = useCallback(async () => {
 		await invoke('hide_main_window')
+		await onWindowHiddenRef.current?.()
 	}, [])
 
 	const showWindow = useCallback(async () => {

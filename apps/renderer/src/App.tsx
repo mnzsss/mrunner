@@ -17,6 +17,7 @@ import {
 	useKeyboardShortcuts,
 	usePalettePages,
 	usePlugins,
+	usePreviewWindow,
 	useRecentCommands,
 	useWindowManager,
 } from '@/hooks'
@@ -70,12 +71,16 @@ function App() {
 	})
 
 	// Window manager hook
+	const preview = usePreviewWindow({ suppressed: isChatMode })
+
 	const { hideWindow } = useWindowManager({
 		onQueryReset: () => {
 			setQuery('')
 			resetPages()
 			requestAnimationFrame(() => inputRef.current?.focus())
+			void preview.close()
 		},
+		onWindowHidden: preview.close,
 		activeDialogs: dialogManager.nativeDialogCount + (isChatMode ? 1 : 0),
 	})
 
