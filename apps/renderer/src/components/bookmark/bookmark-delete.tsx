@@ -47,7 +47,10 @@ export function DeleteConfirmDialog({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 
-				<div className="min-w-0 overflow-hidden rounded-lg bg-muted p-3">
+				<div
+					data-slot="bookmark-preview"
+					className="min-w-0 overflow-hidden rounded-lg border border-border-subtle bg-surface-2 p-3"
+				>
 					<p className="truncate font-medium text-sm">
 						{bookmark.title || t('bookmarks.noTitle')}
 					</p>
@@ -58,10 +61,7 @@ export function DeleteConfirmDialog({
 
 				<AlertDialogFooter>
 					<AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={onConfirm}
-						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-					>
+					<AlertDialogAction variant="destructive" onClick={onConfirm}>
 						{t('actions.delete')}
 					</AlertDialogAction>
 				</AlertDialogFooter>

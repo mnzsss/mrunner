@@ -6,10 +6,12 @@ import {
 	CardTitle,
 } from '@mrunner/ui'
 import { open } from '@tauri-apps/plugin-shell'
-import { AlertTriangle, ArrowLeft, ExternalLink } from 'lucide-react'
+import { AlertTriangle, ExternalLink } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import type { ToolProvider } from '@/core/types/tools'
+
+import { ChatHeader } from './chat-header'
 
 interface ToolNotInstalledCardProps {
 	provider: ToolProvider
@@ -25,17 +27,9 @@ export function ToolNotInstalledCard({
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
-				<button
-					type="button"
-					onClick={onBack}
-					className="cursor-pointer rounded-lg p-1.5 text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-					aria-label={t('chat.back')}
-				>
-					<ArrowLeft className="size-4" />
-				</button>
+			<ChatHeader onBack={onBack}>
 				<span className="font-medium text-sm">{t('chat.title')}</span>
-			</div>
+			</ChatHeader>
 
 			<div className="flex flex-1 items-center justify-center p-4">
 				<Card size="sm" className="max-w-sm">
@@ -57,7 +51,7 @@ export function ToolNotInstalledCard({
 									? t('tools.installWindows')
 									: t('tools.installLinux')}
 							</p>
-							<code className="block rounded-md bg-muted px-3 py-2 text-xs">
+							<code className="block rounded-md border border-border-subtle bg-surface-2 px-3 py-2 text-xs">
 								{isWindows
 									? provider.installInstructions.windows
 									: provider.installInstructions.linux}

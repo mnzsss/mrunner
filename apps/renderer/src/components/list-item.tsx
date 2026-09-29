@@ -29,14 +29,26 @@ export const ListItem = ({
 	const IconComponent = ICON_MAP[icon] ?? Terminal
 
 	return (
-		<CommandItem value={value} onSelect={() => onSelect(id)}>
-			<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 text-muted-foreground transition-all duration-150 group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
+		<CommandItem
+			value={value}
+			data-command-id={id}
+			onSelect={() => onSelect(id)}
+		>
+			<div
+				data-slot="list-item-icon"
+				className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-2 text-muted-foreground transition-colors duration-150 group-data-[selected=true]/command-item:border-highlight/30 group-data-[selected=true]/command-item:bg-highlight/10 group-data-[selected=true]/command-item:text-highlight motion-reduce:transition-none"
+			>
 				<IconComponent className="size-4" aria-hidden="true" />
 			</div>
 			<div className="flex min-w-0 flex-1 items-baseline gap-2">
-				<span className="truncate font-medium text-[13px]">{title}</span>
+				<span
+					data-slot="list-item-title"
+					className="truncate font-medium text-[13px]"
+				>
+					{title}
+				</span>
 				{description && (
-					<span className="truncate text-muted-foreground/70 text-xs">
+					<span className="truncate text-muted-foreground text-xs">
 						{description}
 					</span>
 				)}

@@ -12,6 +12,8 @@ export type {
 	UseDialogManagerReturn,
 } from './use-dialog-manager'
 export type { UseKeyboardShortcutsOptions } from './use-keyboard-shortcuts'
+export type { PalettePage, UsePalettePagesReturn } from './use-palette-pages'
+export type { UsePreviewWindowReturn } from './use-preview-window'
 export type { UseSlashCommandsReturn } from './use-slash-commands'
 export type {
 	UseWindowManagerOptions,
@@ -27,7 +29,14 @@ export { useCommandData } from './use-command-data'
 export { useCommands } from './use-commands'
 export { useDialogManager } from './use-dialog-manager'
 export { useKeyboardShortcuts } from './use-keyboard-shortcuts'
+export { usePalettePages } from './use-palette-pages'
 export { usePlugins } from './use-plugins'
+export { usePreviewWindow } from './use-preview-window'
+export {
+	recentKey,
+	resolveRecentCommands,
+	useRecentCommands,
+} from './use-recent-commands'
 export { useSlashCommands } from './use-slash-commands'
 export { useUpdater } from './use-updater'
 export { useWindowManager } from './use-window-manager'

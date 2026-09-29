@@ -1,5 +1,5 @@
 import type { PromptInputMessage } from '@mrunner/ui/ai-elements/prompt-input'
-import { Badge, Kbd } from '@mrunner/ui'
+import { Badge, DotMatrixLoader } from '@mrunner/ui'
 import {
 	Conversation,
 	ConversationContent,
@@ -37,13 +37,7 @@ import {
 } from '@mrunner/ui/ai-elements/reasoning'
 import { Shimmer } from '@mrunner/ui/ai-elements/shimmer'
 import { open } from '@tauri-apps/plugin-shell'
-import {
-	ArrowLeft,
-	CheckCircle2,
-	CircleX,
-	Loader2,
-	Terminal,
-} from 'lucide-react'
+import { CheckCircle2, CircleX, Terminal } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -52,6 +46,7 @@ import { TOOL_PROVIDERS } from '@/core/types/tools'
 import { useAIChat } from '@/hooks/use-ai-chat'
 import { useAIModels } from '@/hooks/use-ai-models'
 
+import { ChatHeader } from './chat-header'
 import { DirectoryPicker } from './directory-picker'
 import { ToolNotInstalledCard } from './tool-not-installed-card'
 
@@ -86,11 +81,16 @@ const ChatMessageItem = memo(function ChatMessageItem({
 				{message.commands?.map((cmd) => (
 					<div
 						key={cmd.id}
-						className="flex flex-col gap-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-xs"
+						data-slot="chat-tool-call"
+						className="flex flex-col gap-1 rounded-lg border border-border-subtle bg-surface-2 px-3 py-2 text-xs"
 					>
 						<div className="flex items-center gap-2 font-mono">
 							{cmd.status === 'in_progress' ? (
-								<Loader2 className="size-3 animate-spin text-muted-foreground" />
+								<DotMatrixLoader
+									size="sm"
+									label={t('chat.commandRunning')}
+									className="text-muted-foreground"
+								/>
 							) : cmd.exitCode === 0 ? (
 								<CheckCircle2 className="size-3 text-green-500" />
 							) : (
@@ -246,18 +246,9 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 	if (needsDirectory) {
 		return (
 			<div className="flex h-full flex-col">
-				<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
-					<button
-						type="button"
-						onClick={handleBack}
-						className="flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1.5 text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						aria-label={t('chat.back')}
-					>
-						<ArrowLeft className="size-4" />
-						<Kbd>esc</Kbd>
-					</button>
+				<ChatHeader onBack={handleBack}>
 					<span className="font-medium text-sm">{t('chat.title')}</span>
-				</div>
+				</ChatHeader>
 				<DirectoryPicker onSelect={setWorkingDirectory} />
 			</div>
 		)
@@ -284,20 +275,11 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 	return (
 		<div
 			ref={chatRef}
-			className="flex h-full flex-col"
+			className="flex h-full animate-surface-in flex-col"
 			role="region"
 			aria-label={t('chat.title')}
 		>
-			<div className="flex items-center gap-2 border-border/50 border-b px-3 py-2.5">
-				<button
-					type="button"
-					onClick={handleBack}
-					className="flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1.5 text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-					aria-label={t('chat.back')}
-				>
-					<ArrowLeft className="size-4" />
-					<Kbd>esc</Kbd>
-				</button>
+			<ChatHeader onBack={handleBack}>
 				<Badge className={provider.color.badge}>/{provider.command}</Badge>
 				<span className="text-muted-foreground text-sm">{provider.name}</span>
 				{selectedModel && (
@@ -312,7 +294,7 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 						</Shimmer>
 					</span>
 				)}
-			</div>
+			</ChatHeader>
 
 			<Conversation className="flex-1">
 				<ConversationContent className="gap-4 p-3" aria-live="polite">
@@ -323,7 +305,10 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 				<ConversationScrollButton />
 			</Conversation>
 
-			<div className="border-border/50 border-t px-3 py-2.5">
+			<div
+				data-slot="chat-composer"
+				className="border-border-subtle border-t bg-surface-2/60 px-3 py-2.5"
+			>
 				<PromptInput onSubmit={handleSubmit}>
 					<PromptInputBody>
 						<PromptInputTextarea
@@ -343,7 +328,7 @@ export function AIChatView({ onBack, initialMessage }: AIChatViewProps) {
 									render={
 										<button
 											type="button"
-											className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground/70 text-xs transition-all duration-150 hover:bg-muted hover:text-foreground"
+											className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground text-xs transition-all duration-150 hover:bg-surface-3 hover:text-foreground"
 										/>
 									}
 								>

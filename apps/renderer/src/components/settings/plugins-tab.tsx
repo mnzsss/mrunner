@@ -9,6 +9,7 @@ import {
 	AlertDialogTitle,
 	Badge,
 	Button,
+	DotMatrixLoader,
 	Input,
 	Separator,
 	Switch,
@@ -40,6 +41,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { ScriptableRegisteredPlugin } from '@/hooks/use-plugins'
 import { UserPreferencesSchema } from '@/commands/types'
+import { SettingsSectionTitle } from '@/components/settings/settings-section-title'
 
 const CONFIG_DIR = import.meta.env.DEV
 	? '.config/mrunner-dev'
@@ -146,7 +148,7 @@ function NativeValidationDetails({
 		return null
 
 	return (
-		<div className="rounded-md border bg-muted/30 p-2 text-muted-foreground text-xs">
+		<div className="rounded-lg border border-border-subtle bg-surface-2 p-2 text-muted-foreground text-xs">
 			<p className="mb-1 font-medium">
 				{t('settings.plugins.setupInstructions')}
 			</p>
@@ -190,7 +192,7 @@ function UpdateResultsList({
 	}
 
 	return (
-		<div className="space-y-1 rounded-md border bg-muted/30 p-2">
+		<div className="space-y-1 rounded-lg border border-border-subtle bg-surface-2 p-2">
 			{results.map((result) => (
 				<div
 					key={result.pluginId}
@@ -506,9 +508,9 @@ export function PluginsTab() {
 	return (
 		<div className="space-y-6">
 			<div className="space-y-3">
-				<h3 className="font-medium text-muted-foreground text-sm">
+				<SettingsSectionTitle>
 					{t('settings.plugins.nativePlugins')}
-				</h3>
+				</SettingsSectionTitle>
 
 				<Item variant="outline">
 					<div className="flex shrink-0 items-center justify-center p-1 text-muted-foreground">
@@ -544,9 +546,9 @@ export function PluginsTab() {
 
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
-					<h3 className="font-medium text-muted-foreground text-sm">
+					<SettingsSectionTitle>
 						{t('settings.plugins.installedPlugins')}
-					</h3>
+					</SettingsSectionTitle>
 					<Button
 						variant="outline"
 						size="sm"
@@ -559,7 +561,9 @@ export function PluginsTab() {
 				</div>
 
 				{loading && (
-					<p className="text-muted-foreground text-sm">{t('app.loading')}</p>
+					<div className="flex justify-center py-4 text-muted-foreground">
+						<DotMatrixLoader label={t('app.loading')} />
+					</div>
 				)}
 
 				{!loading && plugins.length === 0 && (
@@ -616,7 +620,7 @@ export function PluginsTab() {
 									</Item>
 
 									{isExpanded && plugin.commands.length > 0 && (
-										<div className="ml-6 space-y-1 rounded-md border bg-muted/30 p-2">
+										<div className="ml-6 space-y-1 rounded-lg border border-border-subtle bg-surface-2 p-2">
 											{plugin.commands.map((cmd) => (
 												<div key={cmd.id} className="px-2 py-1">
 													<p className="font-medium text-sm">{cmd.title}</p>
@@ -642,9 +646,9 @@ export function PluginsTab() {
 			<Separator />
 
 			<div className="space-y-3">
-				<h3 className="font-medium text-muted-foreground text-sm">
+				<SettingsSectionTitle>
 					{t('settings.plugins.installFromGit')}
-				</h3>
+				</SettingsSectionTitle>
 
 				<div className="flex gap-2">
 					<Input
@@ -712,7 +716,7 @@ export function PluginsTab() {
 					</AlertDialogHeader>
 
 					{pluginPreview && (
-						<div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
+						<div className="space-y-2 rounded-lg border border-border-subtle bg-surface-2 p-3 text-sm">
 							<div className="flex justify-between">
 								<span className="text-muted-foreground">
 									{t('settings.plugins.pluginName')}
@@ -765,9 +769,9 @@ export function PluginsTab() {
 
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
-					<h3 className="font-medium text-muted-foreground text-sm">
+					<SettingsSectionTitle>
 						{t('settings.plugins.browsePlugins')}
-					</h3>
+					</SettingsSectionTitle>
 					<Button
 						variant="outline"
 						size="sm"
@@ -783,9 +787,9 @@ export function PluginsTab() {
 				</div>
 
 				{registryLoading && (
-					<p className="text-muted-foreground text-sm">
-						{t('settings.plugins.loadingRegistry')}
-					</p>
+					<div className="flex justify-center py-4 text-muted-foreground">
+						<DotMatrixLoader label={t('settings.plugins.loadingRegistry')} />
+					</div>
 				)}
 
 				{!registryLoading && registryError && (
@@ -853,9 +857,9 @@ export function PluginsTab() {
 
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
-					<h3 className="font-medium text-muted-foreground text-sm">
+					<SettingsSectionTitle>
 						{t('settings.plugins.updateResults')}
-					</h3>
+					</SettingsSectionTitle>
 					<Button
 						variant="outline"
 						size="sm"

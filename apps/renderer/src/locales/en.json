@@ -4,6 +4,7 @@
 		"loading": "Loading..."
 	},
 	"search": {
+		"askAi": "Ask AI: {{query}}",
 		"placeholder": "Type a command or search...",
 		"empty": "No results found."
 	},
@@ -12,7 +13,32 @@
 		"select": "select",
 		"edit": "edit",
 		"delete": "delete",
-		"close": "close"
+		"close": "close",
+		"filter": "filter",
+		"back": "back",
+		"preview": "preview",
+		"hidePreview": "hide preview"
+	},
+	"preview": {
+		"label": "Preview",
+		"empty": "Nothing selected",
+		"target": "Target",
+		"tags": "Tags",
+		"kind": {
+			"app": "App",
+			"bookmark": "Bookmark",
+			"folder": "Folder",
+			"plugin": "Plugin",
+			"system": "System"
+		}
+	},
+	"filters": {
+		"label": "Filter results",
+		"all": "All",
+		"app": "Apps",
+		"bookmark": "Bookmarks",
+		"folder": "Folders",
+		"plugin": "Plugins"
 	},
 	"bookmarks": {
 		"group": "Bookmarks",
@@ -71,7 +97,8 @@
 		"conflictWarning": "This shortcut conflicts with another",
 		"resetTooltip": "Restore default",
 		"pressKeys": "Press a key combination...",
-		"clickToRecord": "Click to record"
+		"clickToRecord": "Click to record",
+		"conflicting": "Conflicting"
 	},
 	"actions": {
 		"skip": "Skip",
@@ -187,6 +214,7 @@
 		"openChrome": "Open Chrome browser"
 	},
 	"groups": {
+		"Recent": "Recent",
 		"MRunner": "MRunner",
 		"Applications": "Applications",
 		"Quick Access": "Quick Access",
@@ -198,6 +226,7 @@
 	},
 	"plugins": {
 		"back": "Back",
+		"breadcrumb": "Command pages",
 		"running": "Running...",
 		"success": "Command executed successfully",
 		"error": "Command failed"
@@ -249,6 +278,13 @@
 		"selectDirectory": "Working Directory",
 		"selectDirectoryDescription": "Enter the folder path where Claude can execute commands.",
 		"directoryPlaceholder": "/home/user/projects/my-project",
-		"startChat": "Start Chat"
+		"startChat": "Start Chat",
+		"commandRunning": "Running command..."
+	},
+	"updater": {
+		"available": "New version available:",
+		"downloading": "Downloading update...",
+		"installNow": "Update now",
+		"dismiss": "Dismiss update"
 	}
 }

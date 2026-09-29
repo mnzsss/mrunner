@@ -4,6 +4,7 @@
 		"loading": "Carregando..."
 	},
 	"search": {
+		"askAi": "Perguntar à IA: {{query}}",
 		"placeholder": "Digite um comando ou busque...",
 		"empty": "Nenhum resultado encontrado."
 	},
@@ -12,7 +13,32 @@
 		"select": "selecionar",
 		"edit": "editar",
 		"delete": "deletar",
-		"close": "fechar"
+		"close": "fechar",
+		"filter": "filtrar",
+		"back": "voltar",
+		"preview": "pré-visualizar",
+		"hidePreview": "ocultar pré-visualização"
+	},
+	"preview": {
+		"label": "Pré-visualização",
+		"empty": "Nada selecionado",
+		"target": "Destino",
+		"tags": "Tags",
+		"kind": {
+			"app": "App",
+			"bookmark": "Bookmark",
+			"folder": "Pasta",
+			"plugin": "Plugin",
+			"system": "Sistema"
+		}
+	},
+	"filters": {
+		"label": "Filtrar resultados",
+		"all": "Todos",
+		"app": "Apps",
+		"bookmark": "Bookmarks",
+		"folder": "Pastas",
+		"plugin": "Plugins"
 	},
 	"bookmarks": {
 		"group": "Bookmarks",
@@ -71,7 +97,8 @@
 		"conflictWarning": "Este atalho está em conflito com outro",
 		"resetTooltip": "Restaurar padrão",
 		"pressKeys": "Pressione uma combinação de teclas...",
-		"clickToRecord": "Clique para gravar"
+		"clickToRecord": "Clique para gravar",
+		"conflicting": "Em conflito"
 	},
 	"actions": {
 		"skip": "Pular",
@@ -187,6 +214,7 @@
 		"openChrome": "Abrir navegador Chrome"
 	},
 	"groups": {
+		"Recent": "Recentes",
 		"MRunner": "MRunner",
 		"Applications": "Aplicativos",
 		"Quick Access": "Acesso Rápido",
@@ -198,6 +226,7 @@
 	},
 	"plugins": {
 		"back": "Voltar",
+		"breadcrumb": "Páginas de comando",
 		"running": "Executando...",
 		"success": "Comando executado com sucesso",
 		"error": "Falha ao executar comando"
@@ -249,6 +278,13 @@
 		"selectDirectory": "Diretório de Trabalho",
 		"selectDirectoryDescription": "Insira o caminho da pasta onde o Claude pode executar comandos.",
 		"directoryPlaceholder": "/home/usuario/projetos/meu-projeto",
-		"startChat": "Iniciar Chat"
+		"startChat": "Iniciar Chat",
+		"commandRunning": "Executando comando..."
+	},
+	"updater": {
+		"available": "Nova versão disponível:",
+		"downloading": "Baixando atualização...",
+		"installNow": "Atualizar agora",
+		"dismiss": "Dispensar atualização"
 	}
 }

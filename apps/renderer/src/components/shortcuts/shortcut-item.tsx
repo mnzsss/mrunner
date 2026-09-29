@@ -9,6 +9,7 @@ import {
 import { formatForDisplay } from '@tanstack/react-hotkeys'
 import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { Hotkey, ShortcutConfig } from '@/core/types/shortcuts'
 import { hotkeyToTanStack } from '@/lib/hotkey-adapter'
@@ -30,6 +31,7 @@ export function ShortcutItem({
 	onReset,
 	onToggle,
 }: ShortcutItemProps) {
+	const { t } = useTranslation()
 	const [isEditing, setIsEditing] = useState(false)
 
 	return (
@@ -38,7 +40,9 @@ export function ShortcutItem({
 				<ItemTitle className={isConflicting ? 'text-destructive' : ''}>
 					{shortcut.description}
 					{isConflicting && (
-						<span className="ml-2 text-destructive text-xs">(Conflicting)</span>
+						<span className="ml-2 text-destructive text-xs">
+							({t('shortcuts.conflicting')})
+						</span>
 					)}
 				</ItemTitle>
 				<ItemDescription className="text-xs">

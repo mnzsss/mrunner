@@ -1,14 +1,16 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { sendNotification } from '@tauri-apps/plugin-notification'
-import { lazy, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { Command } from '@/commands/types'
-import { isScriptableAction } from '@/commands/types'
+import type { PaletteFilter } from '@/core/search'
+import { type Command, isScriptableAction } from '@/commands/types'
 import { CommandPalette, PluginCommandView } from '@/components/command-palette'
 import { SettingsSheet } from '@/components/settings/settings-sheet'
 import {
+	recentKey,
+	resolveRecentCommands,
 	useBookmarkActions,
 	useBookmarkSearch,
 	useBookmarks,
@@ -16,7 +18,10 @@ import {
 	useCommands,
 	useDialogManager,
 	useKeyboardShortcuts,
+	usePalettePages,
 	usePlugins,
+	usePreviewWindow,
+	useRecentCommands,
 	useWindowManager,
 } from '@/hooks'
 import { getPluginEnvironment } from '@/lib/plugin-environment'
@@ -41,13 +46,19 @@ const FolderManager = lazy(() =>
 
 function App() {
 	const [query, setQuery] = useState('')
-	const [activeScriptableCommand, setActiveScriptableCommand] =
-		useState<Command | null>(null)
+	const [filter, setFilter] = useState<PaletteFilter>('all')
 	const [isChatMode, setIsChatMode] = useState(false)
 	const [chatInitialMessage, setChatInitialMessage] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	const { t, i18n } = useTranslation()
+	const {
+		pages,
+		current: currentPage,
+		push: pushPage,
+		pop: popPage,
+		reset: resetPages,
+	} = usePalettePages()
 
 	// Core data hooks
 	const { commands, executeCommand, folderActions } = useCommands()
@@ -63,12 +74,19 @@ function App() {
 	})
 
 	// Window manager hook
+	const preview = usePreviewWindow({
+		suppressed:
+			isChatMode || currentPage !== null || dialogManager.activeDialogs > 0,
+	})
+
 	const { hideWindow } = useWindowManager({
 		onQueryReset: () => {
 			setQuery('')
-			setActiveScriptableCommand(null)
+			setFilter('all')
+			resetPages()
 			requestAnimationFrame(() => inputRef.current?.focus())
 		},
+		onWindowHidden: preview.close,
 		activeDialogs: dialogManager.nativeDialogCount + (isChatMode ? 1 : 0),
 	})
 
@@ -80,6 +98,12 @@ function App() {
 		onOpenBookmark: openBookmark,
 	})
 
+	const { recent, record: recordRecent } = useRecentCommands()
+	const recentCommands = useMemo(
+		() => resolveRecentCommands(recent, allItems),
+		[recent, allItems],
+	)
+
 	// Bookmark search hook
 	useBookmarkSearch({
 		query,
@@ -87,10 +111,28 @@ function App() {
 		search,
 	})
 
+	const openPage = useCallback(
+		(command: Command) => {
+			setQuery('')
+			setFilter('all')
+			pushPage(command)
+		},
+		[pushPage],
+	)
+
+	const handleEscape = useCallback(() => {
+		if (popPage()) {
+			setQuery('')
+			requestAnimationFrame(() => inputRef.current?.focus())
+			return
+		}
+		void hideWindow()
+	}, [popPage, hideWindow])
+
 	// Keyboard shortcuts hook
 	useKeyboardShortcuts({
 		bookmarks,
-		onHideWindow: hideWindow,
+		onEscape: handleEscape,
 		onEditBookmark: dialogManager.setEditDialog,
 		onDeleteBookmark: dialogManager.setDeleteDialog,
 	})
@@ -125,9 +167,11 @@ function App() {
 			if (Number.isNaN(bookmarkIndex)) return false
 			await openBookmark(bookmarkIndex)
 			await hideWindow()
+			const bookmark = allItems.find((c) => c.id === commandId)
+			if (bookmark) recordRecent(recentKey(bookmark))
 			return true
 		},
-		[openBookmark, hideWindow],
+		[allItems, openBookmark, hideWindow, recordRecent],
 	)
 
 	const handleSelect = useCallback(
@@ -144,6 +188,7 @@ function App() {
 				} else if (command.action.dialog === 'settings') {
 					dialogManager.setIsSettingsOpen(true)
 				}
+				recordRecent(command.id)
 				return
 			}
 
@@ -161,6 +206,7 @@ function App() {
 								environment,
 							},
 						})
+						recordRecent(command.id)
 						await sendNotification({
 							title: command.name,
 							body: t('plugins.success'),
@@ -176,12 +222,13 @@ function App() {
 					return
 				}
 				// list or detail mode: transition to sub-view
-				setQuery('')
-				setActiveScriptableCommand(command)
+				recordRecent(command.id)
+				openPage(command)
 				return
 			}
 
-			await executeCommand(command)
+			const result = await executeCommand(command)
+			if (result.success) recordRecent(command.id)
 
 			if (command.closeAfterRun !== false) {
 				await hideWindow()
@@ -193,6 +240,8 @@ function App() {
 			handleBookmarkSelect,
 			hideWindow,
 			dialogManager,
+			openPage,
+			recordRecent,
 			query,
 			i18n.language,
 			t,
@@ -207,10 +256,9 @@ function App() {
 					c.action.commandId === pluginCommandId,
 			)
 			if (!target) return
-			setQuery('')
-			setActiveScriptableCommand(target)
+			openPage(target)
 		},
-		[allItems],
+		[allItems, openPage],
 	)
 
 	const handleStartChat = useCallback((message: string) => {
@@ -271,18 +319,16 @@ function App() {
 				onOpenChange={dialogManager.handleSettingsOpenChange}
 			/>
 
-			{activeScriptableCommand ? (
+			{currentPage ? (
 				<PluginCommandView
-					command={activeScriptableCommand}
+					key={`${currentPage.id}-${pages.length}`}
+					command={currentPage.command}
+					pages={pages}
 					query={query}
 					onQueryChange={setQuery}
 					inputRef={inputRef}
 					onPushCommand={handlePushCommand}
-					onBack={() => {
-						setActiveScriptableCommand(null)
-						setQuery('')
-						requestAnimationFrame(() => inputRef.current?.focus())
-					}}
+					onBack={handleEscape}
 				/>
 			) : (
 				<CommandPalette
@@ -291,6 +337,7 @@ function App() {
 					inputRef={inputRef}
 					bookmarks={bookmarks}
 					groupedCommands={groupedCommands}
+					recentCommands={recentCommands}
 					allItems={allItems}
 					commandFilter={commandFilter}
 					onSelect={handleSelect}
@@ -303,6 +350,10 @@ function App() {
 					chatInitialMessage={chatInitialMessage}
 					onStartChat={handleStartChat}
 					onExitChat={handleExitChat}
+					previewOpen={preview.isOpen}
+					onTogglePreview={preview.toggle}
+					filter={filter}
+					onFilterChange={setFilter}
 				/>
 			)}
 		</div>

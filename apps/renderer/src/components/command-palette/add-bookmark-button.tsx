@@ -14,7 +14,7 @@ export function AddBookmarkButton({ onSelect }: AddBookmarkButtonProps) {
 			value={`${t('bookmarks.add')} adicionar bookmark add`}
 			onSelect={onSelect}
 		>
-			<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 text-muted-foreground transition-all duration-150 group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
+			<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-2 text-muted-foreground transition-colors duration-150 group-data-[selected=true]/command-item:border-highlight/30 group-data-[selected=true]/command-item:bg-highlight/10 group-data-[selected=true]/command-item:text-highlight motion-reduce:transition-none">
 				<BookmarkIcon className="size-4" />
 			</div>
 			<div className="flex min-w-0 flex-1 items-baseline gap-2">

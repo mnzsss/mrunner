@@ -83,7 +83,10 @@ export function Setup() {
 	}, [globalShortcut, navigate, locale])
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] bg-background from-primary/5 via-background to-background p-8">
+		<div
+			data-slot="setup-page"
+			className="flex min-h-screen items-center justify-center bg-surface-1 p-8"
+		>
 			<div className="w-full max-w-xl space-y-6">
 				<div className="space-y-2 text-center">
 					<h1 className="font-semibold text-3xl tracking-tight">
@@ -100,7 +103,10 @@ export function Setup() {
 					</div>
 				</div>
 
-				<Card>
+				<Card
+					data-slot="setup-card"
+					className="animate-surface-in ring-border-subtle"
+				>
 					<CardHeader>
 						<CardTitle>{t('setup.step1Title')}</CardTitle>
 					</CardHeader>

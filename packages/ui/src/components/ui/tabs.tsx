@@ -23,7 +23,7 @@ function TabsList({
 	return (
 		<TabsPrimitive.List
 			data-slot="tabs-list"
-			className={cn('flex gap-1 rounded-lg bg-muted p-1', className)}
+			className={cn('flex gap-1 rounded-xl bg-surface-2 p-1', className)}
 			{...props}
 		/>
 	)
@@ -37,7 +37,7 @@ function TabsTrigger({
 		<TabsPrimitive.Tab
 			data-slot="tabs-trigger"
 			className={cn(
-				'inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active]:bg-background data-[active]:text-foreground data-[active]:shadow-sm',
+				'inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active]:bg-surface-3 data-[active]:text-foreground',
 				className,
 			)}
 			{...props}
@@ -66,7 +66,7 @@ function TabsIndicator({
 		<TabsPrimitive.Indicator
 			data-slot="tabs-indicator"
 			className={cn(
-				'absolute rounded-md bg-background shadow-sm transition-all duration-150',
+				'absolute rounded-lg bg-surface-3 transition-all duration-(--duration-fast) ease-(--ease-out)',
 				className,
 			)}
 			{...props}

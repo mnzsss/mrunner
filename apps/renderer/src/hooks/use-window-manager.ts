@@ -7,6 +7,7 @@ const BLUR_DEBOUNCE_MS = 150
 
 export interface UseWindowManagerOptions {
 	onQueryReset?: () => void
+	onWindowHidden?: () => void | Promise<void>
 	activeDialogs?: number
 }
 
@@ -17,6 +18,7 @@ export interface UseWindowManagerReturn {
 
 export function useWindowManager({
 	onQueryReset,
+	onWindowHidden,
 	activeDialogs = 0,
 }: UseWindowManagerOptions = {}): UseWindowManagerReturn {
 	const onQueryResetRef = useRef(onQueryReset)
@@ -27,8 +29,14 @@ export function useWindowManager({
 		onQueryResetRef.current = onQueryReset
 	}, [onQueryReset])
 
+	const onWindowHiddenRef = useRef(onWindowHidden)
+	useEffect(() => {
+		onWindowHiddenRef.current = onWindowHidden
+	}, [onWindowHidden])
+
 	const hideWindow = useCallback(async () => {
 		await invoke('hide_main_window')
+		await onWindowHiddenRef.current?.()
 	}, [])
 
 	const showWindow = useCallback(async () => {
@@ -37,10 +45,10 @@ export function useWindowManager({
 			clearTimeout(blurTimeoutRef.current)
 			blurTimeoutRef.current = null
 		}
-		const window = getCurrentWindow()
-		await window.center()
-		await window.show()
-		await window.setFocus()
+		const appWindow = getCurrentWindow()
+		await appWindow.center()
+		await appWindow.show()
+		await appWindow.setFocus()
 		onQueryResetRef.current?.()
 	}, [])
 
@@ -48,6 +56,9 @@ export function useWindowManager({
 	useEffect(() => {
 		const handleBlur = () => {
 			if (activeDialogs === 0) {
+				// The global shortcut hides the window natively without hideWindow, so restore the
+				// hidden-state layout now rather than after it is shown again.
+				void onWindowHiddenRef.current?.()
 				if (blurTimeoutRef.current) {
 					clearTimeout(blurTimeoutRef.current)
 				}

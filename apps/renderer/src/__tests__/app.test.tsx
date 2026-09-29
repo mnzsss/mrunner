@@ -1,0 +1,196 @@
+import { invoke } from '@tauri-apps/api/core'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { Command } from '@/commands/types'
+import type { CommandPaletteProps } from '@/components/command-palette'
+import App from '@/App'
+import { clearTauriEventHandlers, emitTauriEvent } from '@/test/setup'
+
+const windowMock = vi.hoisted(() => ({
+	setSize: vi.fn((_size: { width: number }) => Promise.resolve()),
+	center: vi.fn(() => Promise.resolve()),
+}))
+
+const shortcuts = vi.hoisted(() => ({ onEscape: () => {} }))
+
+const listCommand = vi.hoisted(
+	(): Command => ({
+		id: 'plugin-list',
+		name: 'List plugin',
+		icon: 'terminal',
+		action: {
+			type: 'scriptable',
+			commandId: 'list',
+			mode: 'list',
+			pluginName: 'demo',
+		},
+	}),
+)
+
+vi.mock('@tauri-apps/api/window', () => ({
+	getCurrentWindow: () => windowMock,
+	LogicalSize: class {
+		constructor(
+			public width: number,
+			public height: number,
+		) {}
+	},
+}))
+
+vi.mock('@tauri-apps/plugin-notification', () => ({
+	sendNotification: vi.fn(),
+}))
+
+vi.mock('@/components/settings/settings-sheet', () => ({
+	SettingsSheet: () => null,
+}))
+vi.mock('@/components/bookmark/bookmark-dialog', () => ({
+	BookmarkDialog: () => null,
+}))
+vi.mock('@/components/bookmark/bookmark-delete', () => ({
+	DeleteConfirmDialog: () => null,
+}))
+vi.mock('@/components/folder/folder-manager', () => ({
+	FolderManager: () => null,
+}))
+
+vi.mock('@/components/command-palette', () => ({
+	CommandPalette: (props: CommandPaletteProps) => (
+		<div>
+			<span>{props.previewOpen ? 'preview open' : 'preview closed'}</span>
+			<span>{`filter ${props.filter}`}</span>
+			<button type="button" onClick={() => props.onFilterChange('app')}>
+				filter apps
+			</button>
+			<button type="button" onClick={() => void props.onTogglePreview()}>
+				toggle preview
+			</button>
+			<button type="button" onClick={() => void props.onSelect(listCommand.id)}>
+				open page
+			</button>
+		</div>
+	),
+	PluginCommandView: () => <span>plugin page</span>,
+}))
+
+vi.mock('@/hooks', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@/hooks')>()),
+	useCommands: () => ({
+		commands: [],
+		executeCommand: vi.fn(),
+		folderActions: { folders: [], systemDirectories: [] },
+	}),
+	usePlugins: () => ({ plugins: [] }),
+	useBookmarks: () => ({
+		bookmarks: [],
+		refresh: vi.fn(),
+		remove: vi.fn(),
+		search: vi.fn(),
+		parseQuery: vi.fn(),
+	}),
+	useBookmarkActions: () => ({ openBookmark: vi.fn() }),
+	useBookmarkSearch: () => {},
+	useCommandData: () => ({
+		allItems: [listCommand],
+		groupedCommands: {},
+		commandFilter: () => 1,
+	}),
+	useKeyboardShortcuts: ({ onEscape }: { onEscape: () => void }) => {
+		shortcuts.onEscape = onEscape
+	},
+}))
+
+function widths() {
+	return windowMock.setSize.mock.calls.map(([size]) => size.width)
+}
+
+async function renderApp() {
+	render(<App />)
+	await act(async () => {})
+}
+
+async function click(name: string) {
+	await act(async () => {
+		fireEvent.click(screen.getByRole('button', { name }))
+	})
+}
+
+beforeEach(() => {
+	clearTauriEventHandlers()
+})
+
+describe('App preview window', () => {
+	it('keeps the preview open when focus returns to the window', async () => {
+		await renderApp()
+		await click('toggle preview')
+
+		await act(async () => emitTauriEvent('tauri://focus', null))
+
+		expect(screen.getByText('preview open')).toBeInTheDocument()
+		expect(widths()).toEqual([960])
+	})
+
+	it('restores the compact window when a page is pushed', async () => {
+		await renderApp()
+		await click('toggle preview')
+
+		await click('open page')
+
+		expect(screen.getByText('plugin page')).toBeInTheDocument()
+		expect(widths()).toEqual([960, 640])
+	})
+
+	it('restores the compact window when a dialog opens over the preview', async () => {
+		await renderApp()
+		await click('toggle preview')
+
+		await act(async () => {
+			fireEvent.keyDown(window, { key: ',', ctrlKey: true })
+		})
+
+		expect(screen.getByText('preview closed')).toBeInTheDocument()
+		expect(widths()).toEqual([960, 640])
+	})
+})
+
+describe('App palette filter', () => {
+	it('resets to all when the window is shown again', async () => {
+		await renderApp()
+		await click('filter apps')
+
+		await act(async () => emitTauriEvent('tauri://focus', null))
+
+		expect(screen.getByText('filter all')).toBeInTheDocument()
+	})
+
+	it('resets to all after visiting a page', async () => {
+		await renderApp()
+		await click('filter apps')
+		await click('open page')
+
+		await act(async () => shortcuts.onEscape())
+
+		expect(screen.getByText('filter all')).toBeInTheDocument()
+	})
+})
+
+describe('App Escape', () => {
+	it('pops the open page without hiding the window', async () => {
+		await renderApp()
+		await click('open page')
+
+		await act(async () => shortcuts.onEscape())
+
+		expect(screen.queryByText('plugin page')).not.toBeInTheDocument()
+		expect(invoke).not.toHaveBeenCalledWith('hide_main_window')
+	})
+
+	it('hides the window at the root palette', async () => {
+		await renderApp()
+
+		await act(async () => shortcuts.onEscape())
+
+		expect(invoke).toHaveBeenCalledWith('hide_main_window')
+	})
+})

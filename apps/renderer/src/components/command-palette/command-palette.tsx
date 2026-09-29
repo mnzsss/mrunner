@@ -6,20 +6,39 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	DotMatrixLoader,
 	Kbd,
+	useCommandState,
 } from '@mrunner/ui'
-import { lazy, type RefObject, Suspense, useCallback, useEffect } from 'react'
+import {
+	lazy,
+	type RefObject,
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Command as CommandType } from '@/commands/types'
 import type { SlashShortcut, ToolProvider } from '@/core/types/tools'
 import { CommandFooter } from '@/components/command-footer'
+import { ListItem } from '@/components/list-item'
 import { UpdateBanner } from '@/components/update-banner'
+import {
+	cyclePaletteFilter,
+	filterGroupedCommands,
+	type PaletteFilter,
+} from '@/core/search'
 import { useSlashCommands } from '@/hooks/use-slash-commands'
 
 import { AddBookmarkButton } from './add-bookmark-button'
+import { AskAiItem } from './ask-ai-item'
 import { BookmarkList } from './bookmark-list'
 import { CommandGroups } from './command-groups'
+import { FilterChips } from './filter-chips'
+import { PreviewPane } from './preview-pane'
 
 const AIChatView = lazy(() =>
 	import('@/components/ai-chat/ai-chat-view').then((mod) => ({
@@ -27,12 +46,32 @@ const AIChatView = lazy(() =>
 	})),
 )
 
+// cmdk exposes only the selected item's value string, which is not unique per command,
+// so the command id is read back from the selected item's rendered element.
+function HighlightTracker({
+	onChange,
+}: {
+	onChange: (id: string | null) => void
+}) {
+	const selectedItemId = useCommandState((state) => state.selectedItemId)
+
+	useEffect(() => {
+		const selected = selectedItemId
+			? document.getElementById(selectedItemId)
+			: null
+		onChange(selected?.dataset.commandId ?? null)
+	}, [selectedItemId, onChange])
+
+	return null
+}
+
 export interface CommandPaletteProps {
 	query: string
 	onQueryChange: (query: string) => void
 	inputRef: RefObject<HTMLInputElement | null>
 	bookmarks: Bookmark[]
 	groupedCommands: Record<string, CommandType[]>
+	recentCommands: CommandType[]
 	allItems: CommandType[]
 	commandFilter: (value: string, search: string) => number
 	onSelect: (commandId: string) => void
@@ -45,6 +84,10 @@ export interface CommandPaletteProps {
 	chatInitialMessage: string
 	onStartChat: (message: string) => void
 	onExitChat: () => void
+	previewOpen: boolean
+	onTogglePreview: () => Promise<void>
+	filter: PaletteFilter
+	onFilterChange: (filter: PaletteFilter) => void
 }
 
 export function CommandPalette({
@@ -53,6 +96,8 @@ export function CommandPalette({
 	inputRef,
 	bookmarks,
 	groupedCommands,
+	recentCommands,
+	allItems,
 	commandFilter,
 	onSelect,
 	onAddBookmark,
@@ -60,6 +105,10 @@ export function CommandPalette({
 	chatInitialMessage,
 	onStartChat,
 	onExitChat,
+	previewOpen,
+	onTogglePreview,
+	filter,
+	onFilterChange,
 }: CommandPaletteProps) {
 	const { t } = useTranslation()
 	const {
@@ -70,6 +119,18 @@ export function CommandPalette({
 		activateCommand,
 		deactivateCommand,
 	} = useSlashCommands(query)
+	const visibleGroups = useMemo(
+		() => filterGroupedCommands(groupedCommands, filter),
+		[groupedCommands, filter],
+	)
+	const showBookmarks = filter === 'all' || filter === 'bookmark'
+	const isRootPage = !isSlashMode && !activeCommand
+	const [highlightedId, setHighlightedId] = useState<string | null>(null)
+
+	const highlightedCommand = useMemo(
+		() => allItems.find((item) => item.id === highlightedId) ?? null,
+		[allItems, highlightedId],
+	)
 
 	const handleToolSelect = useCallback(
 		(provider: ToolProvider) => {
@@ -94,8 +155,26 @@ export function CommandPalette({
 		}
 	}, [matchedShortcut, handleShortcutSelect])
 
+	const cycleFilter = useCallback(
+		(backward: boolean) =>
+			onFilterChange(cyclePaletteFilter(filter, backward ? -1 : 1)),
+		[filter, onFilterChange],
+	)
+
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
+			if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+				e.preventDefault()
+				void onTogglePreview()
+				return
+			}
+
+			if (e.key === 'Tab' && e.ctrlKey && isRootPage) {
+				e.preventDefault()
+				cycleFilter(e.shiftKey)
+				return
+			}
+
 			// Tab to activate first filtered entry in slash mode
 			if (e.key === 'Tab' && isSlashMode && filteredEntries.length > 0) {
 				e.preventDefault()
@@ -128,6 +207,9 @@ export function CommandPalette({
 			}
 		},
 		[
+			onTogglePreview,
+			isRootPage,
+			cycleFilter,
 			isSlashMode,
 			filteredEntries,
 			activeCommand,
@@ -143,13 +225,11 @@ export function CommandPalette({
 	// Chat mode — full view swap
 	if (isChatMode) {
 		return (
-			<div className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-popover shadow-black/15 shadow-xl">
+			<div className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl">
 				<Suspense
 					fallback={
-						<div className="flex h-full items-center justify-center">
-							<span className="text-muted-foreground text-sm motion-safe:animate-pulse">
-								{t('app.loading')}
-							</span>
+						<div className="flex h-full items-center justify-center text-muted-foreground">
+							<DotMatrixLoader label={t('app.loading')} />
 						</div>
 					}
 				>
@@ -167,13 +247,14 @@ export function CommandPalette({
 
 	return (
 		<Command
-			className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 shadow-black/15 shadow-xl"
+			className="glass flex h-full animate-surface-in flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl"
 			loop
 			disablePointerSelection
 			filter={activeCommand || isSlashMode ? () => 1 : commandFilter}
 			onKeyDown={handleKeyDown}
 		>
 			<UpdateBanner />
+			<HighlightTracker onChange={setHighlightedId} />
 			<CommandInput
 				ref={inputRef}
 				value={query}
@@ -187,79 +268,108 @@ export function CommandPalette({
 				}
 				autoFocus
 			/>
+			{isRootPage && <FilterChips value={filter} onChange={onFilterChange} />}
 
-			<CommandList className="flex-1 overflow-y-auto p-2">
-				{isSlashMode && (
-					<CommandGroup heading={t('groups.Tools')}>
-						{filteredEntries.map((item) => {
-							if (item.kind === 'shortcut') {
-								const s = item.entry
+			<div className="flex min-h-0 flex-1">
+				<CommandList className="min-w-0 flex-1 overflow-y-auto p-2">
+					{isSlashMode && (
+						<CommandGroup heading={t('groups.Tools')}>
+							{filteredEntries.map((item) => {
+								if (item.kind === 'shortcut') {
+									const s = item.entry
+									return (
+										<CommandItem
+											key={s.id}
+											value={`/${s.command} ${s.name}`}
+											onSelect={() => handleShortcutSelect(s)}
+											className={`w-full cursor-pointer ${s.color.selectedBg}`}
+										>
+											<s.icon className={`size-4 ${s.color.icon}`} />
+											<span className={`font-medium ${s.color.text}`}>
+												/{s.command}
+											</span>
+											<span className="text-muted-foreground">
+												{t(s.descriptionKey)}
+											</span>
+											<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
+										</CommandItem>
+									)
+								}
+								const tool = item.entry
 								return (
 									<CommandItem
-										key={s.id}
-										value={`/${s.command} ${s.name}`}
-										onSelect={() => handleShortcutSelect(s)}
-										className={`w-full cursor-pointer ${s.color.selectedBg}`}
+										key={tool.id}
+										value={`/${tool.command} ${tool.name}`}
+										onSelect={() => handleToolSelect(tool)}
+										className={`w-full cursor-pointer ${tool.color.selectedBg}`}
 									>
-										<s.icon className={`size-4 ${s.color.icon}`} />
-										<span className={`font-medium ${s.color.text}`}>
-											/{s.command}
+										<tool.icon className={`size-4 ${tool.color.icon}`} />
+										<span className={`font-medium ${tool.color.text}`}>
+											/{tool.command}
 										</span>
-										<span className="text-muted-foreground/70">
-											{t(s.descriptionKey)}
+										<span className="text-muted-foreground">
+											{tool.description}
 										</span>
 										<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
 									</CommandItem>
 								)
-							}
-							const tool = item.entry
-							return (
-								<CommandItem
-									key={tool.id}
-									value={`/${tool.command} ${tool.name}`}
-									onSelect={() => handleToolSelect(tool)}
-									className={`w-full cursor-pointer ${tool.color.selectedBg}`}
-								>
-									<tool.icon className={`size-4 ${tool.color.icon}`} />
-									<span className={`font-medium ${tool.color.text}`}>
-										/{tool.command}
-									</span>
-									<span className="text-muted-foreground/70">
-										{tool.description}
-									</span>
-									<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
-								</CommandItem>
-							)
-						})}
-					</CommandGroup>
-				)}
-
-				{!isSlashMode && !activeCommand && (
-					<>
-						<CommandEmpty className="py-6 text-center text-muted-foreground text-sm">
-							{t('search.empty')}
-						</CommandEmpty>
-
-						<CommandGroup heading={t('groups.Bookmarks')}>
-							<AddBookmarkButton onSelect={onAddBookmark} />
-							<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
+							})}
 						</CommandGroup>
+					)}
 
-						<CommandGroups
-							groupedCommands={groupedCommands}
-							onSelect={onSelect}
-						/>
-					</>
-				)}
+					{isRootPage && (
+						<>
+							<CommandEmpty className="py-2 text-center text-muted-foreground text-sm">
+								{query.trim() ? (
+									<AskAiItem query={query} onAsk={onStartChat} />
+								) : (
+									t('search.empty')
+								)}
+							</CommandEmpty>
 
-				{activeCommand && !query.trim() && (
-					<div className="py-6 text-center text-muted-foreground text-sm">
-						{t('chat.placeholder')}
-					</div>
-				)}
-			</CommandList>
+							{query === '' &&
+								filter === 'all' &&
+								recentCommands.length > 0 && (
+									<CommandGroup heading={t('groups.Recent')}>
+										{recentCommands.map((cmd) => (
+											<ListItem
+												key={`recent-${cmd.id}`}
+												id={cmd.id}
+												value={`recent:${cmd.id}`}
+												title={cmd.name}
+												description={cmd.description}
+												icon={cmd.icon}
+												shortcut={cmd.shortcut}
+												onSelect={onSelect}
+											/>
+										))}
+									</CommandGroup>
+								)}
 
-			<CommandFooter />
+							{showBookmarks && (
+								<CommandGroup heading={t('groups.Bookmarks')}>
+									<AddBookmarkButton onSelect={onAddBookmark} />
+									<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
+								</CommandGroup>
+							)}
+
+							<CommandGroups
+								groupedCommands={visibleGroups}
+								onSelect={onSelect}
+							/>
+						</>
+					)}
+
+					{activeCommand && !query.trim() && (
+						<div className="py-8 text-center text-muted-foreground text-sm">
+							{t('chat.placeholder')}
+						</div>
+					)}
+				</CommandList>
+				{previewOpen && <PreviewPane command={highlightedCommand} />}
+			</div>
+
+			<CommandFooter context="root" previewOpen={previewOpen} />
 		</Command>
 	)
 }

@@ -35,7 +35,14 @@ interface FolderManagerProps {
 
 function FolderIcon({ icon }: { icon: CommandIcon }) {
 	const IconComponent = ICON_MAP[icon]
-	return <IconComponent className="size-4" />
+	return (
+		<span
+			data-slot="folder-icon"
+			className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-3 text-muted-foreground"
+		>
+			<IconComponent className="size-4" aria-hidden="true" />
+		</span>
+	)
 }
 
 interface FolderRowProps {
@@ -77,7 +84,8 @@ function FolderRow({
 					action()
 				}
 			}}
-			className={`group flex items-center gap-3 rounded-md bg-muted/50 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed ? 'opacity-60' : ''}`}
+			data-slot="folder-row"
+			className={`group flex items-center gap-3 rounded-lg border border-border-subtle bg-surface-2 px-3 py-2 outline-none transition-colors focus-visible:border-highlight/40 focus-visible:ring-2 focus-visible:ring-highlight/30 motion-reduce:transition-none ${dimmed ? 'opacity-60' : ''}`}
 		>
 			<FolderIcon icon={folder.icon} />
 			<div className="min-w-0 flex-1">
@@ -250,7 +258,7 @@ export function FolderManager({
 				<SheetBody>
 					<div className="space-y-6">
 						{/* Add Folder Form */}
-						<div className="space-y-3 rounded-md border border-muted bg-muted/30 p-4">
+						<div className="space-y-3 rounded-lg border border-border-subtle bg-surface-2 p-4">
 							<h4 className="font-medium text-sm">
 								{t('folders.addNewFolder')}
 							</h4>
@@ -398,7 +406,7 @@ export function FolderManager({
 					</div>
 				</SheetBody>
 
-				<div className="flex items-center gap-4 border-t px-6 py-3 text-muted-foreground text-xs">
+				<div className="flex items-center gap-4 border-border-subtle border-t bg-surface-2/60 px-6 py-3 text-muted-foreground text-xs">
 					<span className="flex items-center gap-1.5">
 						<Kbd>↑</Kbd>
 						<Kbd>↓</Kbd>

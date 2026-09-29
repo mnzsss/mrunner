@@ -1,21 +1,29 @@
 import type { DetailResult, ListItem } from '@mrunner/plugin'
 import type { RefObject } from 'react'
-import { Command, CommandInput, CommandItem, CommandList } from '@mrunner/ui'
+import {
+	Command,
+	CommandInput,
+	CommandList,
+	DotMatrixLoader,
+} from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
-import { ChevronLeft, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 
-import type { Command as CommandType } from '@/commands/types'
+import type { CommandIcon, Command as CommandType } from '@/commands/types'
+import type { PalettePage } from '@/hooks'
 import { isScriptableAction } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
-import { ICON_MAP } from '@/lib/constants'
+import { ListItem as ListRow } from '@/components/list-item'
 import { executePluginAction } from '@/lib/execute-plugin-action'
 import { getPluginEnvironment } from '@/lib/plugin-environment'
 
+import { PageBreadcrumb } from './page-breadcrumb'
+
 export interface PluginCommandViewProps {
 	command: CommandType
+	pages: PalettePage[]
 	query: string
 	onQueryChange: (query: string) => void
 	inputRef: RefObject<HTMLInputElement | null>
@@ -48,6 +56,7 @@ function isDetailResult(value: unknown): value is DetailResult {
 
 export function PluginCommandView({
 	command,
+	pages,
 	query,
 	onQueryChange,
 	inputRef,
@@ -60,6 +69,7 @@ export function PluginCommandView({
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const rootRef = useRef<HTMLDivElement>(null)
 
 	const mode = isScriptableAction(command.action) ? command.action.mode : 'list'
 
@@ -117,19 +127,10 @@ export function PluginCommandView({
 		}
 	}, [query, runCommand, mode])
 
-	// Escape key to go back
+	// Detail pages have no input, so the root takes focus for Backspace to reach onKeyDown.
 	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				e.preventDefault()
-				e.stopPropagation()
-				onBack()
-			}
-		}
-		window.addEventListener('keydown', handleKeyDown, { capture: true })
-		return () =>
-			window.removeEventListener('keydown', handleKeyDown, { capture: true })
-	}, [onBack])
+		if (mode === 'detail') rootRef.current?.focus()
+	}, [mode])
 
 	const handleItemSelect = useCallback(
 		async (item: ListItem) => {
@@ -147,27 +148,32 @@ export function PluginCommandView({
 
 	return (
 		<Command
-			className="flex h-full flex-col rounded-lg border shadow-md"
+			ref={rootRef}
+			tabIndex={-1}
+			className="glass flex h-full animate-page-in flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl outline-none"
 			loop
 			disablePointerSelection
 			shouldFilter={false}
+			onKeyDown={(e) => {
+				if (e.key === 'Backspace' && query === '') {
+					e.preventDefault()
+					onBack()
+				}
+			}}
 		>
-			<div className="flex items-center gap-2 border-b px-3 py-2 text-muted-foreground text-sm">
-				<button
-					type="button"
-					onClick={onBack}
-					className="flex items-center gap-1 transition-colors hover:text-foreground"
-				>
-					<ChevronLeft className="size-4" />
-					<span>{t('plugins.back')}</span>
-				</button>
-				<span className="font-medium text-foreground">{command.name}</span>
-				{loading && (
-					<span className="ml-auto text-xs opacity-60">
-						{t('plugins.running')}
-					</span>
-				)}
-			</div>
+			<PageBreadcrumb
+				pages={pages}
+				onBack={onBack}
+				trailing={
+					loading && (detailResult || items.length > 0) ? (
+						<DotMatrixLoader
+							size="sm"
+							label={t('plugins.running')}
+							className="text-muted-foreground"
+						/>
+					) : null
+				}
+			/>
 			{mode !== 'detail' && (
 				<CommandInput
 					ref={inputRef}
@@ -183,8 +189,8 @@ export function PluginCommandView({
 						{t('plugins.error')}: {error}
 					</div>
 				) : loading && !detailResult && items.length === 0 ? (
-					<div className="py-6 text-center text-muted-foreground text-sm">
-						{t('plugins.running')}
+					<div className="flex justify-center py-6 text-muted-foreground">
+						<DotMatrixLoader label={t('plugins.running')} />
 					</div>
 				) : detailResult ? (
 					<div className="p-4">
@@ -211,47 +217,33 @@ export function PluginCommandView({
 						)}
 					</div>
 				) : items.length === 0 ? (
-					<div className="py-6 text-center text-muted-foreground text-sm">
+					<div className="py-8 text-center text-muted-foreground text-sm">
 						{t('search.empty')}
 					</div>
 				) : (
-					items.map((item) => {
-						const IconComponent =
-							item.icon && item.icon in ICON_MAP
-								? ICON_MAP[item.icon as keyof typeof ICON_MAP]
-								: Terminal
-						return (
-							<CommandItem
-								key={item.id}
-								value={item.id}
-								onSelect={() => handleItemSelect(item)}
-							>
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-data-[selected=true]:bg-popover">
-									<IconComponent className="size-4" aria-hidden="true" />
-								</div>
-								<div className="min-w-0 flex-1">
-									<div className="truncate font-medium text-sm">
-										{item.title}
-									</div>
-									{item.subtitle && (
-										<div className="truncate text-muted-foreground text-xs">
-											{item.subtitle}
-										</div>
-									)}
-								</div>
-								{item.accessories && item.accessories.length > 0 && (
-									<div className="flex items-center gap-1 text-muted-foreground text-xs">
+					items.map((item) => (
+						<ListRow
+							key={item.id}
+							id={item.id}
+							value={item.id}
+							title={item.title}
+							description={item.subtitle}
+							icon={(item.icon ?? 'terminal') as CommandIcon}
+							actions={
+								item.accessories && item.accessories.length > 0 ? (
+									<span className="flex items-center gap-1 text-muted-foreground text-xs">
 										{item.accessories.map((acc, i) => (
 											<span key={i}>{acc.text}</span>
 										))}
-									</div>
-								)}
-							</CommandItem>
-						)
-					})
+									</span>
+								) : undefined
+							}
+							onSelect={() => handleItemSelect(item)}
+						/>
+					))
 				)}
 			</CommandList>
-			<CommandFooter />
+			<CommandFooter context="page" />
 		</Command>
 	)
 }

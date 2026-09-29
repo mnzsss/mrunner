@@ -1,5 +1,6 @@
 import {
 	Badge,
+	DotMatrixLoader,
 	Label,
 	Select,
 	SelectContent,
@@ -75,9 +76,9 @@ export function ToolsSettingsTab() {
 							key={provider.id}
 							variant="outline"
 							className={cn(
-								'cursor-pointer flex-col items-stretch transition-colors',
+								'cursor-pointer flex-col items-stretch transition-colors motion-reduce:transition-none',
 								isActive &&
-									'border-primary bg-primary/5 ring-1 ring-primary/20',
+									'border-highlight bg-highlight/5 ring-1 ring-highlight/20',
 							)}
 							onClick={() => {
 								if (!isActive) void setProvider(provider.id)
@@ -85,9 +86,11 @@ export function ToolsSettingsTab() {
 						>
 							<div className="flex items-center gap-3">
 								<div
+									data-slot="provider-icon"
 									className={cn(
-										'flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 transition-all duration-150',
-										isActive && 'border-primary/20 bg-primary/10 text-primary',
+										'flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-2 transition-colors duration-150 motion-reduce:transition-none',
+										isActive &&
+											'border-highlight/30 bg-highlight/10 text-highlight',
 									)}
 								>
 									<provider.icon className="size-4" />
@@ -96,7 +99,11 @@ export function ToolsSettingsTab() {
 									<div className="flex items-center gap-2">
 										<ItemTitle>{provider.name}</ItemTitle>
 										{loading ? (
-											<Badge variant="outline">{t('tools.checking')}</Badge>
+											<DotMatrixLoader
+												size="sm"
+												label={t('tools.checking')}
+												className="text-muted-foreground"
+											/>
 										) : status?.installed ? (
 											<Badge variant="default">{t('tools.installed')}</Badge>
 										) : (
@@ -115,14 +122,14 @@ export function ToolsSettingsTab() {
 									)}
 								</ItemContent>
 								{isActive ? (
-									<CircleCheck className="size-5 shrink-0 text-primary" />
+									<CircleCheck className="size-5 shrink-0 text-highlight" />
 								) : (
 									<Circle className="size-5 shrink-0 text-muted-foreground/40" />
 								)}
 							</div>
 
 							{isActive && !modelsLoading && models.length > 0 && (
-								<div className="mt-1 flex flex-col gap-2 border-border/50 border-t pt-3">
+								<div className="mt-1 flex flex-col gap-2 border-border-subtle border-t pt-3">
 									<div className="flex items-center gap-3">
 										<Label className="shrink-0 text-xs">
 											{t('tools.model')}

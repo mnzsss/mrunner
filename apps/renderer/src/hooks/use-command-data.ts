@@ -36,6 +36,7 @@ export function useCommandData({
 				icon: 'bookmark' as const,
 				group: 'Bookmarks',
 				keywords: [bm.title, bm.uri, bm.tags, bm.description].filter(Boolean),
+				bookmark: bm,
 				action: {
 					type: 'function' as const,
 					fn: async () => onOpenBookmark(bm.index),
