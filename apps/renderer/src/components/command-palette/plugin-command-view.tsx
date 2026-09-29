@@ -1,6 +1,12 @@
 import type { DetailResult, ListItem } from '@mrunner/plugin'
 import type { RefObject } from 'react'
-import { Command, CommandInput, CommandItem, CommandList } from '@mrunner/ui'
+import {
+	Command,
+	CommandInput,
+	CommandItem,
+	CommandList,
+	DotMatrixLoader,
+} from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
 import { ChevronLeft, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -162,10 +168,12 @@ export function PluginCommandView({
 					<span>{t('plugins.back')}</span>
 				</button>
 				<span className="font-medium text-foreground">{command.name}</span>
-				{loading && (
-					<span className="ml-auto text-xs opacity-60">
-						{t('plugins.running')}
-					</span>
+				{loading && (detailResult || items.length > 0) && (
+					<DotMatrixLoader
+						size="sm"
+						label={t('plugins.running')}
+						className="ml-auto text-muted-foreground"
+					/>
 				)}
 			</div>
 			{mode !== 'detail' && (
@@ -183,8 +191,8 @@ export function PluginCommandView({
 						{t('plugins.error')}: {error}
 					</div>
 				) : loading && !detailResult && items.length === 0 ? (
-					<div className="py-6 text-center text-muted-foreground text-sm">
-						{t('plugins.running')}
+					<div className="flex justify-center py-6 text-muted-foreground">
+						<DotMatrixLoader label={t('plugins.running')} />
 					</div>
 				) : detailResult ? (
 					<div className="p-4">

@@ -1,5 +1,5 @@
 import type { PromptInputMessage } from '@mrunner/ui/ai-elements/prompt-input'
-import { Badge, Kbd } from '@mrunner/ui'
+import { Badge, DotMatrixLoader, Kbd } from '@mrunner/ui'
 import {
 	Conversation,
 	ConversationContent,
@@ -37,13 +37,7 @@ import {
 } from '@mrunner/ui/ai-elements/reasoning'
 import { Shimmer } from '@mrunner/ui/ai-elements/shimmer'
 import { open } from '@tauri-apps/plugin-shell'
-import {
-	ArrowLeft,
-	CheckCircle2,
-	CircleX,
-	Loader2,
-	Terminal,
-} from 'lucide-react'
+import { ArrowLeft, CheckCircle2, CircleX, Terminal } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -90,7 +84,11 @@ const ChatMessageItem = memo(function ChatMessageItem({
 					>
 						<div className="flex items-center gap-2 font-mono">
 							{cmd.status === 'in_progress' ? (
-								<Loader2 className="size-3 animate-spin text-muted-foreground" />
+								<DotMatrixLoader
+									size="sm"
+									label={t('chat.commandRunning')}
+									className="text-muted-foreground"
+								/>
 							) : cmd.exitCode === 0 ? (
 								<CheckCircle2 className="size-3 text-green-500" />
 							) : (

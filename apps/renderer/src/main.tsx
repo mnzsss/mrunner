@@ -7,6 +7,7 @@ attachConsole()
 
 import '@/lib/i18n'
 
+import { DotMatrixLoader } from '@mrunner/ui'
 import { HotkeysProvider } from '@tanstack/react-hotkeys'
 import { homeDir } from '@tauri-apps/api/path'
 import { exists, readTextFile } from '@tauri-apps/plugin-fs'
@@ -63,8 +64,8 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
 
 	if (setupCompleted === null) {
 		return (
-			<div className="flex h-screen items-center justify-center bg-background">
-				<p className="text-muted-foreground">{t('app.loading')}</p>
+			<div className="flex h-screen items-center justify-center bg-background text-muted-foreground">
+				<DotMatrixLoader label={t('app.loading')} />
 			</div>
 		)
 	}

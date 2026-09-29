@@ -1,5 +1,6 @@
 import {
 	Badge,
+	DotMatrixLoader,
 	Label,
 	Select,
 	SelectContent,
@@ -96,7 +97,11 @@ export function ToolsSettingsTab() {
 									<div className="flex items-center gap-2">
 										<ItemTitle>{provider.name}</ItemTitle>
 										{loading ? (
-											<Badge variant="outline">{t('tools.checking')}</Badge>
+											<DotMatrixLoader
+												size="sm"
+												label={t('tools.checking')}
+												className="text-muted-foreground"
+											/>
 										) : status?.installed ? (
 											<Badge variant="default">{t('tools.installed')}</Badge>
 										) : (

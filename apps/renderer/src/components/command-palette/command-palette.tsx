@@ -6,6 +6,7 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	DotMatrixLoader,
 	Kbd,
 } from '@mrunner/ui'
 import { lazy, type RefObject, Suspense, useCallback, useEffect } from 'react'
@@ -146,10 +147,8 @@ export function CommandPalette({
 			<div className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-popover shadow-black/15 shadow-xl">
 				<Suspense
 					fallback={
-						<div className="flex h-full items-center justify-center">
-							<span className="text-muted-foreground text-sm motion-safe:animate-pulse">
-								{t('app.loading')}
-							</span>
+						<div className="flex h-full items-center justify-center text-muted-foreground">
+							<DotMatrixLoader label={t('app.loading')} />
 						</div>
 					}
 				>

@@ -9,6 +9,7 @@ import {
 	AlertDialogTitle,
 	Badge,
 	Button,
+	DotMatrixLoader,
 	Input,
 	Separator,
 	Switch,
@@ -559,7 +560,9 @@ export function PluginsTab() {
 				</div>
 
 				{loading && (
-					<p className="text-muted-foreground text-sm">{t('app.loading')}</p>
+					<div className="flex justify-center py-4 text-muted-foreground">
+						<DotMatrixLoader label={t('app.loading')} />
+					</div>
 				)}
 
 				{!loading && plugins.length === 0 && (
@@ -783,9 +786,9 @@ export function PluginsTab() {
 				</div>
 
 				{registryLoading && (
-					<p className="text-muted-foreground text-sm">
-						{t('settings.plugins.loadingRegistry')}
-					</p>
+					<div className="flex justify-center py-4 text-muted-foreground">
+						<DotMatrixLoader label={t('settings.plugins.loadingRegistry')} />
+					</div>
 				)}
 
 				{!registryLoading && registryError && (

@@ -249,6 +249,7 @@
 		"selectDirectory": "Working Directory",
 		"selectDirectoryDescription": "Enter the folder path where Claude can execute commands.",
 		"directoryPlaceholder": "/home/user/projects/my-project",
-		"startChat": "Start Chat"
+		"startChat": "Start Chat",
+		"commandRunning": "Running command..."
 	}
 }
