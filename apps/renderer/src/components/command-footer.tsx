@@ -22,7 +22,7 @@ export function CommandFooter({
 	const isRoot = context === 'root'
 
 	return (
-		<div className="flex items-center justify-between border-border/30 border-t px-4 py-1.5 text-muted-foreground text-xs">
+		<div className="flex items-center justify-between border-border-subtle border-t bg-surface-2/60 px-4 py-1.5 text-muted-foreground text-xs">
 			<div className="flex items-center gap-3">
 				<Hint keys="↑↓" label={t('navigation.navigate')} />
 				<Hint keys="↵" label={t('navigation.select')} />

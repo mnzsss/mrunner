@@ -211,7 +211,7 @@ export function CommandPalette({
 	// Chat mode — full view swap
 	if (isChatMode) {
 		return (
-			<div className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-popover shadow-black/15 shadow-xl">
+			<div className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl">
 				<Suspense
 					fallback={
 						<div className="flex h-full items-center justify-center text-muted-foreground">
@@ -233,7 +233,7 @@ export function CommandPalette({
 
 	return (
 		<Command
-			className="glass flex h-full flex-col overflow-hidden rounded-xl border border-border/50 shadow-black/15 shadow-xl"
+			className="glass flex h-full animate-surface-in flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl"
 			loop
 			disablePointerSelection
 			filter={activeCommand || isSlashMode ? () => 1 : commandFilter}
@@ -274,7 +274,7 @@ export function CommandPalette({
 											<span className={`font-medium ${s.color.text}`}>
 												/{s.command}
 											</span>
-											<span className="text-muted-foreground/70">
+											<span className="text-muted-foreground">
 												{t(s.descriptionKey)}
 											</span>
 											<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
@@ -293,7 +293,7 @@ export function CommandPalette({
 										<span className={`font-medium ${tool.color.text}`}>
 											/{tool.command}
 										</span>
-										<span className="text-muted-foreground/70">
+										<span className="text-muted-foreground">
 											{tool.description}
 										</span>
 										<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
@@ -347,7 +347,7 @@ export function CommandPalette({
 					)}
 
 					{activeCommand && !query.trim() && (
-						<div className="py-6 text-center text-muted-foreground text-sm">
+						<div className="py-8 text-center text-muted-foreground text-sm">
 							{t('chat.placeholder')}
 						</div>
 					)}

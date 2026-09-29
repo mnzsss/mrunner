@@ -30,7 +30,7 @@ function PreviewDetails({ command }: { command: Command }) {
 
 	return (
 		<>
-			<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 text-muted-foreground">
+			<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-2 text-muted-foreground">
 				<Icon className="size-5" aria-hidden="true" />
 			</div>
 			<div className="flex flex-col items-start gap-1.5">
@@ -60,7 +60,7 @@ export function PreviewPane({ command }: PreviewPaneProps) {
 	return (
 		<aside
 			aria-label={t('preview.label')}
-			className="motion-safe:fade-in motion-safe:slide-in-from-right-2 flex w-80 shrink-0 flex-col gap-3 border-border/30 border-l p-4 motion-safe:animate-in"
+			className="motion-safe:fade-in motion-safe:slide-in-from-right-2 flex w-80 shrink-0 flex-col gap-3 border-border-subtle border-l p-4 motion-safe:animate-in"
 		>
 			{command ? (
 				<PreviewDetails command={command} />

@@ -21,7 +21,7 @@ export function PageBreadcrumb({
 	return (
 		<nav
 			aria-label={t('plugins.back')}
-			className="flex items-center gap-1.5 border-border/30 border-b px-3 py-2 text-muted-foreground text-sm"
+			className="flex items-center gap-1.5 border-border-subtle border-b bg-surface-2/60 px-3 py-2 text-muted-foreground text-sm"
 		>
 			<button
 				type="button"

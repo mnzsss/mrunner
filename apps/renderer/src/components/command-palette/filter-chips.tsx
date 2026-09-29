@@ -24,7 +24,7 @@ export function FilterChips({ value, onChange }: FilterChipsProps) {
 		<div
 			role="group"
 			aria-label={t('filters.label')}
-			className="flex items-center gap-1 border-border/30 border-b px-3 py-1.5"
+			className="flex items-center gap-1 border-border-subtle border-b px-3 py-1.5"
 		>
 			{PALETTE_FILTERS.map((filter) => (
 				<button

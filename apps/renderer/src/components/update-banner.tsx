@@ -1,9 +1,11 @@
-import { Button } from '@mrunner/ui'
-import { Download, RefreshCw, X } from 'lucide-react'
+import { Button, DotMatrixLoader } from '@mrunner/ui'
+import { Download, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { useUpdater } from '@/hooks/use-updater'
 
 export function UpdateBanner() {
+	const { t } = useTranslation()
 	const { update, downloading, progress, downloadAndInstall, dismiss } =
 		useUpdater()
 
@@ -15,18 +17,21 @@ export function UpdateBanner() {
 			: 0
 
 	return (
-		<div className="flex items-center justify-between gap-3 border-border border-b bg-primary/10 px-4 py-2">
+		<div
+			data-slot="update-banner"
+			className="flex items-center justify-between gap-3 border-border-subtle border-b bg-highlight/10 px-4 py-2"
+		>
 			<div className="flex items-center gap-2 text-sm">
 				<Download className="size-4 text-primary" aria-hidden="true" />
 				<span>
 					{downloading ? (
 						<>
-							Baixando atualização...{' '}
+							{t('updater.downloading')}{' '}
 							<span className="font-medium">{progressPercent}%</span>
 						</>
 					) : (
 						<>
-							Nova versão disponível:{' '}
+							{t('updater.available')}{' '}
 							<span className="font-medium">v{update.version}</span>
 						</>
 					)}
@@ -36,13 +41,10 @@ export function UpdateBanner() {
 			<div className="flex items-center gap-2">
 				{downloading ? (
 					<div className="flex items-center gap-2">
-						<RefreshCw
-							className="size-4 animate-spin text-primary"
-							aria-hidden="true"
-						/>
-						<div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+						<DotMatrixLoader size="sm" label={t('updater.downloading')} />
+						<div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-3">
 							<div
-								className="h-full bg-primary transition-all duration-300"
+								className="h-full bg-highlight transition-all duration-300"
 								style={{ width: `${progressPercent}%` }}
 							/>
 						</div>
@@ -55,14 +57,14 @@ export function UpdateBanner() {
 							className="h-7 px-2"
 							onClick={downloadAndInstall}
 						>
-							Atualizar agora
+							{t('updater.installNow')}
 						</Button>
 						<Button
 							size="sm"
 							variant="ghost"
 							className="size-7 p-0"
 							onClick={dismiss}
-							aria-label="Dispensar atualização"
+							aria-label={t('updater.dismiss')}
 						>
 							<X className="size-4" />
 						</Button>

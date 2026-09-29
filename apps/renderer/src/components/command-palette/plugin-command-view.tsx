@@ -3,21 +3,19 @@ import type { RefObject } from 'react'
 import {
 	Command,
 	CommandInput,
-	CommandItem,
 	CommandList,
 	DotMatrixLoader,
 } from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
-import { Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 
-import type { Command as CommandType } from '@/commands/types'
+import type { CommandIcon, Command as CommandType } from '@/commands/types'
 import type { PalettePage } from '@/hooks/use-palette-pages'
 import { isScriptableAction } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
-import { ICON_MAP } from '@/lib/constants'
+import { ListItem as ListRow } from '@/components/list-item'
 import { executePluginAction } from '@/lib/execute-plugin-action'
 import { getPluginEnvironment } from '@/lib/plugin-environment'
 
@@ -144,7 +142,7 @@ export function PluginCommandView({
 
 	return (
 		<Command
-			className="flex h-full flex-col rounded-lg border shadow-md"
+			className="glass flex h-full animate-page-in flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl"
 			loop
 			disablePointerSelection
 			shouldFilter={false}
@@ -211,44 +209,30 @@ export function PluginCommandView({
 						)}
 					</div>
 				) : items.length === 0 ? (
-					<div className="py-6 text-center text-muted-foreground text-sm">
+					<div className="py-8 text-center text-muted-foreground text-sm">
 						{t('search.empty')}
 					</div>
 				) : (
-					items.map((item) => {
-						const IconComponent =
-							item.icon && item.icon in ICON_MAP
-								? ICON_MAP[item.icon as keyof typeof ICON_MAP]
-								: Terminal
-						return (
-							<CommandItem
-								key={item.id}
-								value={item.id}
-								onSelect={() => handleItemSelect(item)}
-							>
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-data-[selected=true]:bg-popover">
-									<IconComponent className="size-4" aria-hidden="true" />
-								</div>
-								<div className="min-w-0 flex-1">
-									<div className="truncate font-medium text-sm">
-										{item.title}
-									</div>
-									{item.subtitle && (
-										<div className="truncate text-muted-foreground text-xs">
-											{item.subtitle}
-										</div>
-									)}
-								</div>
-								{item.accessories && item.accessories.length > 0 && (
-									<div className="flex items-center gap-1 text-muted-foreground text-xs">
+					items.map((item) => (
+						<ListRow
+							key={item.id}
+							id={item.id}
+							value={item.id}
+							title={item.title}
+							description={item.subtitle}
+							icon={(item.icon ?? 'terminal') as CommandIcon}
+							actions={
+								item.accessories && item.accessories.length > 0 ? (
+									<span className="flex items-center gap-1 text-muted-foreground text-xs">
 										{item.accessories.map((acc, i) => (
 											<span key={i}>{acc.text}</span>
 										))}
-									</div>
-								)}
-							</CommandItem>
-						)
-					})
+									</span>
+								) : undefined
+							}
+							onSelect={() => handleItemSelect(item)}
+						/>
+					))
 				)}
 			</CommandList>
 			<CommandFooter context="page" />

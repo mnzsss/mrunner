@@ -277,5 +277,11 @@
 		"directoryPlaceholder": "/home/user/projects/my-project",
 		"startChat": "Start Chat",
 		"commandRunning": "Running command..."
+	},
+	"updater": {
+		"available": "New version available:",
+		"downloading": "Downloading update...",
+		"installNow": "Update now",
+		"dismiss": "Dismiss update"
 	}
 }

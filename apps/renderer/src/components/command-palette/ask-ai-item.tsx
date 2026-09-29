@@ -22,7 +22,7 @@ export function AskAiItem({ query, onAsk }: AskAiItemProps) {
 				onSelect={() => onAsk(trimmed)}
 				className="w-full cursor-pointer"
 			>
-				<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/40 bg-muted/80 text-muted-foreground group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
+				<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-2 text-muted-foreground transition-colors duration-150 group-data-[selected=true]/command-item:border-highlight/30 group-data-[selected=true]/command-item:bg-highlight/10 group-data-[selected=true]/command-item:text-highlight motion-reduce:transition-none">
 					<Sparkles className="size-4" aria-hidden="true" />
 				</div>
 				<span className="truncate font-medium text-[13px]">
