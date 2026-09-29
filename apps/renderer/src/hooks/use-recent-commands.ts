@@ -18,13 +18,18 @@ export function pushRecent(
 	return [id, ...list.filter((existing) => existing !== id)].slice(0, limit)
 }
 
+// Bookmark ids carry a list index that shifts on delete, so bookmarks are keyed by URI.
+export function recentKey(command: Command): string {
+	return command.bookmark ? `bookmark-uri:${command.bookmark.uri}` : command.id
+}
+
 export function resolveRecentCommands(
-	ids: string[],
+	keys: string[],
 	items: Command[],
 ): Command[] {
-	const byId = new Map(items.map((item) => [item.id, item]))
-	return ids.flatMap((id) => {
-		const item = byId.get(id)
+	const byKey = new Map(items.map((item) => [recentKey(item), item]))
+	return keys.flatMap((key) => {
+		const item = byKey.get(key)
 		return item ? [item] : []
 	})
 }

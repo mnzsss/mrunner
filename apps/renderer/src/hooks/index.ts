@@ -33,6 +33,7 @@ export { usePalettePages } from './use-palette-pages'
 export { usePlugins } from './use-plugins'
 export { usePreviewWindow } from './use-preview-window'
 export {
+	recentKey,
 	resolveRecentCommands,
 	useRecentCommands,
 } from './use-recent-commands'

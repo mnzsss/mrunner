@@ -11,6 +11,7 @@ interface PreviewPaneProps {
 }
 
 function commandTarget(command: Command): string | undefined {
+	if (command.bookmark) return command.bookmark.uri
 	switch (command.action.type) {
 		case 'url':
 			return command.action.url
@@ -23,10 +24,18 @@ function commandTarget(command: Command): string | undefined {
 	}
 }
 
+function bookmarkTags(command: Command): string[] {
+	return (command.bookmark?.tags ?? '')
+		.split(',')
+		.map((tag) => tag.trim())
+		.filter(Boolean)
+}
+
 function PreviewDetails({ command }: { command: Command }) {
 	const { t } = useTranslation()
 	const Icon = ICON_MAP[command.icon] ?? Terminal
 	const target = commandTarget(command)
+	const tags = bookmarkTags(command)
 
 	return (
 		<>
@@ -48,6 +57,20 @@ function PreviewDetails({ command }: { command: Command }) {
 						{t('preview.target')}
 					</span>
 					<span className="break-all font-mono text-xs">{target}</span>
+				</div>
+			)}
+			{tags.length > 0 && (
+				<div className="flex flex-col gap-1">
+					<span className="text-muted-foreground text-xs">
+						{t('preview.tags')}
+					</span>
+					<div className="flex flex-wrap gap-1">
+						{tags.map((tag) => (
+							<Badge key={tag} variant="outline">
+								{tag}
+							</Badge>
+						))}
+					</div>
 				</div>
 			)}
 		</>

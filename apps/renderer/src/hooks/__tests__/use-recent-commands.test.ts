@@ -2,10 +2,12 @@ import { exists, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Command } from '@/commands/types'
+import type { Bookmark, Command } from '@/commands/types'
+import { useCommandData } from '@/hooks/use-command-data'
 import {
 	pushRecent,
 	RECENT_LIMIT,
+	recentKey,
 	resolveRecentCommands,
 	useRecentCommands,
 } from '@/hooks/use-recent-commands'
@@ -39,6 +41,48 @@ describe('resolveRecentCommands', () => {
 		expect(
 			resolveRecentCommands(['c', 'gone', 'a'], items).map((c) => c.id),
 		).toEqual(['c', 'a'])
+	})
+})
+
+describe('resolveRecentCommands with bookmarks', () => {
+	const bookmark = (index: number, uri: string): Bookmark => ({
+		index,
+		uri,
+		title: uri,
+		tags: '',
+		description: '',
+	})
+
+	function bookmarkItems(bookmarks: Bookmark[]): Command[] {
+		const { result } = renderHook(() =>
+			useCommandData({
+				commands: [],
+				plugins: [],
+				bookmarks,
+				onOpenBookmark: vi.fn(),
+			}),
+		)
+		return result.current.allItems
+	}
+
+	it('follows a recorded bookmark to its new index after a delete', () => {
+		const before = bookmarkItems([
+			bookmark(0, 'https://a.example'),
+			bookmark(1, 'https://b.example'),
+		])
+		const recordedB = before.find((item) => item.id === 'bookmark-1')
+		if (!recordedB) throw new Error('bookmark-1 missing')
+		const after = bookmarkItems([bookmark(0, 'https://b.example')])
+
+		const resolved = resolveRecentCommands([recentKey(recordedB)], after)
+
+		expect(resolved.map((c) => c.bookmark?.uri)).toEqual(['https://b.example'])
+	})
+
+	it('drops legacy index-based bookmark ids', () => {
+		const items = bookmarkItems([bookmark(0, 'https://a.example')])
+
+		expect(resolveRecentCommands(['bookmark-0'], items)).toEqual([])
 	})
 })
 

@@ -132,6 +132,7 @@ export interface Command {
 	keywords?: string[]
 	shortcut?: string
 	closeAfterRun?: boolean
+	bookmark?: Bookmark
 	action: CommandAction
 }
 

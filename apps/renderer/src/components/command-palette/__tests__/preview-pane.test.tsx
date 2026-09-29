@@ -73,6 +73,38 @@ describe('PreviewPane', () => {
 		expect(screen.getByText('preview.kind.app')).toBeInTheDocument()
 	})
 
+	const bookmark = (tags: string): Command => ({
+		id: 'bookmark-0',
+		name: 'Rust Book',
+		icon: 'bookmark',
+		group: 'Bookmarks',
+		bookmark: {
+			index: 0,
+			uri: 'https://doc.rust-lang.org/book',
+			title: 'Rust Book',
+			tags,
+			description: '',
+		},
+		action: { type: 'function', fn: vi.fn() },
+	})
+
+	it('shows the uri as target and each tag of a bookmark', () => {
+		render(<PreviewPane command={bookmark('rust, docs')} />)
+
+		expect(
+			screen.getByText('https://doc.rust-lang.org/book'),
+		).toBeInTheDocument()
+		expect(screen.getByText('preview.tags')).toBeInTheDocument()
+		expect(screen.getByText('rust')).toBeInTheDocument()
+		expect(screen.getByText('docs')).toBeInTheDocument()
+	})
+
+	it('omits the tags row for a bookmark without tags', () => {
+		render(<PreviewPane command={bookmark('')} />)
+
+		expect(screen.queryByText('preview.tags')).not.toBeInTheDocument()
+	})
+
 	it('shows the empty state without a highlighted command', () => {
 		render(<PreviewPane command={null} />)
 		expect(screen.getByText('preview.empty')).toBeInTheDocument()

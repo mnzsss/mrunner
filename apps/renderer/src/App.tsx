@@ -9,6 +9,7 @@ import { type Command, isScriptableAction } from '@/commands/types'
 import { CommandPalette, PluginCommandView } from '@/components/command-palette'
 import { SettingsSheet } from '@/components/settings/settings-sheet'
 import {
+	recentKey,
 	resolveRecentCommands,
 	useBookmarkActions,
 	useBookmarkSearch,
@@ -166,17 +167,16 @@ function App() {
 			if (Number.isNaN(bookmarkIndex)) return false
 			await openBookmark(bookmarkIndex)
 			await hideWindow()
+			const bookmark = allItems.find((c) => c.id === commandId)
+			if (bookmark) recordRecent(recentKey(bookmark))
 			return true
 		},
-		[openBookmark, hideWindow],
+		[allItems, openBookmark, hideWindow, recordRecent],
 	)
 
 	const handleSelect = useCallback(
 		async (commandId: string) => {
-			if (await handleBookmarkSelect(commandId)) {
-				recordRecent(commandId)
-				return
-			}
+			if (await handleBookmarkSelect(commandId)) return
 
 			const command = allItems.find((c) => c.id === commandId)
 			if (!command) return

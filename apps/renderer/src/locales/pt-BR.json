@@ -23,6 +23,7 @@
 		"label": "Pré-visualização",
 		"empty": "Nada selecionado",
 		"target": "Destino",
+		"tags": "Tags",
 		"kind": {
 			"app": "App",
 			"bookmark": "Bookmark",
