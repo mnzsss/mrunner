@@ -46,6 +46,8 @@ function renderPalette(overrides: Partial<CommandPaletteProps> = {}) {
 		chatInitialMessage: '',
 		onStartChat: vi.fn(),
 		onExitChat: vi.fn(),
+		previewOpen: false,
+		onTogglePreview: vi.fn(),
 		...overrides,
 	}
 	return render(<CommandPalette {...props} />)

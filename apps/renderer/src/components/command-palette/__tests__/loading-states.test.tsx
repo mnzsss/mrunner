@@ -71,6 +71,8 @@ describe('loading states', () => {
 				chatInitialMessage=""
 				onStartChat={vi.fn()}
 				onExitChat={vi.fn()}
+				previewOpen={false}
+				onTogglePreview={vi.fn()}
 			/>,
 		)
 		expect(screen.getByRole('status', { name: 'app.loading' })).toHaveAttribute(

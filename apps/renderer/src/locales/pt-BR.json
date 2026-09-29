@@ -14,7 +14,22 @@
 		"edit": "editar",
 		"delete": "deletar",
 		"close": "fechar",
-		"filter": "filtrar"
+		"filter": "filtrar",
+		"back": "voltar",
+		"preview": "pré-visualizar",
+		"hidePreview": "ocultar pré-visualização"
+	},
+	"preview": {
+		"label": "Pré-visualização",
+		"empty": "Nada selecionado",
+		"target": "Destino",
+		"kind": {
+			"app": "App",
+			"bookmark": "Bookmark",
+			"folder": "Pasta",
+			"plugin": "Plugin",
+			"system": "Sistema"
+		}
 	},
 	"filters": {
 		"label": "Filtrar resultados",

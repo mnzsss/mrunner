@@ -9,6 +9,7 @@ import {
 	DotMatrixLoader,
 	Kbd,
 } from '@mrunner/ui'
+import { useCommandState } from 'cmdk'
 import {
 	lazy,
 	type RefObject,
@@ -33,12 +34,32 @@ import { AskAiItem } from './ask-ai-item'
 import { BookmarkList } from './bookmark-list'
 import { CommandGroups } from './command-groups'
 import { cyclePaletteFilter, FilterChips } from './filter-chips'
+import { PreviewPane } from './preview-pane'
 
 const AIChatView = lazy(() =>
 	import('@/components/ai-chat/ai-chat-view').then((mod) => ({
 		default: mod.AIChatView,
 	})),
 )
+
+// cmdk exposes only the selected item's value string, which is not unique per command,
+// so the command id is read back from the selected item's rendered element.
+function HighlightTracker({
+	onChange,
+}: {
+	onChange: (id: string | null) => void
+}) {
+	const selectedItemId = useCommandState((state) => state.selectedItemId)
+
+	useEffect(() => {
+		const selected = selectedItemId
+			? document.getElementById(selectedItemId)
+			: null
+		onChange(selected?.dataset.commandId ?? null)
+	}, [selectedItemId, onChange])
+
+	return null
+}
 
 export interface CommandPaletteProps {
 	query: string
@@ -59,6 +80,8 @@ export interface CommandPaletteProps {
 	chatInitialMessage: string
 	onStartChat: (message: string) => void
 	onExitChat: () => void
+	previewOpen: boolean
+	onTogglePreview: () => void
 }
 
 export function CommandPalette({
@@ -68,6 +91,7 @@ export function CommandPalette({
 	bookmarks,
 	groupedCommands,
 	recentCommands,
+	allItems,
 	commandFilter,
 	onSelect,
 	onAddBookmark,
@@ -75,6 +99,8 @@ export function CommandPalette({
 	chatInitialMessage,
 	onStartChat,
 	onExitChat,
+	previewOpen,
+	onTogglePreview,
 }: CommandPaletteProps) {
 	const { t } = useTranslation()
 	const {
@@ -92,6 +118,12 @@ export function CommandPalette({
 	)
 	const showBookmarks = filter === 'all' || filter === 'bookmark'
 	const isRootPage = !isSlashMode && !activeCommand
+	const [highlightedId, setHighlightedId] = useState<string | null>(null)
+
+	const highlightedCommand = useMemo(
+		() => allItems.find((item) => item.id === highlightedId) ?? null,
+		[allItems, highlightedId],
+	)
 
 	const handleToolSelect = useCallback(
 		(provider: ToolProvider) => {
@@ -118,6 +150,12 @@ export function CommandPalette({
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
+			if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+				e.preventDefault()
+				onTogglePreview()
+				return
+			}
+
 			if (e.key === 'Tab' && e.ctrlKey && isRootPage) {
 				e.preventDefault()
 				setFilter((current) => cyclePaletteFilter(current, e.shiftKey ? -1 : 1))
@@ -156,6 +194,7 @@ export function CommandPalette({
 			}
 		},
 		[
+			onTogglePreview,
 			isRootPage,
 			isSlashMode,
 			filteredEntries,
@@ -201,6 +240,7 @@ export function CommandPalette({
 			onKeyDown={handleKeyDown}
 		>
 			<UpdateBanner />
+			<HighlightTracker onChange={setHighlightedId} />
 			<CommandInput
 				ref={inputRef}
 				value={query}
@@ -216,101 +256,106 @@ export function CommandPalette({
 			/>
 			{isRootPage && <FilterChips value={filter} onChange={setFilter} />}
 
-			<CommandList className="flex-1 overflow-y-auto p-2">
-				{isSlashMode && (
-					<CommandGroup heading={t('groups.Tools')}>
-						{filteredEntries.map((item) => {
-							if (item.kind === 'shortcut') {
-								const s = item.entry
+			<div className="flex min-h-0 flex-1">
+				<CommandList className="min-w-0 flex-1 overflow-y-auto p-2">
+					{isSlashMode && (
+						<CommandGroup heading={t('groups.Tools')}>
+							{filteredEntries.map((item) => {
+								if (item.kind === 'shortcut') {
+									const s = item.entry
+									return (
+										<CommandItem
+											key={s.id}
+											value={`/${s.command} ${s.name}`}
+											onSelect={() => handleShortcutSelect(s)}
+											className={`w-full cursor-pointer ${s.color.selectedBg}`}
+										>
+											<s.icon className={`size-4 ${s.color.icon}`} />
+											<span className={`font-medium ${s.color.text}`}>
+												/{s.command}
+											</span>
+											<span className="text-muted-foreground/70">
+												{t(s.descriptionKey)}
+											</span>
+											<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
+										</CommandItem>
+									)
+								}
+								const tool = item.entry
 								return (
 									<CommandItem
-										key={s.id}
-										value={`/${s.command} ${s.name}`}
-										onSelect={() => handleShortcutSelect(s)}
-										className={`w-full cursor-pointer ${s.color.selectedBg}`}
+										key={tool.id}
+										value={`/${tool.command} ${tool.name}`}
+										onSelect={() => handleToolSelect(tool)}
+										className={`w-full cursor-pointer ${tool.color.selectedBg}`}
 									>
-										<s.icon className={`size-4 ${s.color.icon}`} />
-										<span className={`font-medium ${s.color.text}`}>
-											/{s.command}
+										<tool.icon className={`size-4 ${tool.color.icon}`} />
+										<span className={`font-medium ${tool.color.text}`}>
+											/{tool.command}
 										</span>
 										<span className="text-muted-foreground/70">
-											{t(s.descriptionKey)}
+											{tool.description}
 										</span>
 										<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
 									</CommandItem>
 								)
-							}
-							const tool = item.entry
-							return (
-								<CommandItem
-									key={tool.id}
-									value={`/${tool.command} ${tool.name}`}
-									onSelect={() => handleToolSelect(tool)}
-									className={`w-full cursor-pointer ${tool.color.selectedBg}`}
-								>
-									<tool.icon className={`size-4 ${tool.color.icon}`} />
-									<span className={`font-medium ${tool.color.text}`}>
-										/{tool.command}
-									</span>
-									<span className="text-muted-foreground/70">
-										{tool.description}
-									</span>
-									<Kbd className="ml-auto">{t('tools.slashHint')}</Kbd>
-								</CommandItem>
-							)
-						})}
-					</CommandGroup>
-				)}
+							})}
+						</CommandGroup>
+					)}
 
-				{isRootPage && (
-					<>
-						<CommandEmpty className="py-2 text-center text-muted-foreground text-sm">
-							{query.trim() ? (
-								<AskAiItem query={query} onAsk={onStartChat} />
-							) : (
-								t('search.empty')
+					{isRootPage && (
+						<>
+							<CommandEmpty className="py-2 text-center text-muted-foreground text-sm">
+								{query.trim() ? (
+									<AskAiItem query={query} onAsk={onStartChat} />
+								) : (
+									t('search.empty')
+								)}
+							</CommandEmpty>
+
+							{query === '' &&
+								filter === 'all' &&
+								recentCommands.length > 0 && (
+									<CommandGroup heading={t('groups.Recent')}>
+										{recentCommands.map((cmd) => (
+											<ListItem
+												key={`recent-${cmd.id}`}
+												id={cmd.id}
+												value={`recent:${cmd.id}`}
+												title={cmd.name}
+												description={cmd.description}
+												icon={cmd.icon}
+												shortcut={cmd.shortcut}
+												onSelect={onSelect}
+											/>
+										))}
+									</CommandGroup>
+								)}
+
+							{showBookmarks && (
+								<CommandGroup heading={t('groups.Bookmarks')}>
+									<AddBookmarkButton onSelect={onAddBookmark} />
+									<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
+								</CommandGroup>
 							)}
-						</CommandEmpty>
 
-						{query === '' && filter === 'all' && recentCommands.length > 0 && (
-							<CommandGroup heading={t('groups.Recent')}>
-								{recentCommands.map((cmd) => (
-									<ListItem
-										key={`recent-${cmd.id}`}
-										id={cmd.id}
-										value={`recent:${cmd.id}`}
-										title={cmd.name}
-										description={cmd.description}
-										icon={cmd.icon}
-										shortcut={cmd.shortcut}
-										onSelect={onSelect}
-									/>
-								))}
-							</CommandGroup>
-						)}
+							<CommandGroups
+								groupedCommands={visibleGroups}
+								onSelect={onSelect}
+							/>
+						</>
+					)}
 
-						{showBookmarks && (
-							<CommandGroup heading={t('groups.Bookmarks')}>
-								<AddBookmarkButton onSelect={onAddBookmark} />
-								<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
-							</CommandGroup>
-						)}
+					{activeCommand && !query.trim() && (
+						<div className="py-6 text-center text-muted-foreground text-sm">
+							{t('chat.placeholder')}
+						</div>
+					)}
+				</CommandList>
+				{previewOpen && <PreviewPane command={highlightedCommand} />}
+			</div>
 
-						<CommandGroups
-							groupedCommands={visibleGroups}
-							onSelect={onSelect}
-						/>
-					</>
-				)}
-
-				{activeCommand && !query.trim() && (
-					<div className="py-6 text-center text-muted-foreground text-sm">
-						{t('chat.placeholder')}
-					</div>
-				)}
-			</CommandList>
-
-			<CommandFooter />
+			<CommandFooter context="root" previewOpen={previewOpen} />
 		</Command>
 	)
 }

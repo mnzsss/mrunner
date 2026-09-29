@@ -338,6 +338,8 @@ function App() {
 					chatInitialMessage={chatInitialMessage}
 					onStartChat={handleStartChat}
 					onExitChat={handleExitChat}
+					previewOpen={preview.isOpen}
+					onTogglePreview={preview.toggle}
 				/>
 			)}
 		</div>

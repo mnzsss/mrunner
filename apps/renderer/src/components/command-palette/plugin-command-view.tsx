@@ -251,7 +251,7 @@ export function PluginCommandView({
 					})
 				)}
 			</CommandList>
-			<CommandFooter />
+			<CommandFooter context="page" />
 		</Command>
 	)
 }

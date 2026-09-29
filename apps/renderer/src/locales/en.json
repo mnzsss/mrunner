@@ -14,7 +14,22 @@
 		"edit": "edit",
 		"delete": "delete",
 		"close": "close",
-		"filter": "filter"
+		"filter": "filter",
+		"back": "back",
+		"preview": "preview",
+		"hidePreview": "hide preview"
+	},
+	"preview": {
+		"label": "Preview",
+		"empty": "Nothing selected",
+		"target": "Target",
+		"kind": {
+			"app": "App",
+			"bookmark": "Bookmark",
+			"folder": "Folder",
+			"plugin": "Plugin",
+			"system": "System"
+		}
 	},
 	"filters": {
 		"label": "Filter results",
