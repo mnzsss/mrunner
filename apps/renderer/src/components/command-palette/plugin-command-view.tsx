@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 
 import type { CommandIcon, Command as CommandType } from '@/commands/types'
-import type { PalettePage } from '@/hooks/use-palette-pages'
+import type { PalettePage } from '@/hooks'
 import { isScriptableAction } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
 import { ListItem as ListRow } from '@/components/list-item'

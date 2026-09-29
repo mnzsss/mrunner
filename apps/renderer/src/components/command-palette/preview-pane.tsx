@@ -6,11 +6,11 @@ import type { Command } from '@/commands/types'
 import { commandKind } from '@/core/search'
 import { ICON_MAP } from '@/lib/constants'
 
-export interface PreviewPaneProps {
+interface PreviewPaneProps {
 	command: Command | null
 }
 
-export function commandTarget(command: Command): string | undefined {
+function commandTarget(command: Command): string | undefined {
 	switch (command.action.type) {
 		case 'url':
 			return command.action.url

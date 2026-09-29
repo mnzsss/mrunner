@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { PalettePage } from '@/hooks/use-palette-pages'
+import type { PalettePage } from '@/hooks'
 
 export interface PageBreadcrumbProps {
 	pages: PalettePage[]

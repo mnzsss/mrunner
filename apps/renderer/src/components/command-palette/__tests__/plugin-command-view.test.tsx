@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Command } from '@/commands/types'
-import type { PalettePage } from '@/hooks/use-palette-pages'
+import type { PalettePage } from '@/hooks'
 
 import { PluginCommandView } from '../plugin-command-view'
 
