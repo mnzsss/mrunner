@@ -10,7 +10,6 @@ export interface AskAiItemProps {
 export function AskAiItem({ query, onAsk }: AskAiItemProps) {
 	const { t } = useTranslation()
 	const trimmed = query.trim()
-	if (!trimmed) return null
 
 	// cmdk's sort re-appends every item into its group or the list root and throws for an
 	// item nested elsewhere (here, inside CommandEmpty), so the item needs its own group.

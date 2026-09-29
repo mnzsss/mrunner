@@ -6,8 +6,8 @@ import { CommandFooter } from '@/components/command-footer'
 import {
 	CommandPalette,
 	type CommandPaletteProps,
-	PreviewPane,
 } from '@/components/command-palette'
+import { PreviewPane } from '@/components/command-palette/preview-pane'
 
 vi.mock('@/components/update-banner', () => ({ UpdateBanner: () => null }))
 
@@ -49,6 +49,8 @@ function renderPalette(overrides: Partial<CommandPaletteProps> = {}) {
 		onExitChat: vi.fn(),
 		previewOpen: false,
 		onTogglePreview: vi.fn(),
+		filter: 'all',
+		onFilterChange: vi.fn(),
 		...overrides,
 	}
 	return render(<CommandPalette {...props} />)

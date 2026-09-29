@@ -59,6 +59,10 @@ vi.mock('@/components/command-palette', () => ({
 	CommandPalette: (props: CommandPaletteProps) => (
 		<div>
 			<span>{props.previewOpen ? 'preview open' : 'preview closed'}</span>
+			<span>{`filter ${props.filter}`}</span>
+			<button type="button" onClick={() => props.onFilterChange('app')}>
+				filter apps
+			</button>
 			<button type="button" onClick={() => void props.onTogglePreview()}>
 				toggle preview
 			</button>
@@ -141,6 +145,27 @@ describe('App preview window', () => {
 
 		expect(screen.getByText('plugin page')).toBeInTheDocument()
 		expect(widths()).toEqual([960, 640])
+	})
+})
+
+describe('App palette filter', () => {
+	it('resets to all when the window is shown again', async () => {
+		await renderApp()
+		await click('filter apps')
+
+		await act(async () => emitTauriEvent('tauri://focus', null))
+
+		expect(screen.getByText('filter all')).toBeInTheDocument()
+	})
+
+	it('resets to all after visiting a page', async () => {
+		await renderApp()
+		await click('filter apps')
+		await click('open page')
+
+		await act(async () => shortcuts.onEscape())
+
+		expect(screen.getByText('filter all')).toBeInTheDocument()
 	})
 })
 

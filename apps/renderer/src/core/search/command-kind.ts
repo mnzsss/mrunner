@@ -12,6 +12,15 @@ export const PALETTE_FILTERS: readonly PaletteFilter[] = [
 	'plugin',
 ]
 
+export function cyclePaletteFilter(
+	current: PaletteFilter,
+	step: 1 | -1,
+): PaletteFilter {
+	const index = PALETTE_FILTERS.indexOf(current)
+	const next = (index + step + PALETTE_FILTERS.length) % PALETTE_FILTERS.length
+	return PALETTE_FILTERS[next] ?? 'all'
+}
+
 export function commandKind(command: Command): CommandKind {
 	if (command.id.startsWith('bookmark-')) return 'bookmark'
 	if (command.id.startsWith('files-')) return 'folder'

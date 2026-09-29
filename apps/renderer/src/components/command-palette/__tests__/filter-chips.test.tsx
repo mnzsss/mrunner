@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Command } from '@/commands/types'
+import type { PaletteFilter } from '@/core/search'
 import {
 	CommandPalette,
 	type CommandPaletteProps,
-	cyclePaletteFilter,
 	FilterChips,
 } from '@/components/command-palette'
 
@@ -24,6 +25,13 @@ const folder: Command = {
 	icon: 'folder',
 	group: 'Quick Access',
 	action: { type: 'open', path: '/home/me/Downloads' },
+}
+
+function StatefulFilterPalette(props: CommandPaletteProps) {
+	const [filter, setFilter] = useState<PaletteFilter>(props.filter)
+	return (
+		<CommandPalette {...props} filter={filter} onFilterChange={setFilter} />
+	)
 }
 
 function renderPalette(overrides: Partial<CommandPaletteProps> = {}) {
@@ -48,24 +56,22 @@ function renderPalette(overrides: Partial<CommandPaletteProps> = {}) {
 		onExitChat: vi.fn(),
 		previewOpen: false,
 		onTogglePreview: vi.fn(),
+		filter: 'all',
+		onFilterChange: vi.fn(),
 		...overrides,
 	}
-	return render(<CommandPalette {...props} />)
+	return render(<StatefulFilterPalette {...props} />)
 }
 
-describe('cyclePaletteFilter', () => {
-	it('moves forward and wraps to the first filter', () => {
-		expect(cyclePaletteFilter('all', 1)).toBe('app')
-		expect(cyclePaletteFilter('plugin', 1)).toBe('all')
-	})
-
-	it('moves backward and wraps to the last filter', () => {
-		expect(cyclePaletteFilter('app', -1)).toBe('all')
-		expect(cyclePaletteFilter('all', -1)).toBe('plugin')
-	})
-})
-
 describe('FilterChips', () => {
+	it('advertises the Ctrl+Tab shortcut on the group', () => {
+		render(<FilterChips value="all" onChange={vi.fn()} />)
+		expect(screen.getByRole('group')).toHaveAttribute(
+			'aria-keyshortcuts',
+			'Control+Tab',
+		)
+	})
+
 	it('marks the active chip as pressed and reports clicks', () => {
 		const onChange = vi.fn()
 		render(<FilterChips value="folder" onChange={onChange} />)

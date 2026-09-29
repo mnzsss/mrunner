@@ -3,6 +3,7 @@ export type { FuzzySearchOptions, FuzzySearchResult } from './fuzzy-search'
 export { createCommandFilter } from './command-filter'
 export {
 	commandKind,
+	cyclePaletteFilter,
 	filterGroupedCommands,
 	PALETTE_FILTERS,
 } from './command-kind'

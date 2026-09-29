@@ -225,6 +225,7 @@
 	},
 	"plugins": {
 		"back": "Voltar",
+		"breadcrumb": "Páginas de comando",
 		"running": "Executando...",
 		"success": "Comando executado com sucesso",
 		"error": "Falha ao executar comando"

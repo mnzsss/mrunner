@@ -4,10 +4,12 @@ import { sendNotification } from '@tauri-apps/plugin-notification'
 import { lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { isScriptableAction } from '@/commands/types'
+import type { PaletteFilter } from '@/core/search'
+import { type Command, isScriptableAction } from '@/commands/types'
 import { CommandPalette, PluginCommandView } from '@/components/command-palette'
 import { SettingsSheet } from '@/components/settings/settings-sheet'
 import {
+	resolveRecentCommands,
 	useBookmarkActions,
 	useBookmarkSearch,
 	useBookmarks,
@@ -21,7 +23,6 @@ import {
 	useRecentCommands,
 	useWindowManager,
 } from '@/hooks'
-import { resolveRecentCommands } from '@/hooks/use-recent-commands'
 import { getPluginEnvironment } from '@/lib/plugin-environment'
 
 const BookmarkDialog = lazy(() =>
@@ -44,6 +45,7 @@ const FolderManager = lazy(() =>
 
 function App() {
 	const [query, setQuery] = useState('')
+	const [filter, setFilter] = useState<PaletteFilter>('all')
 	const [isChatMode, setIsChatMode] = useState(false)
 	const [chatInitialMessage, setChatInitialMessage] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
@@ -78,6 +80,7 @@ function App() {
 	const { hideWindow } = useWindowManager({
 		onQueryReset: () => {
 			setQuery('')
+			setFilter('all')
 			resetPages()
 			requestAnimationFrame(() => inputRef.current?.focus())
 		},
@@ -105,6 +108,15 @@ function App() {
 		parseQuery,
 		search,
 	})
+
+	const openPage = useCallback(
+		(command: Command) => {
+			setQuery('')
+			setFilter('all')
+			pushPage(command)
+		},
+		[pushPage],
+	)
 
 	const handleEscape = useCallback(() => {
 		if (popPage()) {
@@ -210,8 +222,7 @@ function App() {
 				}
 				// list or detail mode: transition to sub-view
 				recordRecent(command.id)
-				setQuery('')
-				pushPage(command)
+				openPage(command)
 				return
 			}
 
@@ -228,7 +239,7 @@ function App() {
 			handleBookmarkSelect,
 			hideWindow,
 			dialogManager,
-			pushPage,
+			openPage,
 			recordRecent,
 			query,
 			i18n.language,
@@ -244,10 +255,9 @@ function App() {
 					c.action.commandId === pluginCommandId,
 			)
 			if (!target) return
-			setQuery('')
-			pushPage(target)
+			openPage(target)
 		},
-		[allItems, pushPage],
+		[allItems, openPage],
 	)
 
 	const handleStartChat = useCallback((message: string) => {
@@ -341,6 +351,8 @@ function App() {
 					onExitChat={handleExitChat}
 					previewOpen={preview.isOpen}
 					onTogglePreview={preview.toggle}
+					filter={filter}
+					onFilterChange={setFilter}
 				/>
 			)}
 		</div>

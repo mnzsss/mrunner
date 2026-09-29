@@ -26,14 +26,18 @@ import type { SlashShortcut, ToolProvider } from '@/core/types/tools'
 import { CommandFooter } from '@/components/command-footer'
 import { ListItem } from '@/components/list-item'
 import { UpdateBanner } from '@/components/update-banner'
-import { filterGroupedCommands, type PaletteFilter } from '@/core/search'
+import {
+	cyclePaletteFilter,
+	filterGroupedCommands,
+	type PaletteFilter,
+} from '@/core/search'
 import { useSlashCommands } from '@/hooks/use-slash-commands'
 
 import { AddBookmarkButton } from './add-bookmark-button'
 import { AskAiItem } from './ask-ai-item'
 import { BookmarkList } from './bookmark-list'
 import { CommandGroups } from './command-groups'
-import { cyclePaletteFilter, FilterChips } from './filter-chips'
+import { FilterChips } from './filter-chips'
 import { PreviewPane } from './preview-pane'
 
 const AIChatView = lazy(() =>
@@ -82,6 +86,8 @@ export interface CommandPaletteProps {
 	onExitChat: () => void
 	previewOpen: boolean
 	onTogglePreview: () => Promise<void>
+	filter: PaletteFilter
+	onFilterChange: (filter: PaletteFilter) => void
 }
 
 export function CommandPalette({
@@ -101,6 +107,8 @@ export function CommandPalette({
 	onExitChat,
 	previewOpen,
 	onTogglePreview,
+	filter,
+	onFilterChange,
 }: CommandPaletteProps) {
 	const { t } = useTranslation()
 	const {
@@ -111,7 +119,6 @@ export function CommandPalette({
 		activateCommand,
 		deactivateCommand,
 	} = useSlashCommands(query)
-	const [filter, setFilter] = useState<PaletteFilter>('all')
 	const visibleGroups = useMemo(
 		() => filterGroupedCommands(groupedCommands, filter),
 		[groupedCommands, filter],
@@ -148,6 +155,12 @@ export function CommandPalette({
 		}
 	}, [matchedShortcut, handleShortcutSelect])
 
+	const cycleFilter = useCallback(
+		(backward: boolean) =>
+			onFilterChange(cyclePaletteFilter(filter, backward ? -1 : 1)),
+		[filter, onFilterChange],
+	)
+
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
 			if (e.ctrlKey && e.key.toLowerCase() === 'p') {
@@ -158,7 +171,7 @@ export function CommandPalette({
 
 			if (e.key === 'Tab' && e.ctrlKey && isRootPage) {
 				e.preventDefault()
-				setFilter((current) => cyclePaletteFilter(current, e.shiftKey ? -1 : 1))
+				cycleFilter(e.shiftKey)
 				return
 			}
 
@@ -196,6 +209,7 @@ export function CommandPalette({
 		[
 			onTogglePreview,
 			isRootPage,
+			cycleFilter,
 			isSlashMode,
 			filteredEntries,
 			activeCommand,
@@ -254,7 +268,7 @@ export function CommandPalette({
 				}
 				autoFocus
 			/>
-			{isRootPage && <FilterChips value={filter} onChange={setFilter} />}
+			{isRootPage && <FilterChips value={filter} onChange={onFilterChange} />}
 
 			<div className="flex min-h-0 flex-1">
 				<CommandList className="min-w-0 flex-1 overflow-y-auto p-2">

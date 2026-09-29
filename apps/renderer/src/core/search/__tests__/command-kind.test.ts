@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Command } from '@/core/types'
 import {
 	commandKind,
+	cyclePaletteFilter,
 	filterGroupedCommands,
 	PALETTE_FILTERS,
 } from '@/core/search/command-kind'
@@ -83,5 +84,17 @@ describe('filterGroupedCommands', () => {
 			'folder',
 			'plugin',
 		])
+	})
+})
+
+describe('cyclePaletteFilter', () => {
+	it('moves forward and wraps to the first filter', () => {
+		expect(cyclePaletteFilter('all', 1)).toBe('app')
+		expect(cyclePaletteFilter('plugin', 1)).toBe('all')
+	})
+
+	it('moves backward and wraps to the last filter', () => {
+		expect(cyclePaletteFilter('app', -1)).toBe('all')
+		expect(cyclePaletteFilter('all', -1)).toBe('plugin')
 	})
 })

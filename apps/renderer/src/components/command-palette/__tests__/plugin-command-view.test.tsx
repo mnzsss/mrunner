@@ -54,11 +54,45 @@ describe('PluginCommandView page navigation', () => {
 		vi.mocked(invoke).mockResolvedValue({ items: [] })
 	})
 
-	it('shows every page title in the breadcrumb', () => {
+	it('shows every page title in the breadcrumb and marks the current one', () => {
 		renderView('')
-		const crumb = screen.getByRole('navigation', { name: 'plugins.back' })
+		const crumb = screen.getByRole('navigation', { name: 'plugins.breadcrumb' })
 		expect(crumb).toHaveTextContent('Repositories')
-		expect(crumb).toHaveTextContent('Pull Requests')
+		expect(screen.getByText('Pull Requests')).toHaveAttribute(
+			'aria-current',
+			'page',
+		)
+		expect(screen.getByText('Repositories')).not.toHaveAttribute('aria-current')
+	})
+
+	it('Backspace goes back from a detail page that has no input', async () => {
+		vi.mocked(invoke).mockResolvedValue({ markdown: '# Details' })
+		const onBack = vi.fn()
+		render(
+			<PluginCommandView
+				command={{
+					...command,
+					action: {
+						type: 'scriptable',
+						commandId: 'gh.pr',
+						mode: 'detail',
+						pluginName: 'GitHub',
+					},
+				}}
+				pages={pages}
+				query=""
+				onQueryChange={vi.fn()}
+				inputRef={{ current: null }}
+				onBack={onBack}
+			/>,
+		)
+		await screen.findByText('Details')
+
+		fireEvent.keyDown(document.activeElement ?? document.body, {
+			key: 'Backspace',
+		})
+
+		expect(onBack).toHaveBeenCalledTimes(1)
 	})
 
 	it('Backspace on an empty input goes back one page', () => {

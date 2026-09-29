@@ -32,7 +32,10 @@ export { useKeyboardShortcuts } from './use-keyboard-shortcuts'
 export { usePalettePages } from './use-palette-pages'
 export { usePlugins } from './use-plugins'
 export { usePreviewWindow } from './use-preview-window'
-export { useRecentCommands } from './use-recent-commands'
+export {
+	resolveRecentCommands,
+	useRecentCommands,
+} from './use-recent-commands'
 export { useSlashCommands } from './use-slash-commands'
 export { useUpdater } from './use-updater'
 export { useWindowManager } from './use-window-manager'

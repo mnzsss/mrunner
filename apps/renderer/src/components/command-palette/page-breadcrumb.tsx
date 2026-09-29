@@ -20,16 +20,16 @@ export function PageBreadcrumb({
 
 	return (
 		<nav
-			aria-label={t('plugins.back')}
+			aria-label={t('plugins.breadcrumb')}
 			className="flex items-center gap-1.5 border-border-subtle border-b bg-surface-2/60 px-3 py-2 text-muted-foreground text-sm"
 		>
 			<button
 				type="button"
 				onClick={onBack}
 				aria-label={t('plugins.back')}
-				className="rounded-md p-0.5 transition-colors hover:text-foreground"
+				className="rounded-md p-0.5 transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-highlight/40 motion-reduce:transition-none"
 			>
-				<ChevronLeft className="size-4" />
+				<ChevronLeft className="size-4" aria-hidden="true" />
 			</button>
 			{pages.map((page, i) => (
 				<Fragment key={`${page.id}-${i}`}>
@@ -37,6 +37,7 @@ export function PageBreadcrumb({
 						<ChevronRight className="size-3 opacity-50" aria-hidden="true" />
 					)}
 					<span
+						aria-current={i === pages.length - 1 ? 'page' : undefined}
 						className={
 							i === pages.length - 1 ? 'font-medium text-foreground' : undefined
 						}

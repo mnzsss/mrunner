@@ -73,6 +73,8 @@ describe('loading states', () => {
 				onExitChat={vi.fn()}
 				previewOpen={false}
 				onTogglePreview={vi.fn()}
+				filter="all"
+				onFilterChange={vi.fn()}
 			/>,
 		)
 		expect(screen.getByRole('status', { name: 'app.loading' })).toHaveAttribute(

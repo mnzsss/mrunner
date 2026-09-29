@@ -9,6 +9,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { AskAiItem } from '../ask-ai-item'
+import { CommandPalette } from '../command-palette'
+
+vi.mock('@/components/update-banner', () => ({ UpdateBanner: () => null }))
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
@@ -60,14 +63,36 @@ describe('AskAiItem', () => {
 		expect(onAsk).toHaveBeenCalledWith('deploy')
 	})
 
-	it('renders nothing for a blank query', () => {
+	it('palette shows the empty state instead of Ask AI for a blank query', () => {
 		render(
-			<Command>
-				<CommandList>
-					<AskAiItem query="   " onAsk={vi.fn()} />
-				</CommandList>
-			</Command>,
+			<CommandPalette
+				query="   "
+				onQueryChange={vi.fn()}
+				inputRef={{ current: null }}
+				bookmarks={[]}
+				groupedCommands={{}}
+				recentCommands={[]}
+				allItems={[]}
+				commandFilter={() => 0}
+				onSelect={vi.fn()}
+				onAddBookmark={vi.fn()}
+				onOpenBookmark={vi.fn()}
+				onHideWindow={vi.fn()}
+				executeCommand={vi.fn()}
+				onOpenFolderManager={vi.fn()}
+				isChatMode={false}
+				chatInitialMessage=""
+				onStartChat={vi.fn()}
+				onExitChat={vi.fn()}
+				previewOpen={false}
+				onTogglePreview={vi.fn()}
+				filter="all"
+				onFilterChange={vi.fn()}
+			/>,
 		)
-		expect(screen.queryByRole('option')).toBeNull()
+		expect(screen.getByText('search.empty')).toBeInTheDocument()
+		expect(
+			screen.queryByRole('option', { name: /search\.askAi/ }),
+		).not.toBeInTheDocument()
 	})
 })

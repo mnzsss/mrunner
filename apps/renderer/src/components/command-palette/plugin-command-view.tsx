@@ -69,6 +69,7 @@ export function PluginCommandView({
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const rootRef = useRef<HTMLDivElement>(null)
 
 	const mode = isScriptableAction(command.action) ? command.action.mode : 'list'
 
@@ -126,6 +127,11 @@ export function PluginCommandView({
 		}
 	}, [query, runCommand, mode])
 
+	// Detail pages have no input, so the root takes focus for Backspace to reach onKeyDown.
+	useEffect(() => {
+		if (mode === 'detail') rootRef.current?.focus()
+	}, [mode])
+
 	const handleItemSelect = useCallback(
 		async (item: ListItem) => {
 			const firstAction = item.actions?.[0]
@@ -142,7 +148,9 @@ export function PluginCommandView({
 
 	return (
 		<Command
-			className="glass flex h-full animate-page-in flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl"
+			ref={rootRef}
+			tabIndex={-1}
+			className="glass flex h-full animate-page-in flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-black/15 shadow-xl outline-none"
 			loop
 			disablePointerSelection
 			shouldFilter={false}

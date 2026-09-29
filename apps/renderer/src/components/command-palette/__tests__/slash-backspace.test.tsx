@@ -33,6 +33,8 @@ function StatefulPalette(props: Pick<CommandPaletteProps, 'onHideWindow'>) {
 			onExitChat={vi.fn()}
 			previewOpen={false}
 			onTogglePreview={vi.fn()}
+			filter="all"
+			onFilterChange={vi.fn()}
 		/>
 	)
 }
