@@ -7,16 +7,6 @@ import type { Command } from '@/commands/types'
 import { CommandPalette } from '../command-palette'
 import { PluginCommandView } from '../plugin-command-view'
 
-vi.stubGlobal(
-	'ResizeObserver',
-	class {
-		observe() {}
-		unobserve() {}
-		disconnect() {}
-	},
-)
-Element.prototype.scrollIntoView = vi.fn()
-
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
 		t: (key: string) => key,

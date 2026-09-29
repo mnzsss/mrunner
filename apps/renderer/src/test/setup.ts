@@ -1,6 +1,14 @@
 import { vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
+// jsdom lacks the layout APIs cmdk calls when it measures and scrolls the list.
+globalThis.ResizeObserver = class {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+}
+Element.prototype.scrollIntoView = () => {}
+
 // --- Mock @tauri-apps/api/core ---
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn(),

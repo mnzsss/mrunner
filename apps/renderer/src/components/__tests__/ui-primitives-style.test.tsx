@@ -16,17 +16,7 @@ import {
 } from '@mrunner/ui'
 import { Item } from '@mrunner/ui/components/ui/item'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-
-vi.stubGlobal(
-	'ResizeObserver',
-	class {
-		observe() {}
-		unobserve() {}
-		disconnect() {}
-	},
-)
-Element.prototype.scrollIntoView = vi.fn()
+import { describe, expect, it } from 'vitest'
 
 function slot(name: string): HTMLElement {
 	const element = document.querySelector<HTMLElement>(`[data-slot="${name}"]`)
