@@ -33,7 +33,7 @@ describe('primitive restyle', () => {
 				</CommandList>
 			</Command>,
 		)
-		expect(slot('command')).toHaveClass('bg-surface-1', 'animate-surface-in')
+		expect(slot('command')).toHaveClass('bg-surface-1')
 		expect(slot('command-item')).toHaveClass('data-selected:bg-highlight/10')
 	})
 

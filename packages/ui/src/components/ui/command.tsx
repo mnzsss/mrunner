@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { SearchIcon, Tick02Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Command as CommandPrimitive } from 'cmdk'
+import { Command as CommandPrimitive, useCommandState } from 'cmdk'
 
 import { cn } from '../../lib/utils'
 import {
@@ -21,7 +21,7 @@ function Command({
 		<CommandPrimitive
 			data-slot="command"
 			className={cn(
-				'flex size-full animate-surface-in flex-col overflow-hidden rounded-2xl bg-surface-1 p-1 text-popover-foreground',
+				'flex size-full flex-col overflow-hidden rounded-2xl bg-surface-1 p-1 text-popover-foreground',
 				className,
 			)}
 			{...props}
@@ -209,4 +209,5 @@ export {
 	CommandItem,
 	CommandShortcut,
 	CommandSeparator,
+	useCommandState,
 }

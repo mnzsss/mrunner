@@ -8,8 +8,8 @@ import {
 	CommandList,
 	DotMatrixLoader,
 	Kbd,
+	useCommandState,
 } from '@mrunner/ui'
-import { useCommandState } from 'cmdk'
 import {
 	lazy,
 	type RefObject,
