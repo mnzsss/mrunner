@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import type { Bookmark, Command as CommandType } from '@/commands/types'
 import type { SlashShortcut, ToolProvider } from '@/core/types/tools'
 import { CommandFooter } from '@/components/command-footer'
+import { ListItem } from '@/components/list-item'
 import { UpdateBanner } from '@/components/update-banner'
 import { useSlashCommands } from '@/hooks/use-slash-commands'
 
@@ -34,6 +35,7 @@ export interface CommandPaletteProps {
 	inputRef: RefObject<HTMLInputElement | null>
 	bookmarks: Bookmark[]
 	groupedCommands: Record<string, CommandType[]>
+	recentCommands: CommandType[]
 	allItems: CommandType[]
 	commandFilter: (value: string, search: string) => number
 	onSelect: (commandId: string) => void
@@ -54,6 +56,7 @@ export function CommandPalette({
 	inputRef,
 	bookmarks,
 	groupedCommands,
+	recentCommands,
 	commandFilter,
 	onSelect,
 	onAddBookmark,
@@ -238,6 +241,23 @@ export function CommandPalette({
 						<CommandEmpty className="py-6 text-center text-muted-foreground text-sm">
 							{t('search.empty')}
 						</CommandEmpty>
+
+						{query === '' && recentCommands.length > 0 && (
+							<CommandGroup heading={t('groups.Recent')}>
+								{recentCommands.map((cmd) => (
+									<ListItem
+										key={`recent-${cmd.id}`}
+										id={cmd.id}
+										value={`recent:${cmd.id}`}
+										title={cmd.name}
+										description={cmd.description}
+										icon={cmd.icon}
+										shortcut={cmd.shortcut}
+										onSelect={onSelect}
+									/>
+								))}
+							</CommandGroup>
+						)}
 
 						<CommandGroup heading={t('groups.Bookmarks')}>
 							<AddBookmarkButton onSelect={onAddBookmark} />

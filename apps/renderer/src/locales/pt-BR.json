@@ -187,6 +187,7 @@
 		"openChrome": "Abrir navegador Chrome"
 	},
 	"groups": {
+		"Recent": "Recentes",
 		"MRunner": "MRunner",
 		"Applications": "Aplicativos",
 		"Quick Access": "Acesso Rápido",

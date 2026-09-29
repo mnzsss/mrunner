@@ -58,6 +58,7 @@ describe('loading states', () => {
 				inputRef={{ current: null }}
 				bookmarks={[]}
 				groupedCommands={{}}
+				recentCommands={[]}
 				allItems={[]}
 				commandFilter={() => 1}
 				onSelect={vi.fn()}

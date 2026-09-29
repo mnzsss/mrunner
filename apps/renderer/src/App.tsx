@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { sendNotification } from '@tauri-apps/plugin-notification'
-import { lazy, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { isScriptableAction } from '@/commands/types'
@@ -17,8 +17,10 @@ import {
 	useKeyboardShortcuts,
 	usePalettePages,
 	usePlugins,
+	useRecentCommands,
 	useWindowManager,
 } from '@/hooks'
+import { resolveRecentCommands } from '@/hooks/use-recent-commands'
 import { getPluginEnvironment } from '@/lib/plugin-environment'
 
 const BookmarkDialog = lazy(() =>
@@ -85,6 +87,12 @@ function App() {
 		onOpenBookmark: openBookmark,
 	})
 
+	const { recent, record: recordRecent } = useRecentCommands()
+	const recentCommands = useMemo(
+		() => resolveRecentCommands(recent, allItems),
+		[recent, allItems],
+	)
+
 	// Bookmark search hook
 	useBookmarkSearch({
 		query,
@@ -146,7 +154,10 @@ function App() {
 
 	const handleSelect = useCallback(
 		async (commandId: string) => {
-			if (await handleBookmarkSelect(commandId)) return
+			if (await handleBookmarkSelect(commandId)) {
+				recordRecent(commandId)
+				return
+			}
 
 			const command = allItems.find((c) => c.id === commandId)
 			if (!command) return
@@ -158,6 +169,7 @@ function App() {
 				} else if (command.action.dialog === 'settings') {
 					dialogManager.setIsSettingsOpen(true)
 				}
+				recordRecent(command.id)
 				return
 			}
 
@@ -175,6 +187,7 @@ function App() {
 								environment,
 							},
 						})
+						recordRecent(command.id)
 						await sendNotification({
 							title: command.name,
 							body: t('plugins.success'),
@@ -190,12 +203,14 @@ function App() {
 					return
 				}
 				// list or detail mode: transition to sub-view
+				recordRecent(command.id)
 				setQuery('')
 				pushPage(command)
 				return
 			}
 
-			await executeCommand(command)
+			const result = await executeCommand(command)
+			if (result.success) recordRecent(command.id)
 
 			if (command.closeAfterRun !== false) {
 				await hideWindow()
@@ -208,6 +223,7 @@ function App() {
 			hideWindow,
 			dialogManager,
 			pushPage,
+			recordRecent,
 			query,
 			i18n.language,
 			t,
@@ -304,6 +320,7 @@ function App() {
 					inputRef={inputRef}
 					bookmarks={bookmarks}
 					groupedCommands={groupedCommands}
+					recentCommands={recentCommands}
 					allItems={allItems}
 					commandFilter={commandFilter}
 					onSelect={handleSelect}
