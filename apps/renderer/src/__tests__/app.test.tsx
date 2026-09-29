@@ -96,12 +96,6 @@ vi.mock('@/hooks', async (importOriginal) => ({
 		groupedCommands: {},
 		commandFilter: () => 1,
 	}),
-	useDialogManager: () => ({
-		nativeDialogCount: 0,
-		editDialog: {},
-		deleteDialog: {},
-		setIsSettingsOpen: vi.fn(),
-	}),
 	useKeyboardShortcuts: ({ onEscape }: { onEscape: () => void }) => {
 		shortcuts.onEscape = onEscape
 	},
@@ -144,6 +138,18 @@ describe('App preview window', () => {
 		await click('open page')
 
 		expect(screen.getByText('plugin page')).toBeInTheDocument()
+		expect(widths()).toEqual([960, 640])
+	})
+
+	it('restores the compact window when a dialog opens over the preview', async () => {
+		await renderApp()
+		await click('toggle preview')
+
+		await act(async () => {
+			fireEvent.keyDown(window, { key: ',', ctrlKey: true })
+		})
+
+		expect(screen.getByText('preview closed')).toBeInTheDocument()
 		expect(widths()).toEqual([960, 640])
 	})
 })

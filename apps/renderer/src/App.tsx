@@ -74,7 +74,8 @@ function App() {
 
 	// Window manager hook
 	const preview = usePreviewWindow({
-		suppressed: isChatMode || currentPage !== null,
+		suppressed:
+			isChatMode || currentPage !== null || dialogManager.activeDialogs > 0,
 	})
 
 	const { hideWindow } = useWindowManager({

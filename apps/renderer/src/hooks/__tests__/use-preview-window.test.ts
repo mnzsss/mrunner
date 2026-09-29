@@ -84,6 +84,33 @@ describe('usePreviewWindow', () => {
 		expect(widths()).toEqual([960, 640])
 	})
 
+	it('restores 640 when suppressed while widening is in flight', async () => {
+		let finishWidening = () => {}
+		windowMock.setSize.mockImplementationOnce(
+			() =>
+				new Promise<void>((resolve) => {
+					finishWidening = resolve
+				}),
+		)
+		const { result, rerender } = renderHook(
+			({ suppressed }) => usePreviewWindow({ suppressed }),
+			{ initialProps: { suppressed: false } },
+		)
+
+		let toggling = Promise.resolve()
+		act(() => {
+			toggling = result.current.toggle()
+		})
+		rerender({ suppressed: true })
+		await act(async () => {
+			finishWidening()
+			await toggling
+		})
+
+		expect(result.current.isOpen).toBe(false)
+		expect(widths()).toEqual([960, 640])
+	})
+
 	it('ignores toggle while suppressed', async () => {
 		const { result } = renderHook(() => usePreviewWindow({ suppressed: true }))
 

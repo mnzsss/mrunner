@@ -40,6 +40,8 @@ export function usePreviewWindow({
 }: UsePreviewWindowOptions): UsePreviewWindowReturn {
 	const [isOpen, setIsOpen] = useState(false)
 	const isOpenRef = useRef(false)
+	const suppressedRef = useRef(suppressed)
+	suppressedRef.current = suppressed
 
 	const setOpen = useCallback((open: boolean) => {
 		isOpenRef.current = open
@@ -54,10 +56,15 @@ export function usePreviewWindow({
 
 	const toggle = useCallback(async () => {
 		if (isOpenRef.current) return close()
-		if (suppressed) return
+		if (suppressedRef.current) return
 		// Resize before the pane renders so the layout never draws a 960px pane in a 640px window.
-		if (await resizeWindow(PREVIEW_WIDTH)) setOpen(true)
-	}, [close, suppressed, setOpen])
+		if (!(await resizeWindow(PREVIEW_WIDTH))) return
+		if (suppressedRef.current) {
+			await resizeWindow(COMPACT_WIDTH)
+			return
+		}
+		setOpen(true)
+	}, [close, setOpen])
 
 	useEffect(() => {
 		if (suppressed) void close()
