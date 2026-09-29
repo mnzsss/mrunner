@@ -4,6 +4,7 @@
 		"loading": "Loading..."
 	},
 	"search": {
+		"askAi": "Ask AI: {{query}}",
 		"placeholder": "Type a command or search...",
 		"empty": "No results found."
 	},

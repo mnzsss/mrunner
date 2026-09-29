@@ -20,6 +20,7 @@ import { UpdateBanner } from '@/components/update-banner'
 import { useSlashCommands } from '@/hooks/use-slash-commands'
 
 import { AddBookmarkButton } from './add-bookmark-button'
+import { AskAiItem } from './ask-ai-item'
 import { BookmarkList } from './bookmark-list'
 import { CommandGroups } from './command-groups'
 
@@ -238,8 +239,12 @@ export function CommandPalette({
 
 				{!isSlashMode && !activeCommand && (
 					<>
-						<CommandEmpty className="py-6 text-center text-muted-foreground text-sm">
-							{t('search.empty')}
+						<CommandEmpty className="py-2 text-center text-muted-foreground text-sm">
+							{query.trim() ? (
+								<AskAiItem query={query} onAsk={onStartChat} />
+							) : (
+								t('search.empty')
+							)}
 						</CommandEmpty>
 
 						{query === '' && recentCommands.length > 0 && (
