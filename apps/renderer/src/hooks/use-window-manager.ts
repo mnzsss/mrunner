@@ -45,10 +45,10 @@ export function useWindowManager({
 			clearTimeout(blurTimeoutRef.current)
 			blurTimeoutRef.current = null
 		}
-		const window = getCurrentWindow()
-		await window.center()
-		await window.show()
-		await window.setFocus()
+		const appWindow = getCurrentWindow()
+		await appWindow.center()
+		await appWindow.show()
+		await appWindow.setFocus()
 		onQueryResetRef.current?.()
 	}, [])
 
@@ -56,6 +56,9 @@ export function useWindowManager({
 	useEffect(() => {
 		const handleBlur = () => {
 			if (activeDialogs === 0) {
+				// The global shortcut hides the window natively without hideWindow, so restore the
+				// hidden-state layout now rather than after it is shown again.
+				void onWindowHiddenRef.current?.()
 				if (blurTimeoutRef.current) {
 					clearTimeout(blurTimeoutRef.current)
 				}

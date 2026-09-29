@@ -32,6 +32,14 @@ describe('theme tokens', () => {
 	})
 
 	it.each([
+		':root',
+		'.dark',
+	])('keeps --highlight opaque in %s so alpha only comes from modifiers', (selector) => {
+		const value = blockOf(selector).match(/--highlight: ([^;]+);/)?.[1]
+		expect(value).toMatch(/^oklch\([^/]+\)$/)
+	})
+
+	it.each([
 		'surface-in',
 		'page-in',
 		'dot-matrix',

@@ -136,7 +136,7 @@
 	--surface-2: oklch(0.965 0.003 270);
 	--surface-3: oklch(0.94 0.004 270);
 	--border-subtle: oklch(0.2 0.005 270 / 8%);
-	--highlight: oklch(0.55 0.24 265 / 10%);
+	--highlight: oklch(0.55 0.24 265);
 }
 
 .dark {
@@ -175,7 +175,7 @@
 	--surface-2: oklch(1 0 0 / 5%);
 	--surface-3: oklch(1 0 0 / 8%);
 	--border-subtle: oklch(1 0 0 / 8%);
-	--highlight: oklch(0.65 0.2 265 / 16%);
+	--highlight: oklch(0.65 0.2 265);
 }
 
 @layer base {

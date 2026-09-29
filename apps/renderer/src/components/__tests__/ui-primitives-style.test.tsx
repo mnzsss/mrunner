@@ -34,7 +34,7 @@ describe('primitive restyle', () => {
 			</Command>,
 		)
 		expect(slot('command')).toHaveClass('bg-surface-1', 'animate-surface-in')
-		expect(slot('command-item')).toHaveClass('data-selected:bg-highlight')
+		expect(slot('command-item')).toHaveClass('data-selected:bg-highlight/10')
 	})
 
 	it('puts controls on the raised surface', () => {

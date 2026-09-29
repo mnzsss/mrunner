@@ -81,7 +81,7 @@ export interface CommandPaletteProps {
 	onStartChat: (message: string) => void
 	onExitChat: () => void
 	previewOpen: boolean
-	onTogglePreview: () => void
+	onTogglePreview: () => Promise<void>
 }
 
 export function CommandPalette({
@@ -152,7 +152,7 @@ export function CommandPalette({
 		(e: React.KeyboardEvent) => {
 			if (e.ctrlKey && e.key.toLowerCase() === 'p') {
 				e.preventDefault()
-				onTogglePreview()
+				void onTogglePreview()
 				return
 			}
 
