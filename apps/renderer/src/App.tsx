@@ -4,7 +4,6 @@ import { sendNotification } from '@tauri-apps/plugin-notification'
 import { lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { Command } from '@/commands/types'
 import { isScriptableAction } from '@/commands/types'
 import { CommandPalette, PluginCommandView } from '@/components/command-palette'
 import { SettingsSheet } from '@/components/settings/settings-sheet'
@@ -16,6 +15,7 @@ import {
 	useCommands,
 	useDialogManager,
 	useKeyboardShortcuts,
+	usePalettePages,
 	usePlugins,
 	useWindowManager,
 } from '@/hooks'
@@ -41,13 +41,18 @@ const FolderManager = lazy(() =>
 
 function App() {
 	const [query, setQuery] = useState('')
-	const [activeScriptableCommand, setActiveScriptableCommand] =
-		useState<Command | null>(null)
 	const [isChatMode, setIsChatMode] = useState(false)
 	const [chatInitialMessage, setChatInitialMessage] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	const { t, i18n } = useTranslation()
+	const {
+		pages,
+		current: currentPage,
+		push: pushPage,
+		pop: popPage,
+		reset: resetPages,
+	} = usePalettePages()
 
 	// Core data hooks
 	const { commands, executeCommand, folderActions } = useCommands()
@@ -66,7 +71,7 @@ function App() {
 	const { hideWindow } = useWindowManager({
 		onQueryReset: () => {
 			setQuery('')
-			setActiveScriptableCommand(null)
+			resetPages()
 			requestAnimationFrame(() => inputRef.current?.focus())
 		},
 		activeDialogs: dialogManager.nativeDialogCount + (isChatMode ? 1 : 0),
@@ -87,10 +92,19 @@ function App() {
 		search,
 	})
 
+	const handleEscape = useCallback(() => {
+		if (popPage()) {
+			setQuery('')
+			requestAnimationFrame(() => inputRef.current?.focus())
+			return
+		}
+		void hideWindow()
+	}, [popPage, hideWindow])
+
 	// Keyboard shortcuts hook
 	useKeyboardShortcuts({
 		bookmarks,
-		onHideWindow: hideWindow,
+		onEscape: handleEscape,
 		onEditBookmark: dialogManager.setEditDialog,
 		onDeleteBookmark: dialogManager.setDeleteDialog,
 	})
@@ -177,7 +191,7 @@ function App() {
 				}
 				// list or detail mode: transition to sub-view
 				setQuery('')
-				setActiveScriptableCommand(command)
+				pushPage(command)
 				return
 			}
 
@@ -193,6 +207,7 @@ function App() {
 			handleBookmarkSelect,
 			hideWindow,
 			dialogManager,
+			pushPage,
 			query,
 			i18n.language,
 			t,
@@ -208,9 +223,9 @@ function App() {
 			)
 			if (!target) return
 			setQuery('')
-			setActiveScriptableCommand(target)
+			pushPage(target)
 		},
-		[allItems],
+		[allItems, pushPage],
 	)
 
 	const handleStartChat = useCallback((message: string) => {
@@ -271,18 +286,16 @@ function App() {
 				onOpenChange={dialogManager.handleSettingsOpenChange}
 			/>
 
-			{activeScriptableCommand ? (
+			{currentPage ? (
 				<PluginCommandView
-					command={activeScriptableCommand}
+					key={`${currentPage.id}-${pages.length}`}
+					command={currentPage.command}
+					pages={pages}
 					query={query}
 					onQueryChange={setQuery}
 					inputRef={inputRef}
 					onPushCommand={handlePushCommand}
-					onBack={() => {
-						setActiveScriptableCommand(null)
-						setQuery('')
-						requestAnimationFrame(() => inputRef.current?.focus())
-					}}
+					onBack={handleEscape}
 				/>
 			) : (
 				<CommandPalette

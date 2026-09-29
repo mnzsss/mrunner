@@ -36,6 +36,7 @@ describe('loading states', () => {
 		render(
 			<PluginCommandView
 				command={detailCommand}
+				pages={[]}
 				query=""
 				onQueryChange={vi.fn()}
 				inputRef={{ current: null }}

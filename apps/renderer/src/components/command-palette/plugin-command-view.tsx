@@ -8,20 +8,24 @@ import {
 	DotMatrixLoader,
 } from '@mrunner/ui'
 import { invoke } from '@tauri-apps/api/core'
-import { ChevronLeft, Terminal } from 'lucide-react'
+import { Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 
 import type { Command as CommandType } from '@/commands/types'
+import type { PalettePage } from '@/hooks/use-palette-pages'
 import { isScriptableAction } from '@/commands/types'
 import { CommandFooter } from '@/components/command-footer'
 import { ICON_MAP } from '@/lib/constants'
 import { executePluginAction } from '@/lib/execute-plugin-action'
 import { getPluginEnvironment } from '@/lib/plugin-environment'
 
+import { PageBreadcrumb } from './page-breadcrumb'
+
 export interface PluginCommandViewProps {
 	command: CommandType
+	pages: PalettePage[]
 	query: string
 	onQueryChange: (query: string) => void
 	inputRef: RefObject<HTMLInputElement | null>
@@ -54,6 +58,7 @@ function isDetailResult(value: unknown): value is DetailResult {
 
 export function PluginCommandView({
 	command,
+	pages,
 	query,
 	onQueryChange,
 	inputRef,
@@ -123,20 +128,6 @@ export function PluginCommandView({
 		}
 	}, [query, runCommand, mode])
 
-	// Escape key to go back
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				e.preventDefault()
-				e.stopPropagation()
-				onBack()
-			}
-		}
-		window.addEventListener('keydown', handleKeyDown, { capture: true })
-		return () =>
-			window.removeEventListener('keydown', handleKeyDown, { capture: true })
-	}, [onBack])
-
 	const handleItemSelect = useCallback(
 		async (item: ListItem) => {
 			const firstAction = item.actions?.[0]
@@ -157,25 +148,26 @@ export function PluginCommandView({
 			loop
 			disablePointerSelection
 			shouldFilter={false}
+			onKeyDown={(e) => {
+				if (e.key === 'Backspace' && query === '') {
+					e.preventDefault()
+					onBack()
+				}
+			}}
 		>
-			<div className="flex items-center gap-2 border-b px-3 py-2 text-muted-foreground text-sm">
-				<button
-					type="button"
-					onClick={onBack}
-					className="flex items-center gap-1 transition-colors hover:text-foreground"
-				>
-					<ChevronLeft className="size-4" />
-					<span>{t('plugins.back')}</span>
-				</button>
-				<span className="font-medium text-foreground">{command.name}</span>
-				{loading && (detailResult || items.length > 0) && (
-					<DotMatrixLoader
-						size="sm"
-						label={t('plugins.running')}
-						className="ml-auto text-muted-foreground"
-					/>
-				)}
-			</div>
+			<PageBreadcrumb
+				pages={pages}
+				onBack={onBack}
+				trailing={
+					loading && (detailResult || items.length > 0) ? (
+						<DotMatrixLoader
+							size="sm"
+							label={t('plugins.running')}
+							className="text-muted-foreground"
+						/>
+					) : null
+				}
+			/>
 			{mode !== 'detail' && (
 				<CommandInput
 					ref={inputRef}

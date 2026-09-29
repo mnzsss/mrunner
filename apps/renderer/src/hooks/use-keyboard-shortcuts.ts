@@ -10,14 +10,14 @@ import { useShortcutsSettings } from './use-shortcuts-settings'
 
 export interface UseKeyboardShortcutsOptions {
 	bookmarks: Bookmark[]
-	onHideWindow: () => Promise<void>
+	onEscape: () => void
 	onEditBookmark: (state: BookmarkDialogState) => void
 	onDeleteBookmark: (state: BookmarkDialogState) => void
 }
 
 export function useKeyboardShortcuts({
 	bookmarks,
-	onHideWindow,
+	onEscape,
 	onEditBookmark,
 	onDeleteBookmark,
 }: UseKeyboardShortcutsOptions): void {
@@ -58,7 +58,7 @@ export function useKeyboardShortcuts({
 				() => {
 					switch (action) {
 						case 'escape':
-							onHideWindow()
+							onEscape()
 							break
 						case 'edit-bookmark': {
 							const bookmark = getSelectedBookmark()
@@ -85,7 +85,7 @@ export function useKeyboardShortcuts({
 		}
 	}, [
 		shortcuts,
-		onHideWindow,
+		onEscape,
 		getSelectedBookmark,
 		onEditBookmark,
 		onDeleteBookmark,
