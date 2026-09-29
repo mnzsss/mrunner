@@ -21,7 +21,7 @@ function Command({
 		<CommandPrimitive
 			data-slot="command"
 			className={cn(
-				'flex size-full flex-col overflow-hidden rounded-4xl bg-popover p-1 text-popover-foreground',
+				'flex size-full animate-surface-in flex-col overflow-hidden rounded-2xl bg-surface-1 p-1 text-popover-foreground',
 				className,
 			)}
 			{...props}
@@ -74,7 +74,7 @@ function CommandInput({
 	return (
 		<div
 			data-slot="command-input-wrapper"
-			className="border-border/30 border-b p-1.5"
+			className="border-border-subtle border-b p-1.5"
 		>
 			<InputGroup className={cn('h-11 bg-transparent', wrapperClassName)}>
 				{prefix ? (
@@ -138,7 +138,7 @@ function CommandGroup({
 		<CommandPrimitive.Group
 			data-slot="command-group"
 			className={cn(
-				'overflow-hidden p-1 text-foreground first:pt-0 **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-wider',
+				'overflow-hidden p-1 text-foreground first:pt-0 **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:tracking-wide',
 				className,
 			)}
 			{...props}
@@ -153,7 +153,7 @@ function CommandSeparator({
 	return (
 		<CommandPrimitive.Separator
 			data-slot="command-separator"
-			className={cn('my-1 h-px bg-border/50', className)}
+			className={cn('my-1 h-px bg-border-subtle', className)}
 			{...props}
 		/>
 	)
@@ -168,7 +168,7 @@ function CommandItem({
 		<CommandPrimitive.Item
 			data-slot="command-item"
 			className={cn(
-				"group/command-item relative flex cursor-default select-none items-center gap-2.5 in-data-[slot=dialog-content]:rounded-2xl rounded-lg px-3 py-2 text-sm outline-hidden transition-all duration-150 ease-out data-[disabled=true]:pointer-events-none data-selected:bg-muted/80 data-selected:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-selected:*:[svg]:text-foreground",
+				"group/command-item relative flex cursor-default select-none items-center gap-2.5 in-data-[slot=dialog-content]:rounded-2xl rounded-xl px-2.5 py-2 text-sm outline-hidden transition-colors duration-(--duration-fast) ease-(--ease-out) data-[disabled=true]:pointer-events-none data-selected:bg-highlight data-selected:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-selected:*:[svg]:text-foreground",
 				className,
 			)}
 			{...props}

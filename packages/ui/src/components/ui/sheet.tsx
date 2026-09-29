@@ -45,7 +45,7 @@ function SheetContent({
 				data-slot="sheet-content"
 				{...props}
 				className={cn(
-					'fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-md flex-col bg-background outline-none',
+					'glass fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-md flex-col border-border-subtle border-l bg-surface-1 outline-none',
 					'data-closed:animate-out data-open:animate-in',
 					'data-closed:slide-out-to-right data-open:slide-in-from-right',
 					'duration-300',
