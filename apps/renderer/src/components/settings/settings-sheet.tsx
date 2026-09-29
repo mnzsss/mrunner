@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next'
 
 import { LanguageSelector } from '@/components/language-selector'
 import { PluginsTab } from '@/components/settings/plugins-tab'
+import { SettingsSectionTitle } from '@/components/settings/settings-section-title'
 import { ToolsSettingsTab } from '@/components/settings/tools-tab'
 import { ShortcutItem } from '@/components/shortcuts/shortcut-item'
 import { useShortcutsSettings } from '@/hooks/use-shortcuts-settings'
@@ -135,9 +136,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 					{activeTab === 'global' && (
 						<div className="space-y-8">
 							<div className="space-y-3">
-								<h3 className="font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+								<SettingsSectionTitle>
 									{t('settings.preferences')}
-								</h3>
+								</SettingsSectionTitle>
 								<Label htmlFor="autostart">
 									<Item
 										variant="outline"
@@ -161,9 +162,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							<Separator />
 
 							<div className="space-y-3">
-								<h3 className="font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+								<SettingsSectionTitle>
 									{t('settings.language')}
-								</h3>
+								</SettingsSectionTitle>
 								<Label>
 									<Item
 										variant="outline"
@@ -183,9 +184,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							<Separator />
 
 							<div className="space-y-3">
-								<h3 className="font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+								<SettingsSectionTitle>
 									{t('settings.shortcuts')}
-								</h3>
+								</SettingsSectionTitle>
 								<div className="space-y-2">
 									{globalShortcuts.map((sc) => (
 										<ShortcutItem
@@ -205,9 +206,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 							<Separator />
 
 							<div className="space-y-1">
-								<h3 className="font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+								<SettingsSectionTitle>
 									{t('settings.about')}
-								</h3>
+								</SettingsSectionTitle>
 								<p className="text-muted-foreground text-sm">
 									{t('settings.aboutDescription')}
 								</p>
@@ -220,9 +221,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 
 					{activeTab === 'bookmarks' && (
 						<div className="space-y-3">
-							<h3 className="font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+							<SettingsSectionTitle>
 								{t('settings.bookmarkShortcuts')}
-							</h3>
+							</SettingsSectionTitle>
 							<div className="space-y-2">
 								{bookmarkShortcuts.map((sc) => (
 									<ShortcutItem
@@ -245,7 +246,10 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
 					{activeTab === 'tools' && <ToolsSettingsTab />}
 				</SheetBody>
 
-				<div className="flex items-center gap-4 border-border/30 border-t px-6 py-2.5 text-[11px] text-muted-foreground/70">
+				<div
+					data-slot="settings-footer"
+					className="flex items-center gap-4 border-border-subtle border-t bg-surface-2/60 px-6 py-2.5 text-[11px] text-muted-foreground"
+				>
 					<span className="flex items-center gap-1.5">
 						<Kbd>←</Kbd>
 						<Kbd>→</Kbd>

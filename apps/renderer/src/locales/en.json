@@ -96,7 +96,8 @@
 		"conflictWarning": "This shortcut conflicts with another",
 		"resetTooltip": "Restore default",
 		"pressKeys": "Press a key combination...",
-		"clickToRecord": "Click to record"
+		"clickToRecord": "Click to record",
+		"conflicting": "Conflicting"
 	},
 	"actions": {
 		"skip": "Skip",

@@ -96,7 +96,8 @@
 		"conflictWarning": "Este atalho está em conflito com outro",
 		"resetTooltip": "Restaurar padrão",
 		"pressKeys": "Pressione uma combinação de teclas...",
-		"clickToRecord": "Clique para gravar"
+		"clickToRecord": "Clique para gravar",
+		"conflicting": "Em conflito"
 	},
 	"actions": {
 		"skip": "Pular",
