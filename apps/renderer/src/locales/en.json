@@ -13,7 +13,16 @@
 		"select": "select",
 		"edit": "edit",
 		"delete": "delete",
-		"close": "close"
+		"close": "close",
+		"filter": "filter"
+	},
+	"filters": {
+		"label": "Filter results",
+		"all": "All",
+		"app": "Apps",
+		"bookmark": "Bookmarks",
+		"folder": "Folders",
+		"plugin": "Plugins"
 	},
 	"bookmarks": {
 		"group": "Bookmarks",

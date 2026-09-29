@@ -13,7 +13,16 @@
 		"select": "selecionar",
 		"edit": "editar",
 		"delete": "deletar",
-		"close": "fechar"
+		"close": "fechar",
+		"filter": "filtrar"
+	},
+	"filters": {
+		"label": "Filtrar resultados",
+		"all": "Todos",
+		"app": "Apps",
+		"bookmark": "Bookmarks",
+		"folder": "Pastas",
+		"plugin": "Plugins"
 	},
 	"bookmarks": {
 		"group": "Bookmarks",

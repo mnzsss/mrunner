@@ -9,7 +9,15 @@ import {
 	DotMatrixLoader,
 	Kbd,
 } from '@mrunner/ui'
-import { lazy, type RefObject, Suspense, useCallback, useEffect } from 'react'
+import {
+	lazy,
+	type RefObject,
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Bookmark, Command as CommandType } from '@/commands/types'
@@ -17,12 +25,14 @@ import type { SlashShortcut, ToolProvider } from '@/core/types/tools'
 import { CommandFooter } from '@/components/command-footer'
 import { ListItem } from '@/components/list-item'
 import { UpdateBanner } from '@/components/update-banner'
+import { filterGroupedCommands, type PaletteFilter } from '@/core/search'
 import { useSlashCommands } from '@/hooks/use-slash-commands'
 
 import { AddBookmarkButton } from './add-bookmark-button'
 import { AskAiItem } from './ask-ai-item'
 import { BookmarkList } from './bookmark-list'
 import { CommandGroups } from './command-groups'
+import { cyclePaletteFilter, FilterChips } from './filter-chips'
 
 const AIChatView = lazy(() =>
 	import('@/components/ai-chat/ai-chat-view').then((mod) => ({
@@ -75,6 +85,13 @@ export function CommandPalette({
 		activateCommand,
 		deactivateCommand,
 	} = useSlashCommands(query)
+	const [filter, setFilter] = useState<PaletteFilter>('all')
+	const visibleGroups = useMemo(
+		() => filterGroupedCommands(groupedCommands, filter),
+		[groupedCommands, filter],
+	)
+	const showBookmarks = filter === 'all' || filter === 'bookmark'
+	const isRootPage = !isSlashMode && !activeCommand
 
 	const handleToolSelect = useCallback(
 		(provider: ToolProvider) => {
@@ -101,6 +118,12 @@ export function CommandPalette({
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
+			if (e.key === 'Tab' && e.ctrlKey && isRootPage) {
+				e.preventDefault()
+				setFilter((current) => cyclePaletteFilter(current, e.shiftKey ? -1 : 1))
+				return
+			}
+
 			// Tab to activate first filtered entry in slash mode
 			if (e.key === 'Tab' && isSlashMode && filteredEntries.length > 0) {
 				e.preventDefault()
@@ -133,6 +156,7 @@ export function CommandPalette({
 			}
 		},
 		[
+			isRootPage,
 			isSlashMode,
 			filteredEntries,
 			activeCommand,
@@ -190,6 +214,7 @@ export function CommandPalette({
 				}
 				autoFocus
 			/>
+			{isRootPage && <FilterChips value={filter} onChange={setFilter} />}
 
 			<CommandList className="flex-1 overflow-y-auto p-2">
 				{isSlashMode && (
@@ -237,7 +262,7 @@ export function CommandPalette({
 					</CommandGroup>
 				)}
 
-				{!isSlashMode && !activeCommand && (
+				{isRootPage && (
 					<>
 						<CommandEmpty className="py-2 text-center text-muted-foreground text-sm">
 							{query.trim() ? (
@@ -247,7 +272,7 @@ export function CommandPalette({
 							)}
 						</CommandEmpty>
 
-						{query === '' && recentCommands.length > 0 && (
+						{query === '' && filter === 'all' && recentCommands.length > 0 && (
 							<CommandGroup heading={t('groups.Recent')}>
 								{recentCommands.map((cmd) => (
 									<ListItem
@@ -264,13 +289,15 @@ export function CommandPalette({
 							</CommandGroup>
 						)}
 
-						<CommandGroup heading={t('groups.Bookmarks')}>
-							<AddBookmarkButton onSelect={onAddBookmark} />
-							<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
-						</CommandGroup>
+						{showBookmarks && (
+							<CommandGroup heading={t('groups.Bookmarks')}>
+								<AddBookmarkButton onSelect={onAddBookmark} />
+								<BookmarkList bookmarks={bookmarks} onSelect={onSelect} />
+							</CommandGroup>
+						)}
 
 						<CommandGroups
-							groupedCommands={groupedCommands}
+							groupedCommands={visibleGroups}
 							onSelect={onSelect}
 						/>
 					</>
